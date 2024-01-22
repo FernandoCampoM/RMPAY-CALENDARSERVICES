@@ -1,5 +1,9 @@
 # RMPAYDASHBOARD
  RMPY DASHBOARD ofrece  herramientas y recursos de API que le permiten gestioanar y sincronizar los servicios ofrecidos por la app de RMPAY.
+ La documentación de los servicios se encuenra en 
+ ```plaintext
+   https://documenter.getpostman.com/view/19269592/2s9YymH53r
+    ```
 ## Tabla de Contenidos
 
 - [Instalación](#instalación)
