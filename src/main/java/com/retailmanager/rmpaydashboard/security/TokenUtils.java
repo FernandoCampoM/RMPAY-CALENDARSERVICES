@@ -31,7 +31,7 @@ public class TokenUtils {
         Date expirationDate=new Date(System.currentTimeMillis() + expirationTime);
         Map<String, Object> extra= new HashMap<>();
         extra.put("nombre", user.getName());
-        extra.put("roles", user.getRoles().toString());
+        extra.put("roles", user.getRol().toString());
         
         return Jwts.builder()
                     .setSubject(user.getUsername())

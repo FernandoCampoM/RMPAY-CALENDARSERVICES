@@ -28,9 +28,12 @@ public class UserService implements IUserService{
     @Qualifier("mapperbase")
     private ModelMapper mapper;
     
-    /** 
-     * @param prmUser
-     * @return ResponseEntity<?>
+    
+    /**
+     * Save user data into the database and return the response entity
+     *
+     * @param  prmUser  the user data to be saved
+     * @return          the response entity containing the saved user data or an error message
      */
     @Override
     @Transactional
@@ -66,6 +69,13 @@ public class UserService implements IUserService{
         return rta;
     }
 
+    /**
+     * Update user information in the database.
+     *
+     * @param  userId   the user ID
+     * @param  prmUser  the user DTO with updated information
+     * @return          a response entity with the updated user DTO or an error message
+     */
     @Override
     @Transactional
     public ResponseEntity<?> update(Long userId, UserDTO prmUser) {
@@ -97,6 +107,12 @@ public class UserService implements IUserService{
         return rta;
     }
 
+    /**
+     * Deletes a user by their ID.
+     *
+     * @param  userId   the ID of the user to be deleted
+     * @return          true if the user is successfully deleted, false otherwise
+     */
     @Override
     @Transactional
     public boolean delete(Long userId) {
@@ -116,6 +132,12 @@ public class UserService implements IUserService{
         return bandera;
     }
 
+    /**
+     * Find a user by ID and return ResponseEntity with UserDTO if found, or throw an exception.
+     *
+     * @param  userId   the ID of the user to find
+     * @return          ResponseEntity with UserDTO if user is found, or an exception if not found
+     */
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<?> findById(Long userId) {
@@ -131,6 +153,12 @@ public class UserService implements IUserService{
                 throw objExeption;
     }
 
+    /**
+     * Finds a user by username and returns a ResponseEntity with the user information.
+     *
+     * @param  username   the username of the user to find
+     * @return            a ResponseEntity with the user information if found, otherwise throws an exception
+     */
     @Override
     public ResponseEntity<?> findByUsername(String username) {
         if(username!=null){

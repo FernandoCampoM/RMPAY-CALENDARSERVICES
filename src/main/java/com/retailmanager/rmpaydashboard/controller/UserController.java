@@ -32,23 +32,54 @@ public class UserController {
     
     
  
+    /**
+     * A method to find a user by their ID.
+     *
+     * @param  userId   the ID of the user to find
+     * @return          the ResponseEntity containing the user found by ID
+     */
     @GetMapping("/users/{userId}")
     public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "userId.positive")Long userId){
         return this.userService.findById(userId);
     }
+    /**
+     * Finds a user by username.
+     *
+     * @param  username	description of the username parameter
+     * @return         	description of the ResponseEntity return value
+     */
     @GetMapping("/users")
     public ResponseEntity<?> findByUsername(@Valid @RequestParam(name = "username") @NotBlank(message = "username.notBlank") String username){
         return this.userService.findByUsername(username);
     }
     
+    /**
+     * Save a user.
+     *
+     * @param  prmUser  the user to be saved
+     * @return          the response entity
+     */
     @PostMapping("/users")
     public ResponseEntity<?> save(@Valid @RequestBody UserDTO prmUser){
         return this.userService.save(prmUser);
     }
+    /**
+     * Updates a user by userId.
+     *
+     * @param  userId   the ID of the user to update
+     * @param  prmUser  the updated user information
+     * @return          the ResponseEntity containing the updated user
+     */
     @PutMapping("/users/{userId}")
     public ResponseEntity<?> update(@Valid @PathVariable @Positive(message = "userId.positive")Long userId,@Valid @RequestBody UserDTO prmUser){
         return this.userService.update(userId,prmUser);
     }
+    /**
+     * Delete user by ID.
+     *
+     * @param  userId	ID of the user to be deleted
+     * @return        	true if the user is successfully deleted, false otherwise
+     */
     @DeleteMapping("/users/{userId}")
     public Boolean delete(@Valid @PathVariable @Positive(message = "userId.positive")Long userId){
         return this.userService.delete(userId);

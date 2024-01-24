@@ -1,30 +1,35 @@
 package com.retailmanager.rmpaydashboard.models;
+
+import java.util.List;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(name = "Address")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
-public class Address {
+@Entity @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+public class UsersBusiness {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long addressId;
+    private Long userBusinessId;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
     @Column(nullable = false)
-    private String address1;
-    @Column(nullable = true)
-    private String address2;
+    private String password;
+
     @Column(nullable = false)
-    private String city;
-    @Column(nullable = false)
-    private String country;
-    @Column(nullable = false)
-    private String zipcode;
+    private Boolean enable;
+
+    @OneToMany(mappedBy = "userBusiness")
+    private List<UserPermission> userPermissions;
+
 }
