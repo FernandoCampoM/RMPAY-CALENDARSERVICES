@@ -17,4 +17,5 @@ public interface IUserService {
     public boolean delete(Long userId);
     public ResponseEntity<?> findById(Long userId);
     public ResponseEntity<?> findByUsername(String  username);
+    public ResponseEntity<?> getUserBusiness(Long userId);
 }

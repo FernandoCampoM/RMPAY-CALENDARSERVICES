@@ -85,4 +85,15 @@ public class UserController {
         return this.userService.delete(userId);
     }
 
+    /**
+     * Retrieves the business information for a specific user.
+     *
+     * @param  userId   the ID of the user
+     * @return          the ResponseEntity containing the user's business information
+     */
+    @GetMapping("/users/{userId}/business")
+    public ResponseEntity<?> getUserBusiness(@Valid @PathVariable @Positive(message = "userId.positive")Long userId){
+        return this.userService.getUserBusiness(userId);
+    }
+
 }

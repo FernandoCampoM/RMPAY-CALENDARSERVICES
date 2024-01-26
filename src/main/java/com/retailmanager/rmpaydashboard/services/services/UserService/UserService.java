@@ -1,8 +1,10 @@
 package com.retailmanager.rmpaydashboard.services.services.UserService;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -11,10 +13,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 
 
@@ -53,15 +57,18 @@ public class UserService implements IUserService{
                 throw objExeption;
             }
         prmUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
+        
         ResponseEntity<?> rta;
          User objUser= this.mapper.map(prmUser, User.class);
+         if(objUser.getRol()==null){
+             objUser.setRol(Rol.ROLE_USER);
+         }
          User objUserRTA=null;
          if(objUser!=null){
             objUserRTA=this.serviceDBUser.save(objUser);
          }
         UserDTO userDTO=this.mapper.map(objUserRTA, UserDTO.class);
         if(userDTO!=null){
-            userDTO.setPassword(null);
             rta=new ResponseEntity<UserDTO>(userDTO, HttpStatus.CREATED);
         }else{
             rta= new ResponseEntity<String>("Error al crear el User",HttpStatus.INTERNAL_SERVER_ERROR);
@@ -144,8 +151,9 @@ public class UserService implements IUserService{
         if(userId!=null){
             Optional<User> optional= this.serviceDBUser.findById(userId);
             if(optional.isPresent()){
+                
                 UserDTO objUserDTO=this.mapper.map(optional.get(),UserDTO.class);
-                objUserDTO.setPassword(null);
+                
                 return new ResponseEntity<UserDTO>(objUserDTO,HttpStatus.OK);
             }
         }
@@ -170,6 +178,28 @@ public class UserService implements IUserService{
             }
         }
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Usuario con username "+username+" no existe en la Base de datos");
+                throw objExeption;
+    }
+
+    /**
+     * Retrieve user´s business by userId.
+     *
+     * @param  userId   the identifier of the user
+     * @return          ResponseEntity with a list of BusinessDTO or an exception if the user does not exist
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getUserBusiness(Long userId) {
+        if(userId!=null){
+            Optional<User> optional= this.serviceDBUser.findById(userId);
+            if(optional.isPresent()){
+                optional.get().getBusiness();
+                List<BusinessDTO> listBusiness=this.mapper.map(optional.get().getBusiness(),new TypeToken<List<BusinessDTO>>(){}.getType());
+                
+                return new ResponseEntity<List<BusinessDTO>>(listBusiness,HttpStatus.OK);
+            }
+        }
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Usuario con userId "+userId+" no existe en la Base de datos");
                 throw objExeption;
     }
     

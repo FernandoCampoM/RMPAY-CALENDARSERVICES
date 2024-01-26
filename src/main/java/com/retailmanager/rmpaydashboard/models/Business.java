@@ -25,7 +25,9 @@ public class Business {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long businessId;
     @Column(nullable = true)
-    private Long merchantId;
+    private String merchantId;
+    @Column(nullable = false)
+    private String name;
     @Column(nullable = false)
     private String businessPhoneNumber;
     @Column(nullable = false)
@@ -36,7 +38,7 @@ public class Business {
     @JoinColumn( name="addressId",nullable = true)
     private Address address;
 
-    @ManyToOne(cascade=CascadeType.ALL,optional = false)
+    @ManyToOne(optional = false)
     @JoinColumn( name="userId",nullable = false)
     private User user;
 
@@ -45,7 +47,6 @@ public class Business {
     
     @OneToMany(mappedBy = "business",fetch =FetchType.LAZY)
     private List<Terminal> terminals;
-    //PENDIENTE ASOSIAR A UN SERVICIO
-    //private Long serviceId;
+    
 
 }

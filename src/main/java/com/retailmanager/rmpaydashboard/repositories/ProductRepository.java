@@ -1,11 +1,9 @@
 package com.retailmanager.rmpaydashboard.repositories;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -41,7 +39,7 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
      * @param barCode Codigo de barras
      * @return Opcional del producto
      */
-    public Optional<Product> findOneByproductCodeOrBarcode(String productCode, String barCode);
+    public Optional<Product> findOneByCodeOrBarcode(String productCode, String barCode);
     /**
      * Obtiene los productos por categoria
      * @param category Categoria de la cual se quieren recupear los productos

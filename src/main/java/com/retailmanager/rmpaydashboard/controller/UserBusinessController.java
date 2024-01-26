@@ -1,5 +1,5 @@
 package com.retailmanager.rmpaydashboard.controller;
 
-public class UserAppController {
+public class UserBusinessController {
     
 }

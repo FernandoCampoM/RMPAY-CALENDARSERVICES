@@ -2,7 +2,6 @@ package com.retailmanager.rmpaydashboard.services.services.ProductService;
 
 import java.util.List;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;

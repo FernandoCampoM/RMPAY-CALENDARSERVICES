@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 import org.springframework.lang.NonNull;
 
 import com.retailmanager.rmpaydashboard.enums.Rol;
@@ -28,12 +30,10 @@ public class UserDTO {
     private String email;
     @NotEmpty(message = "{user.password.empty}")
     private String password;
-    private Rol roles;
+    private Rol rol;
     private boolean enabled;
     @NotEmpty(message = "{user.phone.empty}")
     private String phone;
-    @NotEmpty(message = "{user.businessName.empty}")
-    private String businessName;
-    private AddressDTO address;
+    private List<BusinessDTO> business;
 
 }
