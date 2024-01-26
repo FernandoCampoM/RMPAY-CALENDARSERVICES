@@ -95,5 +95,16 @@ public class UserController {
     public ResponseEntity<?> getUserBusiness(@Valid @PathVariable @Positive(message = "userId.positive")Long userId){
         return this.userService.getUserBusiness(userId);
     }
+    /**
+     * Updates the enable status for the specified user.
+     *
+     * @param  userId  the ID of the user to be updated
+     * @param  enable  the new enable status
+     * @return         the response entity representing the result of the update operation
+     */
+    @PostMapping("/users/{userId}/enable/{enable}")
+    public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "userId.positive")Long userId, @Valid @PathVariable boolean enable){
+        return this.userService.updateEnable(userId, enable);
+    }
 
 }

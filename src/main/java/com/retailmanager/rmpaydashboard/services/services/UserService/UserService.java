@@ -86,7 +86,7 @@ public class UserService implements IUserService{
     @Override
     @Transactional
     public ResponseEntity<?> update(Long userId, UserDTO prmUser) {
-        ResponseEntity<?> rta;
+        ResponseEntity<?> rta=null;
         
         if(userId!=null){
             Optional<User> optional= this.serviceDBUser.findById(userId);
@@ -202,5 +202,27 @@ public class UserService implements IUserService{
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Usuario con userId "+userId+" no existe en la Base de datos");
                 throw objExeption;
     }
-    
+
+    /**
+     * Updates the enable status of a user.
+     *
+     * @param  userId  the unique identifier of the user
+     * @param  enable  the new enable status
+     * @return         a ResponseEntity with a boolean indicating the success of the update
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> updateEnable(Long userId, boolean enable) {
+        if(userId!=null){
+            Optional<User> optional= this.serviceDBUser.findById(userId);
+            if(optional.isPresent()){
+                this.serviceDBUser.updateEnable(userId, enable);
+                return new ResponseEntity<Boolean>(true,HttpStatus.OK);
+            }
+        }
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Usuario con userId "+userId+" no existe en la Base de datos");
+                throw objExeption;
+    }
+
+   
 }

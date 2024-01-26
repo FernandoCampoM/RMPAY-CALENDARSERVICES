@@ -1,7 +1,9 @@
 package com.retailmanager.rmpaydashboard.repositories;
 
+import org.springframework.data.repository.CrudRepository;
+
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 
-public class UsersAppRepository extends CrudRepository<UsersBusiness,Long>{
+public interface UsersAppRepository extends CrudRepository<UsersBusiness,Long>{
     
 }

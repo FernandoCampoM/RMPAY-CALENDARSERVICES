@@ -11,4 +11,7 @@ public interface IBusinessService {
     public boolean delete(Long businessId);
     public ResponseEntity<?> findById(Long businessId);
     public ResponseEntity<?> findByMerchantId(String merchantId);
+    public ResponseEntity<?> getTerminals(Long businessId);
+    public ResponseEntity<?> getCategories(Long businessId);
+    public ResponseEntity<?> updateEnable(Long businessId, boolean enable);
 }

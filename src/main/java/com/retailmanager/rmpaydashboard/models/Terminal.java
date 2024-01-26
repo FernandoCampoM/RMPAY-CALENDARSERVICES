@@ -11,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 
 @Entity
@@ -22,15 +21,16 @@ public class Terminal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long serial;
-
+    private Long terminalId;
+    @Column(nullable = false)
+    private String serial;
     @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
     private boolean enable;
 
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
+    @ManyToOne( optional = false)
     @JoinColumn(name = "businessId")
     private Business business;
     // Otros campos y métodos según se necesite

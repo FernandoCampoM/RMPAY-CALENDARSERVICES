@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -54,6 +56,9 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
      * @return
      */
     public Page<Product> findByName(String name, Pageable pageable);
+    @Modifying
+    @Query("UPDATE Product u SET u.enable = :enable WHERE u.productId = :productId")
+    void updateUserEnable(Long productId, boolean enable);
     /**
      * Obtiene los productos aplicando un filtro sobre sus atributos: productCode,  barCode, productName, description, provider, department, category
      * @param costumerId Identificador de la cadena.

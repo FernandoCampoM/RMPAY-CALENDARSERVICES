@@ -18,4 +18,5 @@ public interface IUserService {
     public ResponseEntity<?> findById(Long userId);
     public ResponseEntity<?> findByUsername(String  username);
     public ResponseEntity<?> getUserBusiness(Long userId);
+    public ResponseEntity<?> updateEnable(Long userId, boolean enable);
 }

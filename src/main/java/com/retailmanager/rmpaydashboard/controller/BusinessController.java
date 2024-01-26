@@ -12,12 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
-import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
-import com.retailmanager.rmpaydashboard.services.services.UserService.IUserService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -80,5 +76,35 @@ public class BusinessController {
     public Boolean delete(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
         return this.businessService.delete(businessId);
     }
-    
+    /**
+     * Get terminals for a specific business.
+     *
+     * @param  businessId   The ID of the business
+     * @return              ResponseEntity containing the terminals for the specified business
+     */
+    @GetMapping("/business/{businessId}/terminals")
+    public ResponseEntity<?> getTerminals(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
+        return this.businessService.getTerminals(businessId);
+    }
+    /**
+     * Get categories for a specific business.
+     *
+     * @param  businessId   the ID of the business
+     * @return              the ResponseEntity containing the categories
+     */
+    @GetMapping("/business/{businessId}/categories")
+    public ResponseEntity<?> getCategories(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
+        return this.businessService.getCategories(businessId);
+    }
+    /**
+     * Update the enable status of a business.
+     *
+     * @param  businessId  The ID of the business to update
+     * @param  enable      The new enable status
+     * @return             The ResponseEntity containing the result of the update
+     */
+    @PostMapping("/business/{businessId}/enable/{enable}")
+    public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId, @Valid @PathVariable boolean enable){
+        return this.businessService.updateEnable(businessId, enable);
+    }
 }

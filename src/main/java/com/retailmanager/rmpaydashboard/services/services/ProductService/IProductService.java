@@ -38,6 +38,7 @@ public interface IProductService {
      * @return Objeto del producto consultado
      */
     public ResponseEntity<?> findById(Long productId);
+    public ResponseEntity<?> updateEnable(Long productId, boolean enable);
     // /**
     //  * Consulta los productos de una cadena especificada.
     //  * @param costumerId Identificador de la cadena.
