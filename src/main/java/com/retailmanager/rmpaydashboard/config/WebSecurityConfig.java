@@ -2,9 +2,11 @@ package com.retailmanager.rmpaydashboard.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -42,7 +44,6 @@ public class WebSecurityConfig {
         jwtAthenticationFilter.setAuthenticationManager(authenticationManager);
         jwtAthenticationFilter.setFilterProcessesUrl("/login");
         
-
         return http
                 .cors().and().csrf().disable()
                 .authorizeHttpRequests()
@@ -54,7 +55,7 @@ public class WebSecurityConfig {
                 .and()
                 .addFilter(jwtAthenticationFilter)
                 .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+                .build(); 
     }
     /* @Bean 
     UserDetailsService userDetailsService(){
@@ -78,10 +79,10 @@ public class WebSecurityConfig {
     PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
-    /* @Bean
+    /*  @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.debug(true)
-        .ignoring().requestMatchers("/swagger-ui/*").requestMatchers("/v3/*").requestMatchers("/v3/api-docs/*");
+        .ignoring().requestMatchers("/api/services");
     } */
  /* public static void main(String[] args) {
      System.out.println("pass:"+new BCryptPasswordEncoder().encode("developer@601"));

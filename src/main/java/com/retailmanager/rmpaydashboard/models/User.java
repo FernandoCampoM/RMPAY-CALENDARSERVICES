@@ -38,7 +38,7 @@ public class User {
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
-    private boolean enabled=false;
+    private boolean enable=false;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,columnDefinition = "VARCHAR(14)")
     private Rol rol;

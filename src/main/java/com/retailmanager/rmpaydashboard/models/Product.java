@@ -44,7 +44,8 @@ public class Product {
     private int minimumLevel;
     @Column(nullable = false, unique = false) 
     private int maximumLevel;
-
+    @Column(nullable = false)
+    private boolean enable=false;
     @ManyToOne(cascade=CascadeType.ALL,optional = true)
     @JoinColumn( name="categoryId",nullable = false)
     private Category category;

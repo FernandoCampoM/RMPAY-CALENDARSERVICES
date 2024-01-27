@@ -32,6 +32,8 @@ public class Business {
     private String businessPhoneNumber;
     @Column(nullable = false)
     private Integer additionalTerminals;
+    @Column(nullable = false)
+    private boolean enable=false;
 
     /**Objeto que encapsula la información de la dirección */
     @OneToOne(cascade=CascadeType.ALL,optional = true)

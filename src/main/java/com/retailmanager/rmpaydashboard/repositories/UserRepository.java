@@ -10,6 +10,6 @@ import com.retailmanager.rmpaydashboard.models.User;
 public interface UserRepository extends  CrudRepository<User,Long>{
     Optional<User> findOneByUsername(String username);
     @Modifying
-    @Query("UPDATE User u SET u.enable = :enable WHERE u.userId = :userId")
-    void updateEnable(Long userId, boolean enable);
+    @Query("UPDATE User u SET u.enable = :enable WHERE u.userID = :userID")
+    void updateEnable(Long userID, boolean enable);
 }

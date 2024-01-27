@@ -58,7 +58,7 @@ public class UserDetailsImpl implements UserDetails{
 
     @Override
     public boolean isEnabled() {
-        return usuario.isEnabled();
+        return usuario.isEnable();
     }
     public String getName(){
         return usuario.getName();

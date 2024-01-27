@@ -270,6 +270,19 @@ public class ProductService implements IProductService {
         }
         return new ResponseEntity<>(listProductsRTA, HttpStatus.CREATED);
     }
+    @Override
+    @Transactional
+    public ResponseEntity<?> updateEnable(Long productId, boolean enable) {
+        if(productId!=null){
+            Optional<Product> optional= this.serviceDBProducts.findById(productId);
+            if(optional.isPresent()){
+                this.serviceDBProducts.updateEnable(productId, enable);
+                return new ResponseEntity<Boolean>(true,HttpStatus.OK);
+            }
+        }
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Producto con productId "+productId+" no existe en la Base de datos");
+                throw objExeption;
+    }
     
     
 

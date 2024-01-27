@@ -1,7 +1,6 @@
 package com.retailmanager.rmpaydashboard.controller;
 
 
-import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
@@ -16,7 +15,7 @@ import com.retailmanager.rmpaydashboard.services.services.ServiceService.IServic
 @RestController
 @RequestMapping("/api")
 @Validated
-@PermitAll  //Permit that all methods are available without authentication
+
 public class ServiceController {
 
     @Autowired
@@ -29,6 +28,7 @@ public class ServiceController {
      * @return              the ResponseEntity containing the result of the save operation
      */
     @PostMapping("/services")
+    
     public ResponseEntity<?> save(@Valid @RequestBody ServiceDTO prmService) {
         return serviceService.save(prmService);
     }

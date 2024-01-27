@@ -58,7 +58,7 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
     public Page<Product> findByName(String name, Pageable pageable);
     @Modifying
     @Query("UPDATE Product u SET u.enable = :enable WHERE u.productId = :productId")
-    void updateUserEnable(Long productId, boolean enable);
+    void updateEnable(Long productId, boolean enable);
     /**
      * Obtiene los productos aplicando un filtro sobre sus atributos: productCode,  barCode, productName, description, provider, department, category
      * @param costumerId Identificador de la cadena.
