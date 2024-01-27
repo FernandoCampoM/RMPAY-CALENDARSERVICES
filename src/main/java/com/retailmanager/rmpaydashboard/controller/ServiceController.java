@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,6 +65,7 @@ public class ServiceController {
      * @return         	response entity with the found service
      */
     @GetMapping("/services/{serviceId}")
+    
     public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "serviceId.positive") Long serviceId) {
         return serviceService.findById(serviceId);
     }
