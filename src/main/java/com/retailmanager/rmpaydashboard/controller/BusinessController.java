@@ -103,7 +103,7 @@ public class BusinessController {
      * @param  enable      The new enable status
      * @return             The ResponseEntity containing the result of the update
      */
-    @PostMapping("/business/{businessId}/enable/{enable}")
+    @PutMapping("/business/{businessId}/enable/{enable}")
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId, @Valid @PathVariable boolean enable){
         return this.businessService.updateEnable(businessId, enable);
     }

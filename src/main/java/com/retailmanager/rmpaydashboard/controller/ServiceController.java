@@ -87,7 +87,7 @@ public class ServiceController {
      * @param  enable     the new enable status
      * @return            the ResponseEntity representing the result of the update
      */
-    @PostMapping("/services/{serviceId}/enable/{enable}")
+    @PutMapping("/services/{serviceId}/enable/{enable}")
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "serviceId.positive") Long serviceId,
             @Valid @PathVariable boolean enable) {
         return serviceService.updateEnable(serviceId, enable);

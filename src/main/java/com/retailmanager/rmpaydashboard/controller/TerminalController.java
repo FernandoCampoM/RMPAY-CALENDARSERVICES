@@ -85,7 +85,7 @@ public class TerminalController {
      * @param  enable      the new enable status
      * @return             the ResponseEntity with the result of the update
      */
-    @PostMapping("/terminals/{terminalId}/enable/{enable}")
+    @PutMapping("/terminals/{terminalId}/enable/{enable}")
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")Long terminalId, @Valid @PathVariable boolean enable){
         return this.terminalService.updateEnable(terminalId,enable);
     }
