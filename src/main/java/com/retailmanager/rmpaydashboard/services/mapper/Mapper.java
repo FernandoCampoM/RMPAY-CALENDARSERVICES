@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 
 
+
 @Configuration
 public class Mapper {
     
@@ -16,9 +17,7 @@ public class Mapper {
     @Bean(name="mapperbase")
     public ModelMapper modelMapper(){
         ModelMapper objMapper= new ModelMapper();
+       
         return objMapper;
     }
-   
-      
-    
 }

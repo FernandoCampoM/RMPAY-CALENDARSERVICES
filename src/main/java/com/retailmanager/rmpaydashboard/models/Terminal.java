@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 
 @Entity
@@ -30,7 +31,7 @@ public class Terminal {
     @Column(nullable = false)
     private boolean enable;
 
-    @ManyToOne( optional = false)
+    @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "businessId")
     private Business business;
     // Otros campos y métodos según se necesite

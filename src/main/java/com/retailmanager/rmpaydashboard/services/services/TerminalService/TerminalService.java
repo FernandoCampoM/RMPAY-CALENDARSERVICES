@@ -57,13 +57,14 @@ public class TerminalService implements ITerminalService {
         ResponseEntity<?> rta;
          Terminal objTerminal= this.mapper.map(prmTerminal, Terminal.class);
          if(objTerminal!=null){
-            Long businessId=prmTerminal.getBusinessId();
+            Long businessId=prmTerminal.getBusinesId();
             if(businessId!=null){
                 Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
                 if(!existBusiness.isPresent()){
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" no existe en la Base de datos");
                     throw objExeption;
                 }else{
+                    //TODO: Validar que el busines tenga un servicio activo, y que tenga terminales disponibles
                     objTerminal.setBusiness(existBusiness.get());
                 }
             }
@@ -116,7 +117,7 @@ public class TerminalService implements ITerminalService {
             TerminalDTO terminalDTO=this.mapper.map(objTerminal, TerminalDTO.class);
             if(terminalDTO!=null){
                 
-                rta=new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.CREATED);
+                rta=new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.OK);
             }else{
                 rta= new ResponseEntity<String>("Error al actualizar el Terminal",HttpStatus.INTERNAL_SERVER_ERROR);
             }
