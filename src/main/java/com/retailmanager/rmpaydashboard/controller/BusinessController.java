@@ -1,6 +1,8 @@
 package com.retailmanager.rmpaydashboard.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
+import com.retailmanager.rmpaydashboard.services.services.ProductService.IProductService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -25,6 +28,8 @@ import jakarta.validation.constraints.Positive;
 public class BusinessController {
     @Autowired
     private IBusinessService businessService;
+    @Autowired
+    private IProductService productService;
     /**
      * Find a business by ID.
      *
@@ -106,5 +111,20 @@ public class BusinessController {
     @PutMapping("/business/{businessId}/enable/{enable}")
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId, @Valid @PathVariable boolean enable){
         return this.businessService.updateEnable(businessId, enable);
+    }
+    /**
+     * A method to find products by filter.
+     *
+     * @param pageable   the pageable object for pagination
+     * @param businessId the ID of the business
+     * @param filter     the filter string
+     * @return           ResponseEntity with filtered products or all products by business ID
+     */
+    @GetMapping("/business/{businessId}/products")
+    public ResponseEntity<?> findByFilter(@PageableDefault(size = 200,page = 0) Pageable pageable,@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId,@RequestParam(required=false) String filter){
+        if(filter != null){
+            return productService.findAllAndFilter(businessId, filter, pageable);
+        }
+        return this.productService.findAllByBusinessId(businessId,pageable);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import com.retailmanager.rmpaydashboard.models.Category;
 import com.retailmanager.rmpaydashboard.models.Product;
 
 
@@ -28,13 +29,10 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
      
     public Page<Product> findByobjCustomerIsOrObjCustomerIsNull(Customer objCostumer,Pageable pageable);
     */
-    /**
-     * Obtiene los productos de una cadena especificada
-     * @param objCostumer Cadena de la cual se quieren recupear los productos
-     * @param pageable  Objeto de paginación
-     * @return Objeto de pagina de resultados
+    
+    
      
-    public Page<Product> findByobjCustomerIs(Customer objCostumer,Pageable pageable);*/
+    public Page<Product> findByCategoryIs(Category category,Pageable pageable);
     /**
      * Recupera la información de un producto por codigo de producto o codigo de barras
      * @param productCode Codigo del producto
@@ -42,13 +40,7 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
      * @return Opcional del producto
      */
     public Optional<Product> findOneByCodeOrBarcode(String productCode, String barCode);
-    /**
-     * Obtiene los productos por categoria
-     * @param category Categoria de la cual se quieren recupear los productos
-     * @param pageable Objeto de paginación
-     * @return
-     */
-    public Page<Product> findByCategory(String category, Pageable pageable);
+    
     /**
      * Obtiene los productos por nombre
      * @param name Nombre del cual se quieren recupear los productos
@@ -56,49 +48,36 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
      * @return
      */
     public Page<Product> findByName(String name, Pageable pageable);
+    
+    /**
+     * Updates the enable status of a product.
+     *
+     * @param  productId  the ID of the product to update
+     * @param  enable     the new enable status
+     * @return            void
+     */
     @Modifying
     @Query("UPDATE Product u SET u.enable = :enable WHERE u.productId = :productId")
     void updateEnable(Long productId, boolean enable);
+
     /**
-     * Obtiene los productos aplicando un filtro sobre sus atributos: productCode,  barCode, productName, description, provider, department, category
-     * @param costumerId Identificador de la cadena.
-     * @param filter Filtro para bsucar productos
-     * @param pageable Objeto de paginación
-     * @return Pagina de resultados
+     * Finds products by filter.
+     *
+     * @param  businessId  the business id to filter products
+     * @param  filter      the filter string to search products
+     * @param  pageable    the pageable object for pagination and sorting
+     * @return             a page of products matching the filter
      */
-    //@Query(value = "select p from Product p where (p.objCustomer is null or p.objCustomer.customerId=:costumerId) and (p.productCode like :filter or p.barCode like :filter or p.productName like :filter or p.description like :filter or p.provider like :filter or p.department like :filter or p.category like :filter) ORDER BY p.objCustomer desc")
-    //public Page<Product> findProductsByFilterAndCustomerId(String costumerId, String filter,Pageable pageable);
+    @Query(value = "select p from Product p where p.category.business.businessId=:businessId and (p.code like :filter or p.barcode like :filter or p.name like :filter or p.description like :filter or p.category.name like :filter )")
+    public Page<Product> findProductsByFilter(Long businessId,String filter,Pageable pageable);
     /**
-     * Obtiene los productos de una cadena aplicando un filtro sobre sus atributos: productCode,  barCode, productName, description, provider, department, category
-     * y sólo se aplica el filtro sobre los productos de la cadena specificada
-     * @param costumerId Identificador de la cadena.
-     * @param filter Filtro para bsucar productos
-     * @param pageable Objeto de paginación
-     * @return Pagina de resultados
+     * Find products by business ID and return a page of results.
+     *
+     * @param  businessId  the ID of the business to search for
+     * @param  pageable    the pagination information
+     * @return             a page of products matching the given business ID
      */
-    //@Query(value = "select p from Product p where p.objCustomer.customerId=:costumerId and (p.productCode like :filter or p.barCode like :filter or p.productName like :filter or p.description like :filter or p.provider like :filter or p.department like :filter or p.category like :filter)")
-    //public Page<Product> findProductsByFilterAndOnlyCustomerId(String costumerId, String filter,Pageable pageable);
-    /**
-     * Obtiene los productos que no pertenecen a una cadena aplicando un filtro sobre sus atributos: productCode,  barCode, productName, description, provider, department, category
-     * @param filter Filtro para bsucar productos
-     * @param pageable Objeto de paginación
-     * @return  Pagina de resultados
-     */
-    //@Query(value = "select p from Product p where p.objCustomer is null and (p.productCode like :filter or p.barCode like :filter or p.productName like :filter or p.description like :filter or p.provider like :filter or p.department like :filter or p.category like :filter)")
-    //public Page<Product> findProductsByFilter(String filter,Pageable pageable);
-    // /**
-    //  * Obtiene todos los productos de una cadena 
-    //  * @param costumerId Identificador de la cadena.
-    //  * @return Pagina de resultados
-    //  */
-    // @Query(value = "select p from Product p where p.objCustomer.customerId=:costumerId")
-    // public List<Product> findAllProductsByCustomerId(String costumerId);
-    // /**
-    //  * Obtiene todos los productos de retail manager, es decir no están asociados a una cadena.
-    //  * @return Pagina de resultados
-    //  */
-    // @Query(value = "select p from Product p where p.objCustomer is null")
-    // public List<Product> findAllProductsRetailManager();
-    //@Query(value = "select count(p) from Product p where p.objCustomer.customerId=:costumerId")
-    //public int countByCostumerId(String costumerId);
+    @Query(value = "select p from Product p where p.category.business.businessId=:businessId order by p.name")
+    public Page<Product> findProductsByBusinessId(Long businessId,Pageable pageable);
+    
 }

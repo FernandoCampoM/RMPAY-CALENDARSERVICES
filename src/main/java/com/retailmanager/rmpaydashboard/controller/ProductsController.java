@@ -5,6 +5,8 @@ import java.util.List;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,7 +44,7 @@ public class ProductsController {
      */
     @PostMapping("/products/{costumerId}")
     public ResponseEntity<?> saveList(@PathVariable(required = false) String costumerId, @Valid @RequestBody List<ProductDTO> listProductsDTO){
-        return productService.save(costumerId,listProductsDTO);
+        return productService.save(listProductsDTO);
     }
     /**
      * Permite CREAR una lista de Productos que no pertenecen a ninguna cadena
@@ -51,7 +53,7 @@ public class ProductsController {
      */
     @PostMapping("/products/retailmanager")
     public ResponseEntity<?> saveList(@Valid @RequestBody List<ProductDTO> listProductsDTO){
-        return productService.save(null,listProductsDTO);
+        return productService.save(listProductsDTO);
     }
     /**
      * Actualiza la información de un producto ya existente
@@ -94,17 +96,19 @@ public class ProductsController {
     public ResponseEntity<?> delete(@PathVariable Long productId){
         return productService.delete(productId);
     }
+    
     /**
-     * Consulta los producto de una cadena.
-     * @param pageable Objeto de paginación
-     * @param costumerId Identificador de la cadena
-     * @param filter Filtro sobre los atriutos del producto. Opcional
-     * @return
+     * Finds products by category ID.
+     *
+     * @param  pageable     the pageable object for pagination
+     * @param  categoryId   the ID of the category to search for
+     * @return             the response entity containing the products found
      */
-    // @GetMapping("/products/byCostumerId/{costumerId}")
-    // public ResponseEntity<?> findByOnlyCustomerId(@PageableDefault(size = 200,page = 0) Pageable pageable,@PathVariable String costumerId,@RequestParam(required=false) String filter){
-    //     return productService.findByCustomerId(costumerId,filter, pageable);
-    // }
+    @GetMapping("/products/category/{categoryId}")
+    public ResponseEntity<?> findByOnlyCustomerId(@PageableDefault(size = 200,page = 0) Pageable pageable,@PathVariable Long categoryId){
+        return productService.findByCategory(categoryId, pageable);
+    }
+    
     /**
      * Retorna todos los productos de una cadena en un CSV File.
      * @param costumerId Identificador de la cadena

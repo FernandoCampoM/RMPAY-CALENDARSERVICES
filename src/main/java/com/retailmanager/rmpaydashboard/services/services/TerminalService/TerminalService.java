@@ -106,8 +106,6 @@ public class TerminalService implements ITerminalService {
                     throw objExeption;
                 }
             }
-            
-            
              objTerminal.setSerial(prmTerminal.getSerial());
              objTerminal.setEnable(prmTerminal.getEnable());
              objTerminal.setName(prmTerminal.getName());

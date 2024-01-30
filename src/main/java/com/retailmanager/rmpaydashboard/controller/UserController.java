@@ -102,7 +102,7 @@ public class UserController {
      * @param  enable  the new enable status
      * @return         the response entity representing the result of the update operation
      */
-    @PostMapping("/users/{userId}/enable/{enable}")
+    @PutMapping("/users/{userId}/enable/{enable}")
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "userId.positive")Long userId, @Valid @PathVariable boolean enable){
         return this.userService.updateEnable(userId, enable);
     }

@@ -8,7 +8,9 @@ import java.util.Optional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
+import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.Category;
 import com.retailmanager.rmpaydashboard.models.Product;
+import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 
@@ -30,17 +36,21 @@ public class ProductService implements IProductService {
     private ModelMapper mapperBase;
     @Autowired
     private ProductRepository serviceDBProducts;
-    //@Autowired
-    //private CustomerRepository serviceDBCostumer;
-    /** 
-     * @param prmProduct
-     * @return ResponseEntity<?>
+    @Autowired
+    private CategoryRepository serviceDBCategory;
+    @Autowired
+    private BusinessRepository serviceDBBusiness;
+    
+    /**
+     * Save a product and handle exceptions.
+     *
+     * @param  prmProduct	the product to be saved
+     * @return         	the response entity
      */
     @Transactional
     @Override
     public ResponseEntity<?> save(ProductDTO prmProduct) {
         if (prmProduct.getCode() != null) {
-            
             Optional<Product> optionalProduct = this.serviceDBProducts
                     .findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
             if (optionalProduct.isPresent()) {
@@ -59,29 +69,24 @@ public class ProductService implements IProductService {
             }
         }
         Product objProduct = this.mapperBase.map(prmProduct, Product.class);
-        // Optional<Customer> optionalCustomer = null;
-        // if (prmProduct.getCostumerId() != null) {
-        //     optionalCustomer = this.serviceDBCostumer.findById(prmProduct.getCostumerId());
-        //     if (!optionalCustomer.isPresent()) {
-        //         EntidadNoExisteException objException = new EntidadNoExisteException(
-        //                 "El customer con id " + prmProduct.getCostumerId() + " no existe en la base de datos");
-        //         throw objException;
-        //     }
-        //     objProduct.setObjCustomer(optionalCustomer.get());
-        // }
+         Optional<Category> optionalCategory = null;
+         Long categoryId=prmProduct.getIdCategory();
+        if (categoryId != null) {
+            optionalCategory = this.serviceDBCategory.findById(categoryId);
+             if (!optionalCategory.isPresent()) {
+                 EntidadNoExisteException objException = new EntidadNoExisteException(
+                         "La categoria con idCategory " + prmProduct.getIdCategory() + " no existe en la base de datos");
+                 throw objException;
+             }
+             objProduct.setCategory(optionalCategory.get());
+        }
         if(objProduct!=null){
             objProduct = this.serviceDBProducts.save(objProduct);
         }
-        
         ResponseEntity<?> rta = null;
         if (objProduct != null) {
-            // if (objProduct.getObjCustomer() != null) {
-            //     costumerId=objProduct.getObjCustomer().getCustomerId();
-            //     ///objProduct.setObjCustomer(null);
-            // }
             ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
-            // objProductRta.setObjCustomer(null);
-            // objProductRta.setCostumerId(costumerId);
+            objProductRta.setIdCategory(categoryId);
             rta = new ResponseEntity<ProductDTO>(objProductRta, HttpStatus.CREATED);
         } else {
             rta = new ResponseEntity<String>("Ocurrió un error inesperado al crear el producto",
@@ -89,6 +94,12 @@ public class ProductService implements IProductService {
         }
         return rta;
     }
+    /**
+     * Update a product based on the given ProductDTO.
+     *
+     * @param  prmProduct  the product data to be updated
+     * @return             the response entity with the updated product data
+     */
     @Transactional
     @Override
     public ResponseEntity<?> update(ProductDTO prmProduct) {
@@ -106,27 +117,47 @@ public class ProductService implements IProductService {
             throw objException;
         }
         Product objProduct = optionalProduct.get();
+        objProduct.setDescription(prmProduct.getDescription());
         objProduct.setBarcode(prmProduct.getBarcode());
-        //objProduct.setCategory(prmProduct.getCategory());
         objProduct.setCost(prmProduct.getCost());
+        objProduct.setPrice(prmProduct.getPrice());
+        objProduct.setCode(prmProduct.getCode());
+        objProduct.setEstatal(prmProduct.isEstatal());
+        objProduct.setMunicipal(prmProduct.isMunicipal());
+        objProduct.setEnable(prmProduct.getEnable());
         objProduct.setInventoryLevel(prmProduct.getInventoryLevel());
         objProduct.setMinimumLevel(prmProduct.getMinimumLevel());
         objProduct.setMaximumLevel(prmProduct.getMaximumLevel());
         objProduct.setName(prmProduct.getName());
+        Long categoryId=prmProduct.getIdCategory();
+        if(categoryId!=null){
+            Optional<Category> optionalCategory = this.serviceDBCategory.findById(categoryId);
+            if(!optionalCategory.isPresent()){
+                EntidadNoExisteException objException = new EntidadNoExisteException(
+                        "La categoria con idCategory " + prmProduct.getIdCategory() + " no existe en la base de datos");
+                
+                throw objException;
+            }else{
+                objProduct.setCategory(optionalCategory.get());
+            }
+        }
         objProduct = this.serviceDBProducts.save(objProduct);
         ResponseEntity<?> rta = null;
         if (objProduct != null) {
-            // if (objProduct.getObjCustomer() != null) {
-            //     costumerId=objProduct.getObjCustomer().getCustomerId();
-            // }
+            
             ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
-            // objProductRta.setObjCustomer(null);
-            // objProductRta.setCostumerId(costumerId);
+            objProductRta.setIdCategory(categoryId);
             rta = new ResponseEntity<ProductDTO>(objProductRta, HttpStatus.OK);
         } 
         return rta;
 
     }
+    /**
+     * Delete a product by its ID.
+     *
+     * @param  productId	ID of the product to be deleted
+     * @return         	Response entity with a boolean indicating success or failure
+     */
     @Transactional
     @Override
     public ResponseEntity<?> delete(Long productId) {
@@ -143,11 +174,16 @@ public class ProductService implements IProductService {
         if(objProduct!=null){
             this.serviceDBProducts.delete(objProduct);
         }
-        
         return new ResponseEntity<Boolean>(true, HttpStatus.OK);
     }
 
-    @Transactional()
+    /**
+     * Method to find a product by its ID.
+     *
+     * @param  productId  the ID of the product to find
+     * @return            a ResponseEntity containing the product information
+     */
+    @Transactional(readOnly = true)
     @Override
     public ResponseEntity<?> findById(Long productId) {
         ResponseEntity<?> rta = null;
@@ -160,82 +196,79 @@ public class ProductService implements IProductService {
                 throw objException;
             }
         }
-        // if (optionalProduct.get().getObjCustomer() != null) {
-        //     costumerId=optionalProduct.get().getObjCustomer().getCustomerId();
-        // }
         if(optionalProduct!=null){
-            
             ProductDTO objProductDTO = this.mapperBase.map(optionalProduct.get(), ProductDTO.class);
-            // objProductDTO.setObjCustomer(null);
-            // objProductDTO.setCostumerId(costumerId);
+            objProductDTO.setIdCategory(optionalProduct.get().getCategory().getCategoryId());
             rta = new ResponseEntity<ProductDTO>(objProductDTO, HttpStatus.OK);
         }
         return rta;
     }
 
-    // @Transactional()
-    // @Override
-    // public ResponseEntity<?> findByCustomerId(String costumerId, String filter, Pageable pageable) {
-    //     ResponseEntity<?> rta = null;
-    //     Optional<Customer> optionalCustomer = this.serviceDBCostumer.findById(costumerId);
-    //     Page<Product> result = new PageImpl<>(new ArrayList<>());
-    //     if (optionalCustomer.isPresent()) {
-    //         if(filter==null){
-    //             result = this.serviceDBProducts.findByobjCustomerIs(optionalCustomer.get(), pageable);
-    //         }else{
-    //             filter = "%" + filter + "%";
-    //             result = this.serviceDBProducts.findProductsByFilterAndOnlyCustomerId(costumerId, filter, pageable);
-    //         }
-    //     }
-    //     Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
-    //     rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
-    //     return rta;
-    // }
-
-    // @Transactional()
-    // @Override
-    // public ResponseEntity<?> findAllAndFilterCustomerId(String costumerId, String filter, Pageable pageable) {
-    //     ResponseEntity<?> rta = null;
-    //     //Si el costumerId es Null retorna los productos pertenecientes a RetailManager
-    //     if (costumerId == null && filter == null) {
-    //         Page<Product> result = this.serviceDBProducts.findByobjCustomerIsNull(pageable);
-    //         rta = new ResponseEntity<>(result, HttpStatus.OK);
-    //     } else if (filter == null && costumerId != null) {
-    //         Optional<Customer> optionalCustomer = this.serviceDBCostumer.findById(costumerId);
-    //         Page<Product> result = new PageImpl<>(new ArrayList<>());
-    //         if (optionalCustomer.isPresent()) {
-    //             result = this.serviceDBProducts.findByobjCustomerIsOrObjCustomerIsNull(optionalCustomer.get(),
-    //                     pageable);
-    //         }
-    //         Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
-    //         rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
-    //     } else if (filter != null && costumerId != null) {
-    //         Optional<Customer> optionalCustomer = this.serviceDBCostumer.findById(costumerId);
-    //         Page<Product> result = new PageImpl<>(new ArrayList<>());
-    //         if (optionalCustomer.isPresent()) {
-    //             filter = "%" + filter + "%";
-    //             result = this.serviceDBProducts.findProductsByFilterAndCustomerId(costumerId, filter, pageable);
-    //         }
-    //         Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
-    //         rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
-    //     } else if (filter != null && costumerId == null) {
-    //         Page<Product> result = new PageImpl<>(new ArrayList<>());
-
-    //         filter = "%" + filter + "%";
-    //         result = this.serviceDBProducts.findProductsByFilter(filter, pageable);
-    //         Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
-    //         rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
-    //     }
-    //     return rta;
-    // }
+    /**
+     * Finds products by category.
+     *
+     * @param  categoryId  the ID of the category
+     * @param  filter      the filter for the search
+     * @param  pageable    the pagination information
+     * @return             the response entity with the result
+     */
     @Transactional()
     @Override
-    public ResponseEntity<?> save(String costumerId, List<ProductDTO> listProductsDTO) {
+    public ResponseEntity<?> findByCategory(Long categoryId,  Pageable pageable) {
+        ResponseEntity<?> rta = null;
+        if(categoryId==null){
+            return new ResponseEntity<String>("El id de la categoria no puede ser nulo",HttpStatus.BAD_REQUEST);
+        }
+        Optional<Category> optionalCategory = this.serviceDBCategory.findById(categoryId);
+        Page<Product> result = new PageImpl<>(new ArrayList<>());
+        if (optionalCategory.isPresent()) {
+            
+               result = this.serviceDBProducts.findByCategoryIs(optionalCategory.get(), pageable);
+           
+       }
+       Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
+        rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
+       return rta;
+    }
+
+     /**
+      * Find all and filter products.
+      *
+      * @param  businessId   the business id
+      * @param  filter       the filter
+      * @param  pageable     the pageable
+      * @return              the response entity
+      */
+     @Transactional()
+     @Override
+     public ResponseEntity<?> findAllAndFilter(Long businessId,String filter, Pageable pageable) {
+         ResponseEntity<?> rta = null;
+         if(businessId!=null){
+            Optional<Business> exist = this.serviceDBBusiness.findById(businessId);
+            if(!exist.isPresent()){
+                EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" ya existe en la Base de datos");
+                throw objExeption;
+            }
+        }
+        if(filter != null) {
+             Page<Product> result = new PageImpl<>(new ArrayList<>());
+             filter = "%" + filter + "%";
+             result = this.serviceDBProducts.findProductsByFilter(businessId,filter, pageable);
+             Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
+             rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
+        }
+        return rta;
+     }
+    /**
+     * Save a list of product DTOs and return a list of created product DTOs.
+     *
+     * @param  listProductsDTO    the list of product DTOs to be saved
+     * @return                   a list of created product DTOs
+     */
+    @Transactional()
+    @Override
+    public ResponseEntity<?> save( List<ProductDTO> listProductsDTO) {
         List<ProductDTO> listProductsRTA=new ArrayList<>();
-        //Optional<Customer> optionalCustomer = null;
-        // if(costumerId!=null){
-        //     optionalCustomer = this.serviceDBCostumer.findById(costumerId);
-        // }
         for (ProductDTO productDTO : listProductsDTO) {
             if (productDTO.getCode() != null) {
                 Optional<Product> optionalProduct = this.serviceDBProducts
@@ -252,24 +285,33 @@ public class ProductService implements IProductService {
                 }
             }
             Product objProduct = this.mapperBase.map(productDTO, Product.class);
-            // if (optionalCustomer!=null) {
-            //     if(optionalCustomer.isPresent()){
-            //         objProduct.setObjCustomer(optionalCustomer.get());
-            //     }
-            // }
+            Long categoryId=productDTO.getIdCategory();
+            if(categoryId!=null){
+                Optional<Category> optionalCategory = this.serviceDBCategory.findById(categoryId);
+                if(optionalCategory.isPresent()){
+                    objProduct.setCategory(optionalCategory.get());
+                }else{
+                    continue;
+                }
+            }
             if(objProduct!=null){
                 objProduct = this.serviceDBProducts.save(objProduct);
             }
-            
             if (objProduct != null) {
                 ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
-                // objProductRta.setObjCustomer(null);
-                // objProductRta.setCostumerId(costumerId);
+                objProductRta.setIdCategory(categoryId);
                 listProductsRTA.add(objProductRta);
             }
         }
         return new ResponseEntity<>(listProductsRTA, HttpStatus.CREATED);
     }
+    /**
+     * Updates the enable status of a product.
+     *
+     * @param  productId    the ID of the product to be updated
+     * @param  enable       the new enable status
+     * @return              a ResponseEntity with a boolean indicating if the update was successful
+     */
     @Override
     @Transactional
     public ResponseEntity<?> updateEnable(Long productId, boolean enable) {
@@ -283,7 +325,28 @@ public class ProductService implements IProductService {
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Producto con productId "+productId+" no existe en la Base de datos");
                 throw objExeption;
     }
-    
-    
-
+    /**
+     * Find all products by business ID.
+     *
+     * @param  businessId  the ID of the business
+     * @param  pageable    the pageable object for pagination
+     * @return             a ResponseEntity with the list of products and HTTP status
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> findAllByBusinessId(Long businessId, Pageable pageable) {
+        ResponseEntity<?> rta = null;
+         if(businessId!=null){
+            Optional<Business> exist = this.serviceDBBusiness.findById(businessId);
+            if(!exist.isPresent()){
+                EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" ya existe en la Base de datos");
+                throw objExeption;
+            }
+        }
+             Page<Product> result = new PageImpl<>(new ArrayList<>());
+             result = this.serviceDBProducts.findProductsByBusinessId(businessId, pageable);
+             Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
+             rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
+        return rta;
+    }
 }

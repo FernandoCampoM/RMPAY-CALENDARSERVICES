@@ -1,4 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
+import com.retailmanager.rmpaydashboard.models.Product;
+
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,9 +31,8 @@ public class ProductDTO {
     @NotNull(message = "{product.price.null}")
     @Min(value = 0, message = "{product.price.min}")
     private double price;
-
-    @Size(max = 255, message = "{product.category.max}")
-    private String category;
+    @NotNull(message = "{product.IdCategory.null}")
+    private Long IdCategory;
 
     @Size(max = 255, message = "{product.code.max}")
     private String code;
@@ -55,4 +56,23 @@ public class ProductDTO {
     @NotNull(message = "{product.maximumLevel.null}")
     @Min(value = 0, message = "{product.maximumLevel.min}")
     private int maximumLevel;
+    @NotNull(message = "{product.enable.null}")
+    private Boolean enable;
+
+    public static ProductDTO tOProduct(Product product) {
+        ProductDTO objProduct = new ProductDTO();
+        objProduct.setBarcode(product.getBarcode());
+        objProduct.setName(product.getName());
+        objProduct.setDescription(  product.getDescription());
+        objProduct.setCost(product.getCost());
+        objProduct.setPrice(product.getPrice());
+        objProduct.setCode( product.getCode());
+        objProduct.setEstatal(product.isEstatal());
+        objProduct.setMunicipal(product.isMunicipal());
+        objProduct.setInventoryLevel(product.getInventoryLevel());
+        objProduct.setMinimumLevel(product.getMinimumLevel());
+        objProduct.setMaximumLevel(product.getMaximumLevel());
+        objProduct.setEnable(product.isEnable());
+        return objProduct;
+    }
 }

@@ -26,8 +26,10 @@ public class Category {
 
     @Column(nullable = false, unique = true)
     private String name;
+    @Column(nullable = false)
+    private boolean enable;
 
-    @ManyToOne(cascade=CascadeType.ALL,optional = false)
+    @ManyToOne(cascade=CascadeType.PERSIST,optional = false)
     @JoinColumn( name="businessId",nullable = false)
     private Business business;
 }
