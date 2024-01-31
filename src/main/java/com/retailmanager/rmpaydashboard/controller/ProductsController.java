@@ -42,28 +42,21 @@ public class ProductsController {
      * @param prmProduct Lista de nuevos productos
      * @return Lista de productos creados
      */
-    @PostMapping("/products/{costumerId}")
-    public ResponseEntity<?> saveList(@PathVariable(required = false) String costumerId, @Valid @RequestBody List<ProductDTO> listProductsDTO){
+    @PostMapping("/products/list")
+    public ResponseEntity<?> saveList( @Valid @RequestBody List<ProductDTO> listProductsDTO){
         return productService.save(listProductsDTO);
     }
-    /**
-     * Permite CREAR una lista de Productos que no pertenecen a ninguna cadena
-     * @param prmProduct Lista de nuevos productos
-     * @return Lista de productos creados
-     */
-    @PostMapping("/products/retailmanager")
-    public ResponseEntity<?> saveList(@Valid @RequestBody List<ProductDTO> listProductsDTO){
-        return productService.save(listProductsDTO);
-    }
+    
+    
     /**
      * Actualiza la información de un producto ya existente
      * @param prmProduct Objeto de Producto
      * @param productCode Identificador del producto
      * @return Objeto del producto actualizado
      */
-    @PutMapping("/products/{productCode}")
-    public ResponseEntity<?> update(@Valid @RequestBody ProductDTO prmProduct,@PathVariable String productCode){
-        prmProduct.setCode(productCode);
+    @PutMapping("/products/{productId}")
+    public ResponseEntity<?> update(@Valid @RequestBody ProductDTO prmProduct,@PathVariable Long productId){
+        prmProduct.setProductId(productId);
         return productService.update(prmProduct);
     }
     /**
@@ -83,7 +76,7 @@ public class ProductsController {
      * @param productCode Codigo del producto
      * @return Objeto del producto
      */
-    @GetMapping("/products/{productCode}")
+    @GetMapping("/products/{productId}")
     public ResponseEntity<?> findById(@PathVariable Long productId){
         return productService.findById(productId);
     }
@@ -92,7 +85,7 @@ public class ProductsController {
      * @param productCode Codigo del producto
      * @return True si es exitoso. False de lo contrario
      */
-    @DeleteMapping("/products/{productCode}")
+    @DeleteMapping("/products/{productId}")
     public ResponseEntity<?> delete(@PathVariable Long productId){
         return productService.delete(productId);
     }
@@ -105,19 +98,12 @@ public class ProductsController {
      * @return             the response entity containing the products found
      */
     @GetMapping("/products/category/{categoryId}")
-    public ResponseEntity<?> findByOnlyCustomerId(@PageableDefault(size = 200,page = 0) Pageable pageable,@PathVariable Long categoryId){
+    public ResponseEntity<?> findByCategory(@PageableDefault(size = 200,page = 0) Pageable pageable,@PathVariable Long categoryId){
         return productService.findByCategory(categoryId, pageable);
     }
     
-    /**
-     * Retorna todos los productos de una cadena en un CSV File.
-     * @param costumerId Identificador de la cadena
-     * @return CSV File
-     */
-    // @GetMapping("/products/csv/{costumerId}")
-    // public ResponseEntity<?> findByCustomerIdCSV(@PathVariable String costumerId){
-    //     return productService.findByCustomerIdCSV(costumerId);
-    // }
+    
+    
     
 }
 

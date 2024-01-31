@@ -127,4 +127,14 @@ public class BusinessController {
         }
         return this.productService.findAllByBusinessId(businessId,pageable);
     }
+    /**
+     * Download a CSV file of all products associated with a business.
+     *
+     * @param  businessId  the ID of the business
+     * @return             a ResponseEntity containing the CSV file
+     */
+    @GetMapping("/business/{businessId}/products/csv")
+    public ResponseEntity<?> downloadProducsCSV(@PathVariable Long businessId){
+        return productService.findAllByBusinessIdCSV(businessId);
+    }
 }

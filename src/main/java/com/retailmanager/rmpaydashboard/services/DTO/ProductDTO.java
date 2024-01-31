@@ -32,7 +32,7 @@ public class ProductDTO {
     @Min(value = 0, message = "{product.price.min}")
     private double price;
     @NotNull(message = "{product.IdCategory.null}")
-    private Long IdCategory;
+    private Long idCategory;
 
     @Size(max = 255, message = "{product.code.max}")
     private String code;

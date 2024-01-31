@@ -45,6 +45,7 @@ public interface IProductService {
     
     public ResponseEntity<?> findAllAndFilter(Long businessId,String filter,Pageable pageable);
     public ResponseEntity<?> findAllByBusinessId(Long businessId,Pageable pageable);
+    public ResponseEntity<?> findAllByBusinessIdCSV(Long businessId);
     // /**
     //  * Consulta los productos de una cadena especificada y los retorna en un CSV File.
     //  * @param costumerId Identificador de la cadena.

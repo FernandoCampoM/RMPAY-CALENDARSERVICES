@@ -1,6 +1,12 @@
 package com.retailmanager.rmpaydashboard.services.services.ProductService;
 
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -8,10 +14,12 @@ import java.util.Optional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,26 +58,8 @@ public class ProductService implements IProductService {
     @Transactional
     @Override
     public ResponseEntity<?> save(ProductDTO prmProduct) {
-        if (prmProduct.getCode() != null) {
-            Optional<Product> optionalProduct = this.serviceDBProducts
-                    .findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
-            if (optionalProduct.isPresent()) {
-                EntidadYaExisteException objException = new EntidadYaExisteException("El producto con productCode  "
-                        + prmProduct.getCode() + " ya existe en la base de datos");
-                throw objException;
-            }
-        }
-        if (prmProduct.getBarcode() != null) {
-            Optional<Product> optionalProduct = this.serviceDBProducts
-                    .findOneByCodeOrBarcode(prmProduct.getBarcode(), prmProduct.getBarcode());
-            if (optionalProduct.isPresent()) {
-                EntidadYaExisteException objException = new EntidadYaExisteException(
-                        "El producto con barCode  " + prmProduct.getBarcode() + " ya existe en la base de datos");
-                throw objException;
-            }
-        }
-        Product objProduct = this.mapperBase.map(prmProduct, Product.class);
-         Optional<Category> optionalCategory = null;
+        Optional<Category> optionalCategory = null;
+        ResponseEntity<?> rta = null;
          Long categoryId=prmProduct.getIdCategory();
         if (categoryId != null) {
             optionalCategory = this.serviceDBCategory.findById(categoryId);
@@ -78,20 +68,41 @@ public class ProductService implements IProductService {
                          "La categoria con idCategory " + prmProduct.getIdCategory() + " no existe en la base de datos");
                  throw objException;
              }
-             objProduct.setCategory(optionalCategory.get());
+             if (prmProduct.getCode() != null) {
+                Optional<Product> optionalProduct = this.serviceDBProducts
+                        .findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
+                if (optionalProduct.isPresent()) {
+                    if(optionalCategory.get().getBusiness().getBusinessId()==optionalProduct.get().getCategory().getBusiness().getBusinessId()) {
+                       //TODO: AQUÍ DEBE IR EL CÓDIGO E CASO QUE ENTRE DIFERENTES NEGOCIOS PUEDAN EXISTIR PRODUCTOS CON EL MISMO CODIGO
+                       //EN ESTE CASO IRIA LA EXCEPTION DE ENTIDAD YA EXISTE, SE DEBE APLICAR LO MISMO AL CODIGO DE BARRAS Y AL UPDATE 
+                    }
+                    EntidadYaExisteException objException = new EntidadYaExisteException("El producto con Code  "
+                            + prmProduct.getCode() + " ya existe en la base de datos");
+                    throw objException;
+                }
+            }
+            if (prmProduct.getBarcode() != null) {
+                Optional<Product> optionalProduct = this.serviceDBProducts
+                        .findOneByCodeOrBarcode(prmProduct.getBarcode(), prmProduct.getBarcode());
+                if (optionalProduct.isPresent()) {
+                    EntidadYaExisteException objException = new EntidadYaExisteException(
+                            "El producto con barCode  " + prmProduct.getBarcode() + " ya existe en la base de datos");
+                    throw objException;
+                }
+            }
+            Product objProduct = this.mapperBase.map(prmProduct, Product.class);
+            objProduct.setCategory(optionalCategory.get());
+            if(objProduct!=null){
+                objProduct = this.serviceDBProducts.save(objProduct);
+            }
+            
+            if (objProduct != null) {
+                ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
+                objProductRta.setIdCategory(categoryId);
+                rta = new ResponseEntity<ProductDTO>(objProductRta, HttpStatus.CREATED);
+            }
         }
-        if(objProduct!=null){
-            objProduct = this.serviceDBProducts.save(objProduct);
-        }
-        ResponseEntity<?> rta = null;
-        if (objProduct != null) {
-            ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
-            objProductRta.setIdCategory(categoryId);
-            rta = new ResponseEntity<ProductDTO>(objProductRta, HttpStatus.CREATED);
-        } else {
-            rta = new ResponseEntity<String>("Ocurrió un error inesperado al crear el producto",
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        
         return rta;
     }
     /**
@@ -103,19 +114,33 @@ public class ProductService implements IProductService {
     @Transactional
     @Override
     public ResponseEntity<?> update(ProductDTO prmProduct) {
-        Optional<Product> optionalProduct;
-        if(prmProduct.getBarcode()!=null){
-            optionalProduct= this.serviceDBProducts.findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getBarcode());
-        }else{
-            optionalProduct= this.serviceDBProducts.findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
+        Long productId = prmProduct.getProductId();
+        if(productId==null){
+            throw new EntidadNoExisteException("El identificador del producto no puede ser nulo");
         }
-         
+        Optional<Product> optionalProduct=this.serviceDBProducts.findById(productId);
         if (!optionalProduct.isPresent()) {
             EntidadNoExisteException objException = new EntidadNoExisteException(
-                    "El producto con productCode o barCode " + prmProduct.getCode()
+                    "El producto con idProduct " + prmProduct.getProductId()
                             + " no existe en la base de datos");
             throw objException;
         }
+        Optional<Product> optionalProduct2=null;
+        if(prmProduct.getBarcode()!=null){
+            optionalProduct2= this.serviceDBProducts.findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getBarcode());
+        }else{
+            optionalProduct2= this.serviceDBProducts.findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
+        }
+         if(optionalProduct2.isPresent()){
+            //TODO: SINO PUEDEN REPERTIRSE CODIGOS ENTRE DIFERNETES NEGOCIOS ASÍ SEA ENTRE NEGOCIOS DIFERENTES ELIMINAR SEGUNDA VALIDACIÓN DEL SIGUIENTE IF
+             if(optionalProduct2.get().getProductId()!=productId && optionalProduct2.get().getCategory().getBusiness().getBusinessId()==optionalProduct.get().getCategory().getBusiness().getBusinessId()){
+                 EntidadYaExisteException objException = new EntidadYaExisteException(
+                         "El producto con Code o barCode " + prmProduct.getCode()
+                                 + " ya existe en la base de datos");
+                 throw objException;
+             }
+         }
+        
         Product objProduct = optionalProduct.get();
         objProduct.setDescription(prmProduct.getDescription());
         objProduct.setBarcode(prmProduct.getBarcode());
@@ -348,5 +373,86 @@ public class ProductService implements IProductService {
              Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
              rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
         return rta;
+    }
+    /**
+     * Find all products by business ID and generate a CSV file with the product details.
+     *
+     * @param  businessId    the ID of the business
+     * @return               a ResponseEntity with the generated CSV file
+     */
+    @Override
+    public ResponseEntity<?> findAllByBusinessIdCSV(Long businessId) {
+        List<Product> productos=new ArrayList<>();
+        if(businessId!=null){
+           
+            boolean existe = this.serviceDBBusiness.existsById(businessId);
+            if(!existe){
+                EntidadNoExisteException objException = new EntidadNoExisteException(
+                        "El business con businessId "+businessId+ " no existe en la base de datos");
+                throw objException;
+            }
+            productos=this.serviceDBProducts.findProductsByBusinessId(businessId);
+        }
+        String encabezado = "Product Id," +
+                    "Barcode," +
+                    "Code," +
+                    "Name," +
+                    "Description," +
+                    "Cost," +
+                    "Price," +
+                    "Category," +
+                    "Estatal Tax," +
+                    "Municipal Tax," +
+                    "Inventory Level," +
+                    "Minimum Level," +
+                    "Maximum Level," +
+                    "Enable\n";
+        String archCSV = System.getProperty("user.dir") + "/products.csv";
+        try {
+            File statText = new File(archCSV);
+            FileOutputStream is = new FileOutputStream(statText);
+            OutputStreamWriter osw = new OutputStreamWriter(is);
+            Writer w = new BufferedWriter(osw);
+            w.write(encabezado);
+            if(productos!=null){
+                for (Product objProduct : productos) {
+                    w.write(createLine(objProduct));
+                }
+            }
+            w.close();
+            File file = new File(archCSV);
+            InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+            return ResponseEntity.ok()
+                    .contentLength(file.length())
+                    .contentType( MediaType.parseMediaTypes("text/csv").get(0))
+                    .body(resource);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return null;
+    }
+    private String createLine(Product objProduct) {
+        String line = objProduct.getProductId() + "," +
+                nullToZero(objProduct.getBarcode()) + "," +
+                nullToZero(objProduct.getCode()) + "," +
+                nullToZero(objProduct.getName()) + "," +
+                nullToZero(objProduct.getDescription()) + "," +
+                nullToZero(objProduct.getCost()) + "," +
+                nullToZero(objProduct.getPrice()) + "," +
+                nullToZero(objProduct.getCategory().getName()) + "," +
+                nullToZero(objProduct.isEstatal()) + "," +
+                nullToZero(objProduct.isMunicipal()) + "," +
+                nullToZero(objProduct.getInventoryLevel()) + "," +
+                nullToZero(objProduct.getMinimumLevel()) + "," +
+                nullToZero(objProduct.getMaximumLevel()) + "," +
+                nullToZero(objProduct.isEnable()) + "\n";
+        return line;
+    }
+    
+    private String nullToZero(Object prmObject){
+        if(prmObject==null)
+            return "0";
+        else
+            return prmObject.toString();
     }
 }
