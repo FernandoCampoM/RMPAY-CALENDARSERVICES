@@ -4,20 +4,27 @@ package com.retailmanager.rmpaydashboard.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.retailmanager.rmpaydashboard.services.DTO.ServiceDTO;
+import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.ServiceService.IServiceService;
 
 @RestController
 @RequestMapping("/api")
 @Validated
 
-public class ServiceController {
 
+
+public class ServiceController {
+    @Autowired
+    private IEmailService emailService;
     @Autowired
     private IServiceService serviceService;
 
@@ -90,5 +97,28 @@ public class ServiceController {
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "serviceId.positive") Long serviceId,
             @Valid @PathVariable boolean enable) {
         return serviceService.updateEnable(serviceId, enable);
+    }
+
+    @GetMapping("/services/testemail")
+    public ResponseEntity<?> testEmail() {
+
+        List<String> toList = Arrays.asList("juancamm@unicauca.edu.co", "juancampo201509@gmail.com");
+        List<String> cc = Arrays.asList("naslybecoche.q@gmail.com");
+        String subject = "Correo HTML con adjunto y CCO de prueba";
+        String htmlBody = "<html><body><h1>Hola,</h1><p>Este es un correo HTML con adjunto y CCO enviado desde Spring Boot.</p></body></html>";
+
+        // Datos del archivo adjunto
+        byte[] attachmentData = obtenerDatosAdjunto(); // Implementa tu lógica para obtener los datos del archivo
+        String attachmentFileName = "adjunto.txt";
+
+        emailService.sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, attachmentData, attachmentFileName);
+
+        return new ResponseEntity<>("Email enviado correctamente", org.springframework.http.HttpStatus.OK);
+        
+    }
+    private byte[] obtenerDatosAdjunto() {
+        // Implementa la lógica para obtener los datos del archivo adjunto
+        // En este ejemplo, simplemente retornamos un archivo de texto con contenido de prueba.
+        return "Contenido del archivo adjunto de prueba.".getBytes();
     }
 }

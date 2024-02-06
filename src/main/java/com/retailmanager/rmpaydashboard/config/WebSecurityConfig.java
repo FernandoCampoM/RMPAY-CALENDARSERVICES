@@ -37,7 +37,9 @@ public class WebSecurityConfig {
 
         return http.csrf(csrf->csrf.disable())
                 .authorizeHttpRequests(authRequest->authRequest
-                    .requestMatchers("/login").permitAll().requestMatchers(HttpMethod.GET,"/api/services/**").permitAll()
+                    .requestMatchers("/login").permitAll()
+                    .requestMatchers(HttpMethod.GET,"/api/services/**").permitAll()
+                    .requestMatchers(HttpMethod.GET,"/api/payment-methods/**").permitAll()
                     .anyRequest()
                     .authenticated())
                 .sessionManagement(sesion->sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

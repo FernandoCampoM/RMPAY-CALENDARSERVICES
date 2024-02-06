@@ -1,7 +1,12 @@
 package com.retailmanager.rmpaydashboard.services.services.UserService;
 
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -10,28 +15,51 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.enums.Rol;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
+import com.retailmanager.rmpaydashboard.models.Invoice;
+import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.User;
+import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
+import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
+import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
+import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
+import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
+import com.sendgrid.helpers.mail.objects.Email;
 
 
 
-@Service
+@org.springframework.stereotype.Service
 public class UserService implements IUserService{
 
     @Autowired
     private UserRepository serviceDBUser;
     @Autowired
+    private ServiceRepository serviceDBService;
+    @Autowired 
+    private IEmailService emailService;
+    @Autowired 
+    private InvoiceRepository serviceDBInvoice;
+
+    DecimalFormat formato = new DecimalFormat("#.##");
+    @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
-    
+    @Autowired
+    private IBusinessService businessService;
+    @Autowired
+    private IBlackStoneService blackStoneService;
+    String msgError = "";
     
     /**
      * Save user data into the database and return the response entity
@@ -42,6 +70,7 @@ public class UserService implements IUserService{
     @Override
     @Transactional
     public ResponseEntity<?> save( UserDTO prmUser) {
+        prmUser.setRegisterDate(LocalDate.now());
         if(prmUser.getUserID()!=null){
             final boolean exist = this.serviceDBUser.existsById(prmUser.getUserID());
             if(exist){
@@ -222,6 +251,250 @@ public class UserService implements IUserService{
         }
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Usuario con userId "+userId+" no existe en la Base de datos");
                 throw objExeption;
+    }
+
+    @Override
+    public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry) {
+        String msg="No se pudo registrar el usuario";
+        Double amount=0.0;
+        ResponsePayment respPayment;
+        String serviceReferenceNumber=null;
+        EmailBodyData objEmailBodyData=mapper.map(prmRegistry, EmailBodyData.class);
+        try {
+            prmRegistry=validateData(prmRegistry);
+            if(prmRegistry==null){
+                return new ResponseEntity<String>(msgError,HttpStatus.BAD_REQUEST);
+            }
+            if(prmRegistry.getAdditionalTerminals()!=0){
+                Optional<Service> optional= this.serviceDBService.findById(prmRegistry.getServiceId());
+                if(!optional.isPresent()){
+                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El Servicio con serviceId "+prmRegistry.getServiceId()+" no existe en la Base de datos");
+                    throw objExeption;
+                }
+                String userTransactionNumber = uniqueString();
+                Service objService=optional.get();
+                String descripcion=objService.getServiceDescription();
+                descripcion+=": $"+String.valueOf(formato.format(objService.getServiceValue()))+"\n";
+                amount=objService.getServiceValue();
+                //Calculo del valor de los terminales
+                if(prmRegistry.getAdditionalTerminals()<=5){
+                    descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals2to5()))+"\n";
+                    amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals2to5();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
+                }else if(prmRegistry.getAdditionalTerminals()>5 && prmRegistry.getAdditionalTerminals()<10){
+                    amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals6to9();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
+                }else{
+                    amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals10();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
+                }
+                objEmailBodyData.setAmount(amount);
+                objEmailBodyData.setServiceDescription(objService.getServiceDescription());
+                objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
+                
+                
+                switch (prmRegistry.getPaymethod()){
+                    case "CREDIT-CARD":
+                    respPayment=blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(amount)), 
+                    prmRegistry.getAddress().getZipcode(), 
+                    prmRegistry.getCreditcarnumber().replaceAll("-", ""),
+                    prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear(), 
+                    prmRegistry.getNameoncard(), 
+                    prmRegistry.getSecuritycode(), null, userTransactionNumber);
+                    if(respPayment.getResponseCode()!=200){
+                        //TODO: Enviar notificación de PAGO CON TARJETA
+                        HashMap <String, String> objError=new HashMap<String, String>();
+                        objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
+                        return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
+                    }
+                    serviceReferenceNumber=respPayment.getServiceReferenceNumber();
+                    objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
+                    break;
+                }
+            }
+            
+            UserDTO objUserDTO=new UserDTO();
+            objUserDTO.setName(prmRegistry.getName());
+            objUserDTO.setPassword(new BCryptPasswordEncoder().encode(prmRegistry.getPassword()));
+            objUserDTO.setEmail(prmRegistry.getEmail());
+            objUserDTO.setUsername(prmRegistry.getUsername());
+            objUserDTO.setEnabled(true);
+            objUserDTO.setRol(Rol.ROLE_USER);
+            objUserDTO.setPhone(prmRegistry.getPhone());
+            objUserDTO.setRegisterDate(LocalDate.now());
+
+            ResponseEntity<?> objResponseU=this.save(objUserDTO);
+            if(objResponseU.getStatusCode()==HttpStatus.CREATED){
+                objUserDTO=(UserDTO)objResponseU.getBody();
+                if(objUserDTO!=null){
+                    BusinessDTO objBusinessDTO=new BusinessDTO();
+                    objBusinessDTO.setUserId(objUserDTO.getUserID());
+                    objBusinessDTO.setName(prmRegistry.getBusinessName());
+                    objBusinessDTO.setAddress(prmRegistry.getAddress());
+                    objBusinessDTO.setBusinessPhoneNumber(prmRegistry.getBusinessPhoneNumber());
+                    objBusinessDTO.setAdditionalTerminals(prmRegistry.getAdditionalTerminals());
+                    objBusinessDTO.setMerchantId(prmRegistry.getMerchantId());
+                    objBusinessDTO.setBusinessId(prmRegistry.getServiceId());
+                    objBusinessDTO.setEnable(true);
+                    objBusinessDTO.setDiscount(0.0);
+                    objBusinessDTO.setLastPayment(LocalDate.now());
+                    ResponseEntity <?> objResponseB=this.businessService.save(objBusinessDTO);
+                    if(objResponseB.getStatusCode()==HttpStatus.CREATED){
+                        objBusinessDTO=(BusinessDTO)objResponseB.getBody();
+                        if(prmRegistry.getAdditionalTerminals()!=0 && objBusinessDTO!=null){
+                            switch (prmRegistry.getPaymethod()){
+                                case "CREDIT-CARD":
+                                    Invoice objInvoice=new Invoice();
+                                    objInvoice.setDate(LocalDate.now());
+                                    objInvoice.setTime(LocalTime.now());
+                                    objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
+                                    objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
+                                    objInvoice.setTotalAmount(amount);
+                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());//TODO: Obtener el businessId
+                                    objInvoice.setReferenceNumber(serviceReferenceNumber);
+                                    objInvoice.setServiceId(prmRegistry.getServiceId());
+                                    objInvoice=serviceDBInvoice.save(objInvoice);
+                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                                    emailService.notifyPaymentCreditCard(objEmailBodyData);
+                                break;
+                                case "ATHMOVIL":
+                                    //TODO: Enviar notificación de PAGO CON ATHMOVIL
+                                    break;
+                                case "BANK-ACCOUNT":
+                                    //TODO: Enviar notificación de PAGO CON CUENTA BANCARIA
+                                break;
+                            }
+                        }
+                        //TODO: Enviar notificación de REGISTRO EXITOSO A LA EMPRESA
+                        return new ResponseEntity<RegistryDTO>(prmRegistry,HttpStatus.CREATED);
+                    }else{
+                        msg="No se pudo registrar el Negocio";
+                    }
+                }else{
+                    msg="No se pudo registrar el usuario";
+                }
+            }else{
+                msg="No se pudo registrar el usuario";
+            }
+        }catch (ConsumeAPIException ex) {
+                System.err.println("Error en el consumo de BlackStone: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: "+ ex.getMessage() );
+                
+                HashMap<String, String> map = new HashMap<>();
+                map.put("msg", "Por favor comuniquese con el administrador de la página.");
+                return new ResponseEntity<HashMap<String,String>>(map,HttpStatus.BAD_REQUEST);
+        }catch (Exception e){
+            return new ResponseEntity<String>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+        return new ResponseEntity<String>(msg,HttpStatus.BAD_REQUEST);
+    }
+    /**
+     * Generates a unique string using UUID.
+     *
+     * @return  the unique string generated
+     */
+    public String uniqueString() {
+        String random = UUID.randomUUID().toString();
+        random = random.replaceAll("-", "");
+        random = random.substring(0, 16);
+
+        return random;
+    }
+
+    /**
+     * Validates the given RegistryDTO object based on the pay method.
+     *
+     * @param  prmRegistry  The RegistryDTO object to be validated
+     * @return              The validated RegistryDTO object, or null if there is an error
+     */
+    private RegistryDTO validateData(RegistryDTO prmRegistry) {
+        if(prmRegistry.getPaymethod().compareTo("CREDIT-CARD")==0){
+            if(prmRegistry.getCreditcarnumber()!=null){
+                if(!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the credit card number";
+                return null;
+                }
+            }else{
+                msgError = "The credit card number is required";
+                return null;
+            }
+            if(prmRegistry.getNameoncard()!=null){
+                prmRegistry.setNameoncard(prmRegistry.getNameoncard().toUpperCase().trim());
+            }else{
+                msgError = "The name on card is required";
+                return null;
+            }
+            if(prmRegistry.getSecuritycode()!=null){
+                if(!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the security code";
+                return null;
+                }
+            }else{
+                msgError = "The security code is required";
+                return null;
+            }
+            if(prmRegistry.getExpDateMonth()!=null){
+                if(!prmRegistry.getExpDateMonth().matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the expiration date";
+                return null;
+                }else{
+                    if(Integer.parseInt(prmRegistry.getExpDateMonth())>12){
+                        msgError = "The expiration date month must be less than or equal to 12";
+                        return null;
+                    }
+                }
+            }else{
+                msgError = "The expiration date month is required";
+                return null;
+            }
+            if(prmRegistry.getExpDateYear()!=null){
+                if(!prmRegistry.getExpDateYear().matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the expiration date";
+                return null;
+                }else{
+                    prmRegistry.setExpDateYear(prmRegistry.getExpDateYear().trim());
+                    if(prmRegistry.getExpDateYear().length()!=2){
+                        msgError = "The expiration date year must be 2 digits";
+                        return null;
+                    }
+                }
+            }else{
+                msgError = "The expiration date year is required";
+                return null;
+            }
+            
+        }else if(prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT")==0){
+            if(prmRegistry.getAccountNameBank()!=null){
+                prmRegistry.setAccountNameBank(prmRegistry.getAccountNameBank().toUpperCase().trim());
+            }else{
+                msgError = "The account name is required";
+                return null;
+            }
+            if(prmRegistry.getAccountNumberBank()!=null){
+                if(!prmRegistry.getAccountNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the account number";
+                    return null;
+                }else{
+                    prmRegistry.setAccountNumberBank(prmRegistry.getAccountNumberBank().trim());
+                }
+            }else{
+                msgError = "The account number is required";
+                return null;
+            }
+            if(prmRegistry.getRouteNumberBank()!=null){
+                if(!prmRegistry.getRouteNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the route number";
+                    return null;
+                }else{
+                    prmRegistry.setRouteNumberBank(prmRegistry.getRouteNumberBank().trim());
+                }
+            }else{
+                msgError = "The route number is required";
+                return null;
+            }
+            
+        }
+        return prmRegistry;
     }
 
    

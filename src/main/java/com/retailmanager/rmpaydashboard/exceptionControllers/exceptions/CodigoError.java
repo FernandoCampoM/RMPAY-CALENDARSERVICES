@@ -13,7 +13,8 @@ public enum CodigoError {
         CREDENCIALES_INVALIDAS("GC-0005", "Error al iniciar sesión, compruebe sus credenciales y vuelva a intentarlo"),
         USUARIO_DESHABILITADO("GC-0006",
                         "El usuario no ha sido verificado, por favor revise su correo para verificar su cuenta"),
-        UNAUTHORISED("GC-0007", "El usuario no tiene acceso a éste recurso");
+        UNAUTHORISED("GC-0007", "El usuario no tiene acceso a éste recurso"),
+        CONFIGURATION_NOT_FOUND("GC-0008", "Configuración no encontrada");
         private final String codigo;
         private final String llaveMensaje;
 }

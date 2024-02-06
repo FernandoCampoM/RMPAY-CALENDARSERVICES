@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.services.services.UserService;
 
 import org.springframework.http.ResponseEntity;
 
+import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 
 public interface IUserService {
@@ -19,4 +20,5 @@ public interface IUserService {
     public ResponseEntity<?> findByUsername(String  username);
     public ResponseEntity<?> getUserBusiness(Long userId);
     public ResponseEntity<?> updateEnable(Long userId, boolean enable);
+    public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry);
 }

@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -29,6 +30,11 @@ public class BusinessDTO {
     @Min(value = 0, message = "{business.additionalTerminals.min}")
     private Integer additionalTerminals;
 
+    private Long serviceId;
+    private double discount=0.0;
+    private boolean enable=false;
+    private boolean terms=false;
+    private LocalDate lastPayment;
     @Valid
     private AddressDTO address;
 

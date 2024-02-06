@@ -1,0 +1,39 @@
+package com.retailmanager.rmpaydashboard.models;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter @NoArgsConstructor @AllArgsConstructor @Setter
+public class Invoice {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long invoiceNumber;
+    @Column(nullable = false)
+    private LocalDate date;
+    @Column(nullable = false)
+    private LocalTime time;
+    @Column(nullable = false)
+    private String paymentMethod;
+    @Column(nullable = true)
+    private Integer terminals;
+    @Column(nullable = false)
+    private Double totalAmount;
+    @Column(nullable = false)
+    private Long businessId;
+    
+    @Column(nullable = true)
+    private String referenceNumber;
+    private boolean rejected = false;
+    private Long serviceId;
+}

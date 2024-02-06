@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.models;
 
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -34,7 +35,14 @@ public class Business {
     private Integer additionalTerminals;
     @Column(nullable = false)
     private boolean enable=false;
-
+    @Column(nullable = true)
+    private boolean terms=false;
+    @Column(nullable = true)
+    private Long serviceId;
+    @Column(nullable = false)
+    private double discount=0.0;
+    @Column(nullable = true)
+    private LocalDate lastPayment;
     /**Objeto que encapsula la información de la dirección */
     @OneToOne(cascade=CascadeType.ALL,optional = true)
     @JoinColumn( name="addressId",nullable = true)

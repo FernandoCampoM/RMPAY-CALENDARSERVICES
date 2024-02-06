@@ -23,6 +23,7 @@ public class ServiceService implements IServiceService {
 
     @Autowired
     private ServiceRepository serviceDBService;
+    
     @Autowired 
     @Qualifier("mapperbase")
     private ModelMapper mapper;

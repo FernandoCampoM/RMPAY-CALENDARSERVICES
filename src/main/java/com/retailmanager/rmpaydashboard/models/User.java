@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.models;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.retailmanager.rmpaydashboard.enums.Rol;
@@ -39,6 +40,8 @@ public class User {
     private String password;
     @Column(nullable = false)
     private boolean enable=false;
+    @Column(nullable = true)
+    private LocalDate registerDate;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,columnDefinition = "VARCHAR(14)")
     private Rol rol;

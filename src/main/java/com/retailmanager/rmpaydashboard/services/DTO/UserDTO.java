@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.lang.NonNull;
@@ -34,6 +35,8 @@ public class UserDTO {
     private boolean enabled;
     @NotEmpty(message = "{user.phone.empty}")
     private String phone;
+    
+    private LocalDate registerDate;
     private List<BusinessDTO> business;
 
 }

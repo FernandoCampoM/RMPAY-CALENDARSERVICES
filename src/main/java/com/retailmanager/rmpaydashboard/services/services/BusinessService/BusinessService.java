@@ -10,25 +10,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 
-@Service
+@org.springframework.stereotype.Service
 public class BusinessService implements IBusinessService {
     @Autowired
     private BusinessRepository serviceDBBusiness;
     @Autowired
     private UserRepository serviceDBUser;
+    @Autowired
+    private ServiceRepository serviceDBService;
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
@@ -56,8 +59,16 @@ public class BusinessService implements IBusinessService {
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El business con merchantId "+prmBusiness.getMerchantId()+" ya existe en la Base de datos");
                 throw objExeption;
             }
-        
-        
+        Long serviceId = prmBusiness.getServiceId();
+        if(serviceId!=null){
+            if(serviceId!=0){
+                Optional<Service> existService = this.serviceDBService.findById(serviceId);
+                if(!existService.isPresent()){
+                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El service con serviceId "+prmBusiness.getServiceId()+" no existe en la Base de datos");
+                    throw objExeption;
+                }
+            }
+        }
         ResponseEntity<?> rta;
          Business objBusiness= this.mapper.map(prmBusiness, Business.class);
          if(objBusiness!=null){
@@ -95,6 +106,16 @@ public class BusinessService implements IBusinessService {
     public ResponseEntity<?> update(Long businessId, BusinessDTO prmBusiness) {
         Business objBusiness=null;
         ResponseEntity<?> rta=null;
+        Long serviceId = prmBusiness.getServiceId();
+        if(serviceId!=null){
+            if(serviceId!=0){
+                Optional<Service> existService = this.serviceDBService.findById(serviceId);
+                if(!existService.isPresent()){
+                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El service con serviceId "+prmBusiness.getServiceId()+" no existe en la Base de datos");
+                    throw objExeption;
+                }
+            }
+        }
         if(businessId!=null){
             Optional<Business> exist = this.serviceDBBusiness.findById(businessId);
             if(!exist.isPresent()){
@@ -117,6 +138,8 @@ public class BusinessService implements IBusinessService {
              objBusiness.getAddress().setCity(prmBusiness.getAddress().getCity());
              objBusiness.getAddress().setCountry(prmBusiness.getAddress().getCountry());
              objBusiness.getAddress().setZipcode(prmBusiness.getAddress().getZipcode());
+             objBusiness.setDiscount(prmBusiness.getDiscount());
+             objBusiness.setServiceId(serviceId);
              if(objBusiness!=null){
                 objBusiness=this.serviceDBBusiness.save(objBusiness);
              }
