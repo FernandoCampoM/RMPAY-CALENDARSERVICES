@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor
 public class EmailConfigData {
-    private String Key;
+    private String appKey;
     private String emailFrom;
     private String emailTo;
     private String emailCCO;

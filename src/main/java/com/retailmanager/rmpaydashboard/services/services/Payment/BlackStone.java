@@ -74,7 +74,16 @@ public class BlackStone implements IBlackStoneService{
      */
     public ReqBlackStoneData loadAndValid() throws ConfigurationNotFoundException {
         ReqBlackStoneData valueObject = new ReqBlackStoneData();
-        valueObject=serviceDBConfig.getBlackStoneConfig();
+        Object[] obj1=serviceDBConfig.getBlackStoneConfig();
+        Object[] obj=(Object[]) obj1[0];
+        valueObject.setAppKey(obj[0].toString());
+        valueObject.setUrl(obj[1].toString());
+        valueObject.setAppType( obj[2].toString());
+        valueObject.setMid( obj[3].toString());
+        valueObject.setCid( obj[4].toString());
+        valueObject.setUserName( obj[5].toString());
+        valueObject.setPassword( obj[6].toString());
+        
         HashMap<String, String> map = new HashMap<>();
         boolean bandera=false;
         if (valueObject!=null) {
@@ -111,8 +120,6 @@ public class BlackStone implements IBlackStoneService{
                 String json = gson.toJson(map);
                 throw new ConfigurationNotFoundException("[Debug] Blackstone Configuration not found."+json);
             }
-        } else {
-            throw new ConfigurationNotFoundException("[Debug] Blackstone Configuration not found.");
         }
         return valueObject;
     }

@@ -40,6 +40,8 @@ public class WebSecurityConfig {
                     .requestMatchers("/login").permitAll()
                     .requestMatchers(HttpMethod.GET,"/api/services/**").permitAll()
                     .requestMatchers(HttpMethod.GET,"/api/payment-methods/**").permitAll()
+                    .requestMatchers(HttpMethod.POST,"/api/register").permitAll()
+                    .requestMatchers(HttpMethod.POST,"/api/file").permitAll()
                     .anyRequest()
                     .authenticated())
                 .sessionManagement(sesion->sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

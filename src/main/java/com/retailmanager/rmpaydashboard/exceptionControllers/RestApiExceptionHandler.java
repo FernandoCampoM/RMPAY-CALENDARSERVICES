@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.CodigoError;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConfigurationNotFoundException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ErrorUtils;
@@ -88,6 +89,18 @@ public class RestApiExceptionHandler {
                                 .crearError(CodigoError.ENTIDAD_NO_ENCONTRADA.getCodigo(),
                                                 String.format("%s, %s",
                                                                 CodigoError.ENTIDAD_NO_ENCONTRADA.getLlaveMensaje(),
+                                                                ex.getMessage()),
+                                                HttpStatus.NOT_FOUND.value())
+                                .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
+                return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+        }
+        @ExceptionHandler(ConfigurationNotFoundException.class)
+        public ResponseEntity<Error> handleConfigurationNotFoundException(final HttpServletRequest req,
+                        final ConfigurationNotFoundException ex, final Locale locale) {
+                final Error error = ErrorUtils
+                                .crearError(CodigoError.CONFIGURATION_NOT_FOUND.getCodigo(),
+                                                String.format("%s, %s",
+                                                                CodigoError.CONFIGURATION_NOT_FOUND.getLlaveMensaje(),
                                                                 ex.getMessage()),
                                                 HttpStatus.NOT_FOUND.value())
                                 .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());

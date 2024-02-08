@@ -1,14 +1,10 @@
 package com.retailmanager.rmpaydashboard.services.services.EmailService;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.retailmanager.rmpaydashboard.services.DTO.RejectedPaymentsDTO;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,6 +16,7 @@ public class EmailBodyData {
     private Integer additionalTerminals;
     private double additionalTerminalsValue;
     private String paymethod;
+    private String phone;
     //PARA PAGO CON TARJETA
     private String nameoncard;
     private String creditcarnumber;
@@ -35,7 +32,6 @@ public class EmailBodyData {
 
     private String serviceDescription;
     private String serviceValue;
-    private LocalDate expirationDate;
     private String referenceNumber;
     private String cardType;
     private String email;
@@ -44,4 +40,6 @@ public class EmailBodyData {
     private String accountNameBank;
     private String accountNumberBank;
     private String routeNumberBank;
+    private Long chequeVoidId;
+
 }

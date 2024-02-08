@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 import com.retailmanager.rmpaydashboard.services.services.UserService.IUserService;
 
@@ -105,6 +106,17 @@ public class UserController {
     @PutMapping("/users/{userId}/enable/{enable}")
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "userId.positive")Long userId, @Valid @PathVariable boolean enable){
         return this.userService.updateEnable(userId, enable);
+    }
+    
+    /**
+     * A method to create a new registry of a user with a business.
+     *
+     * @param  prmRegistry   the registry data to be validated and processed
+     * @return               a ResponseEntity containing the result of the registry operation
+     */
+    @PostMapping("/register")
+    public ResponseEntity<?> newRegistry(@Valid @RequestBody RegistryDTO prmRegistry){
+        return this.userService.registryWithBusiness(prmRegistry);
     }
 
 }

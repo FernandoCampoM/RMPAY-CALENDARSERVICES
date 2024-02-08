@@ -51,7 +51,7 @@ public class RegistryDTO {
     private AddressDTO address;
     private boolean terms;
     //INFORMACIÓN DEL PAGO
-    @NotNull(message = "{registry.paymethod.null}")
+    
     private String paymethod;
     //PARA PAGO CON TARJETA
     private String nameoncard;
@@ -63,8 +63,10 @@ public class RegistryDTO {
     
     
     
+    
     //PARA PAGO CON CHEQUE
     private String accountNameBank;
     private String accountNumberBank;
     private String routeNumberBank;
+    private Long chequeVoidId;
 }

@@ -29,5 +29,20 @@ VALUES (6, N'config.blackstone.Username', N'Username', N'nicolas');
 -- Insertar Password
 INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) 
 VALUES (7, N'config.blackstone.Password', N'Password', N'password1');
-SET IDENTITY_INSERT [dbo].[Sys_general_config] OFF
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (9, N'config.email.AppKey', N'key', N'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')
 
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (10, N'config.email.emailFrom', N'emailFrom', N'brayam.otero@somos.biz')
+
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (11, N'config.email.emailTo', N'emailTo', N'juancampo201509@gmail.com')
+
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (12, N'config.email.emailCCO', N'emailCCO', N'juancamm@unicauca.edu.co')
+SET IDENTITY_INSERT [dbo].[Sys_general_config] OFF
+SET IDENTITY_INSERT [dbo].[Service] ON 
+GO
+INSERT [dbo].[Service] ([serviceId], [duration], [enable], [referralPayment], [referralPayment10], [referralPayment2to5], [referralPayment6to9], [serviceDescription], [serviceName], [serviceValue], [terminals10], [terminals2to5], [terminals6to9]) VALUES (1, 31, 1, 2, 0, 0, 0, N'RM pay - Mensual', N'RM pay - Mensual', 6.99, 4.5, 5, 4.75)
+GO
+INSERT [dbo].[Service] ([serviceId], [duration], [enable], [referralPayment], [referralPayment10], [referralPayment2to5], [referralPayment6to9], [serviceDescription], [serviceName], [serviceValue], [terminals10], [terminals2to5], [terminals6to9]) VALUES (2, 66, 1, 5, 0, 0, 0, N'RM pay - 6 meses', N'RM pay - 6 meses', 36, 20, 40, 30)
+GO
+INSERT [dbo].[Service] ([serviceId], [duration], [enable], [referralPayment], [referralPayment10], [referralPayment2to5], [referralPayment6to9], [serviceDescription], [serviceName], [serviceValue], [terminals10], [terminals2to5], [terminals6to9]) VALUES (5, 365, 1, 15, 0, 0, 0, N'RM pay - anual', N'RM pay - anual', 65, 65, 65, 65)
+GO
+SET IDENTITY_INSERT [dbo].[Service] OFF

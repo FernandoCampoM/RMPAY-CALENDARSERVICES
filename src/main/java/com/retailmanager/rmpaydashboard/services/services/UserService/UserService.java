@@ -21,9 +21,11 @@ import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
+import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.User;
+import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
@@ -35,7 +37,6 @@ import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBody
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
-import com.sendgrid.helpers.mail.objects.Email;
 
 
 
@@ -55,6 +56,8 @@ public class UserService implements IUserService{
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
+    @Autowired
+    private BusinessRepository serviceDBBusiness;
     @Autowired
     private IBusinessService businessService;
     @Autowired
@@ -80,6 +83,11 @@ public class UserService implements IUserService{
                 prmUser.setUserID(0L);
             }
         }
+        Optional<User> exist2 = this.serviceDBUser.findOneByEmail(prmUser.getEmail());
+            if(exist2.isPresent()){
+                EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con email "+prmUser.getEmail()+" ya existe en la Base de datos");
+                throw objExeption;
+            }
         Optional<User> exist = this.serviceDBUser.findOneByUsername(prmUser.getUsername());
             if(exist.isPresent()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmUser.getUsername()+" ya existe en la Base de datos");
@@ -253,6 +261,12 @@ public class UserService implements IUserService{
                 throw objExeption;
     }
 
+    /**
+     * Registry a user with the business and process payment.
+     *
+     * @param  prmRegistry		the user's registry data
+     * @return         		the response entity with the result of the registration process
+     */
     @Override
     public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry) {
         String msg="No se pudo registrar el usuario";
@@ -260,12 +274,28 @@ public class UserService implements IUserService{
         ResponsePayment respPayment;
         String serviceReferenceNumber=null;
         EmailBodyData objEmailBodyData=mapper.map(prmRegistry, EmailBodyData.class);
+        
+        Optional<User> exist = this.serviceDBUser.findOneByUsername(prmRegistry.getUsername());
+            if(exist.isPresent()){
+                EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmRegistry.getUsername()+" ya existe en la Base de datos");
+                throw objExeption;
+            }
+            Optional<User> exist2 = this.serviceDBUser.findOneByEmail(prmRegistry.getEmail());
+            if(exist2.isPresent()){
+                EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con email "+prmRegistry.getEmail()+" ya existe en la Base de datos");
+                throw objExeption;
+            }
+            Optional<Business> existB = this.serviceDBBusiness.findOneByMerchantId(prmRegistry.getMerchantId());
+            if(existB.isPresent()){
+                EntidadYaExisteException objExeption = new EntidadYaExisteException("El business con merchantId "+prmRegistry.getMerchantId()+" ya existe en la Base de datos");
+                throw objExeption;
+            }
         try {
             prmRegistry=validateData(prmRegistry);
             if(prmRegistry==null){
                 return new ResponseEntity<String>(msgError,HttpStatus.BAD_REQUEST);
             }
-            if(prmRegistry.getAdditionalTerminals()!=0){
+            if(prmRegistry.getAdditionalTerminals()!=null && prmRegistry.getAdditionalTerminals()!=0){
                 Optional<Service> optional= this.serviceDBService.findById(prmRegistry.getServiceId());
                 if(!optional.isPresent()){
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El Servicio con serviceId "+prmRegistry.getServiceId()+" no existe en la Base de datos");
@@ -295,22 +325,29 @@ public class UserService implements IUserService{
                 
                 switch (prmRegistry.getPaymethod()){
                     case "CREDIT-CARD":
-                    respPayment=blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(amount)), 
-                    prmRegistry.getAddress().getZipcode(), 
-                    prmRegistry.getCreditcarnumber().replaceAll("-", ""),
-                    prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear(), 
-                    prmRegistry.getNameoncard(), 
-                    prmRegistry.getSecuritycode(), null, userTransactionNumber);
-                    if(respPayment.getResponseCode()!=200){
-                        //TODO: Enviar notificación de PAGO CON TARJETA
-                        HashMap <String, String> objError=new HashMap<String, String>();
-                        objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
-                        return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
-                    }
-                    serviceReferenceNumber=respPayment.getServiceReferenceNumber();
-                    objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
+                        respPayment=blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(amount)), 
+                        prmRegistry.getAddress().getZipcode(), 
+                        prmRegistry.getCreditcarnumber().replaceAll("-", ""),
+                        prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear(), 
+                        prmRegistry.getNameoncard(), 
+                        prmRegistry.getSecuritycode(), null, userTransactionNumber);
+                        if(respPayment.getResponseCode()!=200){
+                            emailService.notifyErrorRegister(objEmailBodyData);
+                            HashMap <String, String> objError=new HashMap<String, String>();
+                            objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
+                            return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
+                        }
+                        serviceReferenceNumber=respPayment.getServiceReferenceNumber();
+                        objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
                     break;
                 }
+            }else{
+                prmRegistry.setAdditionalTerminals(0);
+                objEmailBodyData.setAdditionalTerminals(0);
+                prmRegistry.setPaymethod("SIN METODO DE PAGO");
+                objEmailBodyData.setPaymethod("SIN METODO DE PAGO");
+                prmRegistry.setServiceId(null);
+                objEmailBodyData.setServiceDescription("");
             }
             
             UserDTO objUserDTO=new UserDTO();
@@ -334,14 +371,17 @@ public class UserService implements IUserService{
                     objBusinessDTO.setBusinessPhoneNumber(prmRegistry.getBusinessPhoneNumber());
                     objBusinessDTO.setAdditionalTerminals(prmRegistry.getAdditionalTerminals());
                     objBusinessDTO.setMerchantId(prmRegistry.getMerchantId());
-                    objBusinessDTO.setBusinessId(prmRegistry.getServiceId());
+                    objBusinessDTO.setServiceId(prmRegistry.getServiceId());
                     objBusinessDTO.setEnable(true);
                     objBusinessDTO.setDiscount(0.0);
-                    objBusinessDTO.setLastPayment(LocalDate.now());
+                    if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().equals("CREDIT-CARD")){
+                        objBusinessDTO.setLastPayment(LocalDate.now());
+                    }
+                    
                     ResponseEntity <?> objResponseB=this.businessService.save(objBusinessDTO);
                     if(objResponseB.getStatusCode()==HttpStatus.CREATED){
                         objBusinessDTO=(BusinessDTO)objResponseB.getBody();
-                        if(prmRegistry.getAdditionalTerminals()!=0 && objBusinessDTO!=null){
+                        if(prmRegistry.getAdditionalTerminals()!=null && prmRegistry.getAdditionalTerminals()!=0 && objBusinessDTO!=null){
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
                                     Invoice objInvoice=new Invoice();
@@ -353,19 +393,20 @@ public class UserService implements IUserService{
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());//TODO: Obtener el businessId
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
+
                                     objInvoice=serviceDBInvoice.save(objInvoice);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                                     emailService.notifyPaymentCreditCard(objEmailBodyData);
                                 break;
                                 case "ATHMOVIL":
-                                    //TODO: Enviar notificación de PAGO CON ATHMOVIL
+                                    emailService.notifyPaymentATHMovil(objEmailBodyData);
                                     break;
                                 case "BANK-ACCOUNT":
-                                    //TODO: Enviar notificación de PAGO CON CUENTA BANCARIA
+                                    emailService.notifyPaymentBankAccount(objEmailBodyData);
                                 break;
                             }
                         }
-                        //TODO: Enviar notificación de REGISTRO EXITOSO A LA EMPRESA
+                        emailService.notifyNewRegister(objEmailBodyData);
                         return new ResponseEntity<RegistryDTO>(prmRegistry,HttpStatus.CREATED);
                     }else{
                         msg="No se pudo registrar el Negocio";
@@ -408,7 +449,7 @@ public class UserService implements IUserService{
      * @return              The validated RegistryDTO object, or null if there is an error
      */
     private RegistryDTO validateData(RegistryDTO prmRegistry) {
-        if(prmRegistry.getPaymethod().compareTo("CREDIT-CARD")==0){
+        if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("CREDIT-CARD")==0){
             if(prmRegistry.getCreditcarnumber()!=null){
                 if(!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
                     msgError = "Letters are not allowed in the credit card number";
@@ -463,7 +504,7 @@ public class UserService implements IUserService{
                 return null;
             }
             
-        }else if(prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT")==0){
+        }else if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT")==0){
             if(prmRegistry.getAccountNameBank()!=null){
                 prmRegistry.setAccountNameBank(prmRegistry.getAccountNameBank().toUpperCase().trim());
             }else{
@@ -490,6 +531,10 @@ public class UserService implements IUserService{
                 }
             }else{
                 msgError = "The route number is required";
+                return null;
+            }
+            if(prmRegistry.getChequeVoidId()==null){
+                msgError = "The chequeVoidId is required";
                 return null;
             }
             

@@ -15,7 +15,7 @@ public class ConsumerApi {
         String res = "";
 
         //Creamos el cliente de conexión al API Restful
-        Client client = ClientBuilder.newClient();
+        Client client = ClientBuilder.newBuilder().build();
 
         //Creamos el target lo cuál es nuestra URL junto con el nombre del método a llamar
         WebTarget target = client.target(URL);
