@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.ProductService.IProductService;
 
@@ -57,7 +58,7 @@ public class BusinessController {
      * @return               a ResponseEntity containing the result of the save operation
      */
     @PostMapping("/business")
-    public ResponseEntity<?> save(@Valid @RequestBody BusinessDTO prmBusiness){
+    public ResponseEntity<?> save(@Valid @RequestBody RegsitryBusinessDTO prmBusiness){
         return this.businessService.save(prmBusiness);
     }
     /**

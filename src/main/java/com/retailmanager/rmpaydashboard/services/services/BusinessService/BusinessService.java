@@ -1,8 +1,13 @@
 package com.retailmanager.rmpaydashboard.services.services.BusinessService;
 
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -12,17 +17,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
+import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
+import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 
 @org.springframework.stereotype.Service
 public class BusinessService implements IBusinessService {
@@ -35,6 +48,14 @@ public class BusinessService implements IBusinessService {
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
+    @Autowired
+    private IBlackStoneService blackStoneService;
+    String msgError = "";
+    @Autowired 
+    private IEmailService emailService;
+    @Autowired 
+    private InvoiceRepository serviceDBInvoice;
+    DecimalFormat formato = new DecimalFormat("#.##");
     /**
      * Save a business entity.
      *
@@ -59,22 +80,26 @@ public class BusinessService implements IBusinessService {
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El business con merchantId "+prmBusiness.getMerchantId()+" ya existe en la Base de datos");
                 throw objExeption;
             }
+        Business objBusiness= this.mapper.map(prmBusiness, Business.class);
         Long serviceId = prmBusiness.getServiceId();
+        Optional<Service> existService=null;
         if(serviceId!=null){
             if(serviceId!=0){
-                Optional<Service> existService = this.serviceDBService.findById(serviceId);
+                existService= this.serviceDBService.findById(serviceId);
                 if(!existService.isPresent()){
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El service con serviceId "+prmBusiness.getServiceId()+" no existe en la Base de datos");
                     throw objExeption;
+                }else{
+                    objBusiness.setServiceId(serviceId);
                 }
             }
         }
         ResponseEntity<?> rta;
-         Business objBusiness= this.mapper.map(prmBusiness, Business.class);
+        Optional<User> existUser=null; 
          if(objBusiness!=null){
             Long userId=prmBusiness.getUserId();
             if(userId!=null){
-                Optional<User> existUser = this.serviceDBUser.findById(userId);
+                existUser = this.serviceDBUser.findById(userId);
                 if(!existUser.isPresent()){
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El User con userId "+prmBusiness.getUserId()+" no existe en la Base de datos");
                     throw objExeption;
@@ -92,6 +117,299 @@ public class BusinessService implements IBusinessService {
             rta= new ResponseEntity<String>("Error al crear el Business",HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return rta;
+    }
+    /**
+     * Save a business entity.
+     *
+     * @param  prmBusiness   the business DTO to be saved
+     * @return               the response entity with the saved business DTO or an error message
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> save(RegsitryBusinessDTO prmBusiness) {
+        Long businessId = prmBusiness.getBusinessId();
+        prmBusiness=validateData(prmBusiness);
+            if(prmBusiness==null){
+                return new ResponseEntity<String>(msgError,HttpStatus.BAD_REQUEST);
+            }
+        if(businessId!=null){
+            final boolean exist = this.serviceDBBusiness.existsById(businessId);
+            if(exist){
+                EntidadYaExisteException objExeption = new EntidadYaExisteException("El business con businessId "+prmBusiness.getBusinessId()+" ya existe en la Base de datos");
+                throw objExeption;
+            }else{
+                prmBusiness.setBusinessId(null);
+            }
+        }
+        Optional<Business> exist = this.serviceDBBusiness.findOneByMerchantId(prmBusiness.getMerchantId());
+            if(exist.isPresent()){
+                EntidadYaExisteException objExeption = new EntidadYaExisteException("El business con merchantId "+prmBusiness.getMerchantId()+" ya existe en la Base de datos");
+                throw objExeption;
+            }
+        Business objBusiness= this.mapper.map(prmBusiness, Business.class);
+        Long serviceId = prmBusiness.getServiceId();
+        Optional<Service> existService=null;
+        if(serviceId!=null){
+            if(serviceId!=0){
+                existService= this.serviceDBService.findById(serviceId);
+                if(!existService.isPresent()){
+                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El service con serviceId "+prmBusiness.getServiceId()+" no existe en la Base de datos");
+                    throw objExeption;
+                }else{
+                    objBusiness.setServiceId(serviceId);
+                }
+            }
+        }
+        Optional<User> existUser=null; 
+        Long userId=prmBusiness.getUserId();
+        if(userId!=null){
+                existUser = this.serviceDBUser.findById(userId);
+                if(!existUser.isPresent()){
+                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El User con userId "+prmBusiness.getUserId()+" no existe en la Base de datos");
+                    throw objExeption;
+                }else{
+                    objBusiness.setUser(existUser.get());
+                }
+        }
+        if(objBusiness==null){
+            return new ResponseEntity<String>("Error al crear el Business",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+        
+        
+         
+
+        String msg="No se pudo registrar el usuario";
+        Double amount=0.0;
+        ResponsePayment respPayment;
+        String serviceReferenceNumber=null;
+        EmailBodyData objEmailBodyData=mapper.map(prmBusiness, EmailBodyData.class);
+        try {
+            
+            if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0){
+                
+                String userTransactionNumber = uniqueString();
+                Service objService=existService.get();
+                String descripcion=objService.getServiceDescription();
+                descripcion+=": $"+String.valueOf(formato.format(objService.getServiceValue()))+"\n";
+                amount=objService.getServiceValue();
+                //Calculo del valor de los terminales
+                if(prmBusiness.getAdditionalTerminals()<=5){
+                    descripcion+="Terminales Adicionales: $"+prmBusiness.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals2to5()))+"\n";
+                    amount+=(prmBusiness.getAdditionalTerminals()-1)*objService.getTerminals2to5();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
+                }else if(prmBusiness.getAdditionalTerminals()>5 && prmBusiness.getAdditionalTerminals()<10){
+                    amount+=(prmBusiness.getAdditionalTerminals()-1)*objService.getTerminals6to9();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
+                }else{
+                    amount+=(prmBusiness.getAdditionalTerminals()-1)*objService.getTerminals10();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
+                }
+                objEmailBodyData.setAmount(amount);
+                objEmailBodyData.setServiceDescription(objService.getServiceDescription());
+                objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
+                
+                
+                switch (prmBusiness.getPaymethod()){
+                    case "CREDIT-CARD":
+                        respPayment=blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(amount)), 
+                        prmBusiness.getAddress().getZipcode(), 
+                        prmBusiness.getCreditcarnumber().replaceAll("-", ""),
+                        prmBusiness.getExpDateMonth() + prmBusiness.getExpDateYear(), 
+                        prmBusiness.getNameoncard(), 
+                        prmBusiness.getSecuritycode(), null, userTransactionNumber);
+                        if(respPayment.getResponseCode()!=200){
+                            emailService.notifyErrorRegister(objEmailBodyData);
+                            HashMap <String, String> objError=new HashMap<String, String>();
+                            objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
+                            return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
+                        }
+                        serviceReferenceNumber=respPayment.getServiceReferenceNumber();
+                        objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
+                    break;
+                }
+            }else{
+                prmBusiness.setAdditionalTerminals(0);
+                objEmailBodyData.setAdditionalTerminals(0);
+                prmBusiness.setPaymethod("SIN METODO DE PAGO");
+                objEmailBodyData.setPaymethod("SIN METODO DE PAGO");
+                prmBusiness.setServiceId(null);
+                objEmailBodyData.setServiceDescription("");
+            }
+            
+            User objUserDTO=existUser.get();
+                if(objUserDTO!=null){
+                    BusinessDTO objBusinessDTO=new BusinessDTO();
+                    objBusinessDTO.setUserId(objUserDTO.getUserID());
+                    objBusinessDTO.setName(prmBusiness.getName());
+                    objBusinessDTO.setAddress(prmBusiness.getAddress());
+                    objBusinessDTO.setBusinessPhoneNumber(prmBusiness.getBusinessPhoneNumber());
+                    objBusinessDTO.setAdditionalTerminals(prmBusiness.getAdditionalTerminals());
+                    objBusinessDTO.setMerchantId(prmBusiness.getMerchantId());
+                    objBusinessDTO.setServiceId(prmBusiness.getServiceId());
+                    objBusinessDTO.setEnable(true);
+                    objBusinessDTO.setDiscount(0.0);
+                    if(prmBusiness.getPaymethod()!=null && prmBusiness.getPaymethod().equals("CREDIT-CARD")){
+                        objBusinessDTO.setLastPayment(LocalDate.now());
+                    }
+                    
+                    objBusiness=this.serviceDBBusiness.save(objBusiness);
+                    if(objBusiness!=null){
+                        objBusinessDTO=this.mapper.map(objBusiness, BusinessDTO.class);
+                        if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0 && objBusinessDTO!=null && prmBusiness.getPaymethod()!=null){
+                            switch (prmBusiness.getPaymethod()){
+                                case "CREDIT-CARD":
+                                    Invoice objInvoice=new Invoice();
+                                    objInvoice.setDate(LocalDate.now());
+                                    objInvoice.setTime(LocalTime.now());
+                                    objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
+                                    objInvoice.setTerminals(prmBusiness.getAdditionalTerminals());
+                                    objInvoice.setTotalAmount(amount);
+                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());//TODO: Obtener el businessId
+                                    objInvoice.setReferenceNumber(serviceReferenceNumber);
+                                    objInvoice.setServiceId(prmBusiness.getServiceId());
+
+                                    objInvoice=serviceDBInvoice.save(objInvoice);
+                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                                    emailService.notifyPaymentCreditCard(objEmailBodyData);
+                                break;
+                                case "ATHMOVIL":
+                                    emailService.notifyPaymentATHMovil(objEmailBodyData);
+                                    break;
+                                case "BANK-ACCOUNT":
+                                    emailService.notifyPaymentBankAccount(objEmailBodyData);
+                                break;
+                            }
+                        }
+                        emailService.notifyNewRegister(objEmailBodyData);
+                        return new ResponseEntity<BusinessDTO>(objBusinessDTO,HttpStatus.CREATED);
+                    }
+                }else{
+                    msg="No se pudo registrar el usuario";
+                }
+        }catch (ConsumeAPIException ex) {
+                System.err.println("Error en el consumo de BlackStone: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: "+ ex.getMessage() );
+                
+                HashMap<String, String> map = new HashMap<>();
+                map.put("msg", "Por favor comuniquese con el administrador de la página.");
+                return new ResponseEntity<HashMap<String,String>>(map,HttpStatus.BAD_REQUEST);
+        }catch (Exception e){
+            return new ResponseEntity<String>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+        return new ResponseEntity<String>(msg,HttpStatus.BAD_REQUEST);
+    }
+    /**
+     * Generates a unique string using UUID.
+     *
+     * @return  the unique string generated
+     */
+    public String uniqueString() {
+        String random = UUID.randomUUID().toString();
+        random = random.replaceAll("-", "");
+        random = random.substring(0, 16);
+
+        return random;
+    }
+
+    /**
+     * Validates the given RegistryDTO object based on the pay method.
+     *
+     * @param  prmRegistry  The RegistryDTO object to be validated
+     * @return              The validated RegistryDTO object, or null if there is an error
+     */
+    private RegsitryBusinessDTO validateData(RegsitryBusinessDTO prmRegistry) {
+        if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("CREDIT-CARD")==0){
+            if(prmRegistry.getCreditcarnumber()!=null){
+                if(!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the credit card number";
+                return null;
+                }
+            }else{
+                msgError = "The credit card number is required";
+                return null;
+            }
+            if(prmRegistry.getNameoncard()!=null){
+                prmRegistry.setNameoncard(prmRegistry.getNameoncard().toUpperCase().trim());
+            }else{
+                msgError = "The name on card is required";
+                return null;
+            }
+            if(prmRegistry.getSecuritycode()!=null){
+                if(!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the security code";
+                return null;
+                }
+            }else{
+                msgError = "The security code is required";
+                return null;
+            }
+            if(prmRegistry.getExpDateMonth()!=null){
+                if(!prmRegistry.getExpDateMonth().matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the expiration date";
+                return null;
+                }else{
+                    if(Integer.parseInt(prmRegistry.getExpDateMonth())>12){
+                        msgError = "The expiration date month must be less than or equal to 12";
+                        return null;
+                    }
+                }
+            }else{
+                msgError = "The expiration date month is required";
+                return null;
+            }
+            if(prmRegistry.getExpDateYear()!=null){
+                if(!prmRegistry.getExpDateYear().matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the expiration date";
+                return null;
+                }else{
+                    prmRegistry.setExpDateYear(prmRegistry.getExpDateYear().trim());
+                    if(prmRegistry.getExpDateYear().length()!=2){
+                        msgError = "The expiration date year must be 2 digits";
+                        return null;
+                    }
+                }
+            }else{
+                msgError = "The expiration date year is required";
+                return null;
+            }
+            
+        }else if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT")==0){
+            if(prmRegistry.getAccountNameBank()!=null){
+                prmRegistry.setAccountNameBank(prmRegistry.getAccountNameBank().toUpperCase().trim());
+            }else{
+                msgError = "The account name is required";
+                return null;
+            }
+            if(prmRegistry.getAccountNumberBank()!=null){
+                if(!prmRegistry.getAccountNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the account number";
+                    return null;
+                }else{
+                    prmRegistry.setAccountNumberBank(prmRegistry.getAccountNumberBank().trim());
+                }
+            }else{
+                msgError = "The account number is required";
+                return null;
+            }
+            if(prmRegistry.getRouteNumberBank()!=null){
+                if(!prmRegistry.getRouteNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+                    msgError = "Letters are not allowed in the route number";
+                    return null;
+                }else{
+                    prmRegistry.setRouteNumberBank(prmRegistry.getRouteNumberBank().trim());
+                }
+            }else{
+                msgError = "The route number is required";
+                return null;
+            }
+            if(prmRegistry.getChequeVoidId()==null){
+                msgError = "The chequeVoidId is required";
+                return null;
+            }
+            
+        }
+        return prmRegistry;
     }
 
     /**
