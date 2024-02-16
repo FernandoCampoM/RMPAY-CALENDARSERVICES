@@ -23,10 +23,12 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadY
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.Service;
+import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
+import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
@@ -45,6 +47,8 @@ public class BusinessService implements IBusinessService {
     private UserRepository serviceDBUser;
     @Autowired
     private ServiceRepository serviceDBService;
+    @Autowired
+    private TerminalRepository serviceDBTerminal;
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
@@ -149,6 +153,7 @@ public class BusinessService implements IBusinessService {
         Business objBusiness= this.mapper.map(prmBusiness, Business.class);
         Long serviceId = prmBusiness.getServiceId();
         Optional<Service> existService=null;
+        Service objService=null;
         if(serviceId!=null){
             if(serviceId!=0){
                 existService= this.serviceDBService.findById(serviceId);
@@ -156,22 +161,26 @@ public class BusinessService implements IBusinessService {
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El service con serviceId "+prmBusiness.getServiceId()+" no existe en la Base de datos");
                     throw objExeption;
                 }else{
+                    objService=existService.get();
                     objBusiness.setServiceId(serviceId);
                 }
             }
         }
         Optional<User> existUser=null; 
         Long userId=prmBusiness.getUserId();
+        User objUserDTO=null;
         if(userId!=null){
                 existUser = this.serviceDBUser.findById(userId);
                 if(!existUser.isPresent()){
+
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El User con userId "+prmBusiness.getUserId()+" no existe en la Base de datos");
                     throw objExeption;
                 }else{
+                    objUserDTO=existUser.get();
                     objBusiness.setUser(existUser.get());
                 }
         }
-        if(objBusiness==null){
+        if(objBusiness==null || objService==null || objUserDTO==null){
             return new ResponseEntity<String>("Error al crear el Business",HttpStatus.INTERNAL_SERVER_ERROR);
         }
         
@@ -185,11 +194,11 @@ public class BusinessService implements IBusinessService {
         String serviceReferenceNumber=null;
         EmailBodyData objEmailBodyData=mapper.map(prmBusiness, EmailBodyData.class);
         try {
-            
+            objEmailBodyData.setEmail(objUserDTO.getEmail());
             if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0){
                 
                 String userTransactionNumber = uniqueString();
-                Service objService=existService.get();
+                
                 String descripcion=objService.getServiceDescription();
                 descripcion+=": $"+String.valueOf(formato.format(objService.getServiceValue()))+"\n";
                 amount=objService.getServiceValue();
@@ -237,7 +246,7 @@ public class BusinessService implements IBusinessService {
                 objEmailBodyData.setServiceDescription("");
             }
             
-            User objUserDTO=existUser.get();
+            
                 if(objUserDTO!=null){
                     BusinessDTO objBusinessDTO=new BusinessDTO();
                     objBusinessDTO.setUserId(objUserDTO.getUserID());
@@ -259,6 +268,16 @@ public class BusinessService implements IBusinessService {
                         if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0 && objBusinessDTO!=null && prmBusiness.getPaymethod()!=null){
                             switch (prmBusiness.getPaymethod()){
                                 case "CREDIT-CARD":
+                                    for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
+                                        Terminal objTerminal=new Terminal();
+                                        objTerminal.setEnable(true);
+                                        objTerminal.setBusiness(objBusiness);
+                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setSerial(null);
+                                        objTerminal.setName(null);
+                                        objTerminal.setService(objService);
+                                        objTerminal=serviceDBTerminal.save(objTerminal);
+                                    }
                                     Invoice objInvoice=new Invoice();
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
@@ -281,11 +300,9 @@ public class BusinessService implements IBusinessService {
                                 break;
                             }
                         }
-                        emailService.notifyNewRegister(objEmailBodyData);
+                        emailService.notifyNewBusiness(objEmailBodyData);
                         return new ResponseEntity<BusinessDTO>(objBusinessDTO,HttpStatus.CREATED);
                     }
-                }else{
-                    msg="No se pudo registrar el usuario";
                 }
         }catch (ConsumeAPIException ex) {
                 System.err.println("Error en el consumo de BlackStone: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: "+ ex.getMessage() );
@@ -296,8 +313,7 @@ public class BusinessService implements IBusinessService {
         }catch (Exception e){
             return new ResponseEntity<String>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        
-        return new ResponseEntity<String>(msg,HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<String>("Error al registrar el negocio",HttpStatus.INTERNAL_SERVER_ERROR);
     }
     /**
      * Generates a unique string using UUID.
@@ -457,6 +473,7 @@ public class BusinessService implements IBusinessService {
              objBusiness.getAddress().setCountry(prmBusiness.getAddress().getCountry());
              objBusiness.getAddress().setZipcode(prmBusiness.getAddress().getZipcode());
              objBusiness.setDiscount(prmBusiness.getDiscount());
+             objBusiness.setName(prmBusiness.getName());
              objBusiness.setServiceId(serviceId);
              if(objBusiness!=null){
                 objBusiness=this.serviceDBBusiness.save(objBusiness);

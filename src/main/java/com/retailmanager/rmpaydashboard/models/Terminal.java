@@ -26,9 +26,9 @@ public class Terminal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long terminalId;
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String serial;
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String name;
 
     @Column(nullable = false)
@@ -37,7 +37,10 @@ public class Terminal {
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "businessId")
     private Business business;
-
+    @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
+    @JoinColumn(name = "serviceId")
+    private Service service;
+    @Column(nullable = true)
     private LocalDate expirationDate;
     // Otros campos y métodos según se necesite
 }

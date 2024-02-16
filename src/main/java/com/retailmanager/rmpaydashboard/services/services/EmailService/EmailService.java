@@ -184,6 +184,18 @@ public class EmailService implements IEmailService{
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
     
     }
+    @Override
+    public void notifyNewBusiness(EmailBodyData emailData) {
+        List<String> toList = Arrays.asList(emailData.getEmail());
+        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        String subject = "NUEVO NEGOCIO REGISTRADO EN RMPAY";
+        
+        String htmlBody = createBodyNewRegistry(emailData);
+        htmlBody=htmlBody.replace("-paymethod-", emailData.getPaymethod());
+        htmlBody=htmlBody.replace("NUEVO CLIENTE REGISTRADO EN RMPAY", "NUEVO NEGOCIO REGISTRADO EN RMPAY");
+        sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
+    
+    }
 
     /**
      * Notify rejected payment with email data.
@@ -629,7 +641,7 @@ public class EmailService implements IEmailService{
                     + "                                                                    </p>\n"
                     + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong> \n"
                     + "                                                                    </p>\n"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong> \n"
+                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + formato.format(emailData.getAmount()) + " </strong> \n"
                     + "                                                                    </p>\n";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {

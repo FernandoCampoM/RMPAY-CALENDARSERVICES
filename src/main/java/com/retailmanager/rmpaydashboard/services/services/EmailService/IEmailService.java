@@ -9,6 +9,7 @@ public interface IEmailService {
     public void notifyPaymentATHMovil(EmailBodyData emailData);
     public void notifyPaymentBankAccount(EmailBodyData emailData);
     public void notifyNewRegister(EmailBodyData emailData);
+    public void notifyNewBusiness(EmailBodyData emailData);
     public void notifyRejectedPayment(EmailBodyData emailData);
     public void notifyErrorRegister(EmailBodyData emailData);
 }

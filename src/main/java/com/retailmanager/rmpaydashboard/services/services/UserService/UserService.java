@@ -133,8 +133,12 @@ public class UserService implements IUserService{
             }else{
                 User objUser=optional.get();
                 objUser.setName(prmUser.getName());
-                objUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
+                if(prmUser.getPassword()!=null && prmUser.getPassword().compareTo("unchanged")!=0){
+                    objUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
+                }
+                
                 objUser.setEmail(prmUser.getEmail());
+                objUser.setPhone(prmUser.getPhone());
                 User objUserRTA=this.serviceDBUser.save(objUser);
                 UserDTO userDTO=this.mapper.map(objUserRTA, UserDTO.class);
                 

@@ -1,7 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
