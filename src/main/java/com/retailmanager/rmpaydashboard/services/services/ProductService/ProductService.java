@@ -73,21 +73,23 @@ public class ProductService implements IProductService {
                         .findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
                 if (optionalProduct.isPresent()) {
                     if(optionalCategory.get().getBusiness().getBusinessId()==optionalProduct.get().getCategory().getBusiness().getBusinessId()) {
-                       //TODO: AQUÍ DEBE IR EL CÓDIGO E CASO QUE ENTRE DIFERENTES NEGOCIOS PUEDAN EXISTIR PRODUCTOS CON EL MISMO CODIGO
-                       //EN ESTE CASO IRIA LA EXCEPTION DE ENTIDAD YA EXISTE, SE DEBE APLICAR LO MISMO AL CODIGO DE BARRAS Y AL UPDATE 
+                        EntidadYaExisteException objException = new EntidadYaExisteException("El producto con Code  "
+                        + prmProduct.getCode() + " ya existe en la base de datos");
+                        throw objException;
                     }
-                    EntidadYaExisteException objException = new EntidadYaExisteException("El producto con Code  "
-                            + prmProduct.getCode() + " ya existe en la base de datos");
-                    throw objException;
+                    
                 }
             }
             if (prmProduct.getBarcode() != null) {
                 Optional<Product> optionalProduct = this.serviceDBProducts
                         .findOneByCodeOrBarcode(prmProduct.getBarcode(), prmProduct.getBarcode());
                 if (optionalProduct.isPresent()) {
-                    EntidadYaExisteException objException = new EntidadYaExisteException(
+                    if(optionalCategory.get().getBusiness().getBusinessId()==optionalProduct.get().getCategory().getBusiness().getBusinessId()) {
+                        EntidadYaExisteException objException = new EntidadYaExisteException(
                             "El producto con barCode  " + prmProduct.getBarcode() + " ya existe en la base de datos");
-                    throw objException;
+                        throw objException;
+                    }
+                    
                 }
             }
             Product objProduct = this.mapperBase.map(prmProduct, Product.class);
@@ -132,7 +134,7 @@ public class ProductService implements IProductService {
             optionalProduct2= this.serviceDBProducts.findOneByCodeOrBarcode(prmProduct.getCode(), prmProduct.getCode());
         }
          if(optionalProduct2.isPresent()){
-            //TODO: SINO PUEDEN REPERTIRSE CODIGOS ENTRE DIFERNETES NEGOCIOS ASÍ SEA ENTRE NEGOCIOS DIFERENTES ELIMINAR SEGUNDA VALIDACIÓN DEL SIGUIENTE IF
+            
              if(optionalProduct2.get().getProductId()!=productId && optionalProduct2.get().getCategory().getBusiness().getBusinessId()==optionalProduct.get().getCategory().getBusiness().getBusinessId()){
                  EntidadYaExisteException objException = new EntidadYaExisteException(
                          "El producto con Code o barCode " + prmProduct.getCode()

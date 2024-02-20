@@ -21,6 +21,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Configur
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ErrorUtils;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Error;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -105,6 +106,18 @@ public class RestApiExceptionHandler {
                                                 HttpStatus.NOT_FOUND.value())
                                 .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
                 return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+        }
+        @ExceptionHandler(MaxTerminalsReached.class)
+        public ResponseEntity<Error> handleMaxTerminalsReachedException(final HttpServletRequest req,
+                        final MaxTerminalsReached ex, final Locale locale) {
+                final Error error = ErrorUtils
+                                .crearError(CodigoError.MAX_TERMINALS_REACHED.getCodigo(),
+                                                String.format("%s, %s",
+                                                                CodigoError.MAX_TERMINALS_REACHED.getLlaveMensaje(),
+                                                                ex.getMessage()),
+                                                HttpStatus.PAYMENT_REQUIRED.value())
+                                .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
+                return new ResponseEntity<>(error, HttpStatus.PAYMENT_REQUIRED);
         }
         /**
          * Atiende las Exepciones MethodArgumentNotValidException y crea una rspuesta

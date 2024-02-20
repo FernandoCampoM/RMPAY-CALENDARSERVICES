@@ -7,6 +7,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 
 public interface ITerminalService {
     public ResponseEntity<?> save(TerminalDTO prmTerminal);
+    public ResponseEntity<?> buyTerminal(TerminalDTO prmTerminal);
     public ResponseEntity<?> update(Long terminalId, TerminalDTO prmTerminal);
     public boolean delete(Long terminalId);
     public ResponseEntity<?> findById(Long terminalId);

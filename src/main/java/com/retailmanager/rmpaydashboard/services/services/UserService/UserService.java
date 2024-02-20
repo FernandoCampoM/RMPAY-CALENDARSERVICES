@@ -394,7 +394,7 @@ public class UserService implements IUserService{
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
                                     objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
                                     objInvoice.setTotalAmount(amount);
-                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());//TODO: Obtener el businessId
+                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
 

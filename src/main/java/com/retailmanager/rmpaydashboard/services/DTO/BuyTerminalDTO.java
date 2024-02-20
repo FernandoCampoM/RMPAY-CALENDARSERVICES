@@ -10,8 +10,7 @@ import lombok.AllArgsConstructor;
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TerminalDTO {
-    private Long terminalId;
+public class BuyTerminalDTO {
     @NotBlank(message = "{terminal.serial.empty}")
     private String serial;
     @NotBlank(message = "{terminal.name.empty}")

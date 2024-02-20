@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.TerminalService;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 
@@ -28,6 +32,8 @@ public class TerminalService implements ITerminalService {
     private BusinessRepository serviceDBBusiness;
     @Autowired
     private TerminalRepository serviceDBTerminal;
+    @Autowired
+    private ServiceRepository serviceDBService;
     /**
      * Saves a TerminalDTO object in the database and returns a response entity.
      *
@@ -52,24 +58,43 @@ public class TerminalService implements ITerminalService {
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos");
                 throw objExeption;
             }
-        
-        
         ResponseEntity<?> rta;
-         Terminal objTerminal= this.mapper.map(prmTerminal, Terminal.class);
-         if(objTerminal!=null){
-            Long businessId=prmTerminal.getBusinesId();
+         Terminal objTerminal= null;
+        Long businessId=prmTerminal.getBusinesId();
             if(businessId!=null){
                 Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
                 if(!existBusiness.isPresent()){
                     EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" no existe en la Base de datos");
                     throw objExeption;
                 }else{
-                    //TODO: Validar que el busines tenga un servicio activo, y que tenga terminales disponibles
-                    objTerminal.setBusiness(existBusiness.get());
+                    
+                    List<Terminal> allsTerminals=this.serviceDBTerminal.findByBusiness(existBusiness.get());
+                    for (Terminal terminal : allsTerminals) {
+                        if(terminal.getExpirationDate().isBefore(LocalDate.now()) && terminal.getSerial()==null ){
+                            terminal.setSerial(prmTerminal.getSerial());
+                            terminal.setName(prmTerminal.getName());
+                            terminal.setEnable(prmTerminal.getEnable());
+                            objTerminal=this.serviceDBTerminal.save(terminal);
+                            break;
+                            
+                        }
+                        if(terminal.getExpirationDate()==null && terminal.getSerial()==null && existBusiness.get().getLastPayment()!=null){
+                            terminal.setSerial(prmTerminal.getSerial());
+                            terminal.setName(prmTerminal.getName());
+                            terminal.setEnable(prmTerminal.getEnable());
+                            terminal.setExpirationDate(LocalDate.now().plusDays(terminal.getService().getDuration()));
+                            objTerminal=this.serviceDBTerminal.save(terminal);
+                            break;
+                        }
+                        
+                    }
                 }
             }
-            objTerminal=this.serviceDBTerminal.save(objTerminal);
-         }
+            //objTerminal=this.serviceDBTerminal.save(objTerminal);
+        if(objTerminal==null){
+            MaxTerminalsReached objExeption = new MaxTerminalsReached("Se alcanzo el maximo de terminales");
+            throw objExeption;
+        }
         TerminalDTO terminalDTO=this.mapper.map(objTerminal, TerminalDTO.class);
         if(terminalDTO!=null){
             
@@ -140,7 +165,9 @@ public class TerminalService implements ITerminalService {
             if(optional.isPresent()){
                 Terminal objTerminal=optional.get();
                 if(objTerminal!=null){
-                    this.serviceDBTerminal.delete(objTerminal);
+                    objTerminal.setName(null);
+                    objTerminal.setSerial(null);
+                    this.serviceDBTerminal.save(objTerminal);
                     bandera=true;
                 }
                 
@@ -203,16 +230,25 @@ public class TerminalService implements ITerminalService {
     @Override
     @Transactional
     public ResponseEntity<?> updateEnable(Long terminalId, boolean enable) {
-        //TODO: Implementar validación que al actualizar el enable, el terminal tenga un servicio activo
+        
         if(terminalId!=null){
             Optional<Terminal> optional= this.serviceDBTerminal.findById(terminalId);
             if(optional.isPresent()){
+                if(enable && optional.get().getExpirationDate().isBefore(LocalDate.now())==false){
+                    return new ResponseEntity<Boolean>(false,HttpStatus.PAYMENT_REQUIRED);
+                } 
                 this.serviceDBTerminal.updateEnable(terminalId, enable);
                 return new ResponseEntity<Boolean>(true,HttpStatus.OK);
             }
         }
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Terminal con terminalId "+terminalId+" no existe en la Base de datos");
                 throw objExeption;
+    }
+
+    @Override
+    public ResponseEntity<?> buyTerminal(TerminalDTO prmTerminal) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'buyTerminal'");
     }
     
 }

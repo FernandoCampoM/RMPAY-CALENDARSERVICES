@@ -2,11 +2,14 @@ package com.retailmanager.rmpaydashboard.models;
 
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,7 +23,7 @@ public class UsersBusiness {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userBusinessId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String username;
 
     @Column(nullable = false)
@@ -29,7 +32,13 @@ public class UsersBusiness {
     @Column(nullable = false)
     private Boolean enable;
 
-    @OneToMany(mappedBy = "userBusiness")
+    @OneToMany(mappedBy = "userBusiness", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserPermission> userPermissions;
+
+    @ManyToOne(cascade=CascadeType.PERSIST,optional = false)
+    @JoinColumn( name="businessId",nullable = false)
+    private Business business;
+
+    
 
 }

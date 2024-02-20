@@ -188,7 +188,6 @@ public class BusinessService implements IBusinessService {
         
          
 
-        String msg="No se pudo registrar el usuario";
         Double amount=0.0;
         ResponsePayment respPayment;
         String serviceReferenceNumber=null;
@@ -284,7 +283,7 @@ public class BusinessService implements IBusinessService {
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
                                     objInvoice.setTerminals(prmBusiness.getAdditionalTerminals());
                                     objInvoice.setTotalAmount(amount);
-                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());//TODO: Obtener el businessId
+                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmBusiness.getServiceId());
 
@@ -599,7 +598,7 @@ public class BusinessService implements IBusinessService {
     @Override
     @Transactional
     public ResponseEntity<?> updateEnable(Long businessId, boolean enable) {
-        //TODO: Implementar validación que al actualizar el enable, el business tenga un servicio activo
+        
         if(businessId!=null){
             Optional<Business> optional= this.serviceDBBusiness.findById(businessId);
             if(optional.isPresent()){
