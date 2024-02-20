@@ -89,4 +89,8 @@ public class UserBusinessController {
            @Valid @PathVariable @Positive(message = "idPermission.positive") Long idPermission, @Valid @PathVariable boolean enable) {
         return usersBusinessService.updatePermission(userBusinessId, idPermission, enable);
     }
+    @GetMapping("/userBusiness/permissions")
+    public ResponseEntity<?> getAllPermissions() {
+        return usersBusinessService.getAllPermissions();
+    }
 }

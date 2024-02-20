@@ -21,4 +21,6 @@ public interface IUserService {
     public ResponseEntity<?> getUserBusiness(Long userId);
     public ResponseEntity<?> updateEnable(Long userId, boolean enable);
     public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry);
+
+    
 }

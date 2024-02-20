@@ -21,6 +21,7 @@ import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.PermissionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 
 @Service
@@ -247,6 +248,13 @@ public class UsersBusinesService implements IUsersBusinessService{
             }
         }
         return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
+    public ResponseEntity<?> getAllPermissions() {
+        Iterable<Permission> permissions = this.serviceDBUPermission.findAll();
+        List<PermissionDTO> permissionsDTO = this.mapper.map(permissions,  new TypeToken<List<PermissionDTO>>(){}.getType());
+        return new ResponseEntity<List<PermissionDTO>>(permissionsDTO, HttpStatus.OK);
     }
     
 }

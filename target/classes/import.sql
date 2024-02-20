@@ -46,3 +46,21 @@ GO
 INSERT [dbo].[Service] ([serviceId], [duration], [enable], [referralPayment], [referralPayment10], [referralPayment2to5], [referralPayment6to9], [serviceDescription], [serviceName], [serviceValue], [terminals10], [terminals2to5], [terminals6to9]) VALUES (5, 365, 1, 15, 0, 0, 0, N'RM pay - anual', N'RM pay - anual', 65, 65, 65, 65)
 GO
 SET IDENTITY_INSERT [dbo].[Service] OFF
+
+SET IDENTITY_INSERT [dbo].[Permission] ON 
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (7, N'CLOSEOUT')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (6, N'IVU CONTROL')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (5, N'MERCHANT')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (4, N'REFUND')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (2, N'REPORT')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (8, N'SETTINGS')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (1, N'TIPS')
+GO
+INSERT [dbo].[Permission] ([permissionId], [name]) VALUES (3, N'USERS')
+SET IDENTITY_INSERT [dbo].[Permission] OFF 

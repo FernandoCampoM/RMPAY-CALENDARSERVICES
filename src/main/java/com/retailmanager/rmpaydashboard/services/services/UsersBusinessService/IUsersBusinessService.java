@@ -12,5 +12,6 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> updateEnable(Long userBusinessId, boolean enable);
     public ResponseEntity<?> findByBusiness(Long idBusiness);
     public ResponseEntity<?> updatePermission(Long idUser, Long idPermission, boolean enable);
+    public ResponseEntity<?> getAllPermissions();
 
 }
