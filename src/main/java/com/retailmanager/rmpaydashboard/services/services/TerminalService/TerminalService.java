@@ -54,7 +54,7 @@ public class TerminalService implements ITerminalService {
             }
         }
         Optional<Terminal> exist = this.serviceDBTerminal.findOneBySerial(prmTerminal.getSerial());
-            if(exist.isPresent()){
+            if(exist.isPresent() && exist.get().getSerial()!=null && exist.get().getBusiness().getBusinessId()==prmTerminal.getBusinesId()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos");
                 throw objExeption;
             }
@@ -70,7 +70,7 @@ public class TerminalService implements ITerminalService {
                     
                     List<Terminal> allsTerminals=this.serviceDBTerminal.findByBusiness(existBusiness.get());
                     for (Terminal terminal : allsTerminals) {
-                        if(terminal.getExpirationDate().isBefore(LocalDate.now()) && terminal.getSerial()==null ){
+                        if(terminal.getExpirationDate()!=null && terminal.getExpirationDate().isBefore(LocalDate.now()) && terminal.getSerial()==null ){
                             terminal.setSerial(prmTerminal.getSerial());
                             terminal.setName(prmTerminal.getName());
                             terminal.setEnable(prmTerminal.getEnable());
