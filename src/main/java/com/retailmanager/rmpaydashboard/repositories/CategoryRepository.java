@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Category;
+
 
 public interface CategoryRepository extends CrudRepository<Category, Long> {
     Optional<Category> findOneByName(String name);
@@ -14,4 +16,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
     @Modifying
     @Query("UPDATE Category u SET u.enable = :enable WHERE u.categoryId = :categoryId")
     public int updateEnable(Long categoryId, boolean enable);
+    
+    public Optional<Category> findFirstByNameAndBusiness(String name, Business business);
 }

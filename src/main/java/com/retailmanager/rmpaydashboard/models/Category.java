@@ -32,4 +32,6 @@ public class Category {
     @ManyToOne(cascade=CascadeType.PERSIST,optional = false)
     @JoinColumn( name="businessId",nullable = false)
     private Business business;
+    private String color;
+    private String position;
 }

@@ -12,4 +12,6 @@ public interface IEmailService {
     public void notifyNewBusiness(EmailBodyData emailData);
     public void notifyRejectedPayment(EmailBodyData emailData);
     public void notifyErrorRegister(EmailBodyData emailData);
+
+    public void notifyNewTerminal(EmailBodyData emailData);
 }

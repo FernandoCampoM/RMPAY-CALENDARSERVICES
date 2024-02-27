@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.retailmanager.rmpaydashboard.services.DTO.BuyTerminalDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 import com.retailmanager.rmpaydashboard.services.services.TerminalService.ITerminalService;
 
@@ -56,6 +57,10 @@ public class TerminalController {
     @PostMapping("/terminals")
     public ResponseEntity<?> save(@Valid @RequestBody TerminalDTO prmTerminal){
         return this.terminalService.save(prmTerminal);
+    }
+    @PostMapping("/terminals/buy")
+    public ResponseEntity<?> save(@Valid @RequestBody BuyTerminalDTO prmTerminal){
+        return this.terminalService.buyTerminal(prmTerminal);
     }
     /**
      * A description of the entire Java function.

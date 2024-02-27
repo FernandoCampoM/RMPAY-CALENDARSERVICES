@@ -194,7 +194,19 @@ public class EmailService implements IEmailService{
         htmlBody=htmlBody.replace("-paymethod-", emailData.getPaymethod());
         htmlBody=htmlBody.replace("NUEVO CLIENTE REGISTRADO EN RMPAY", "NUEVO NEGOCIO REGISTRADO EN RMPAY");
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
-    
+     
+    }
+    @Override
+    public void notifyNewTerminal(EmailBodyData emailData) {
+        List<String> toList = Arrays.asList(emailData.getEmail());
+        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        String subject = "NUEVO TERMINAL REGISTRADO EN RMPAY PARA EL NEGOCIO "+emailData.getBusinessName();
+        
+        String htmlBody = createBodyNewRegistry(emailData);
+        htmlBody=htmlBody.replace("-paymethod-", emailData.getPaymethod());
+        htmlBody=htmlBody.replace("NUEVO CLIENTE REGISTRADO EN RMPAY", "NUEVO TERMINAL REGISTRADO EN RMPAY PARA EL NEGOCIO "+emailData.getBusinessName());
+        sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
+     
     }
 
     /**

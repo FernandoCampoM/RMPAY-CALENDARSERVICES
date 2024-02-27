@@ -16,4 +16,7 @@ public class CategoryDTO {
     private Long businesId;
     @NotNull(message = "{category.enable.null}")
     private Boolean enable;
+    
+    private String color;
+    private String position;
 }

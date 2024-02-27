@@ -19,7 +19,7 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long productId;
-    @Column(nullable = true, unique = false)
+    @Column(nullable = false, unique = false)
     private String barcode;
     @Column(nullable = false, unique = false)
     private String name;
@@ -30,7 +30,7 @@ public class Product {
     @Column(nullable = false, unique = false)
     private double price;
     
-    @Column(nullable = true, unique = false)
+    @Column(nullable = false, unique = false)
     private String code;
     
     // Inventory attributes

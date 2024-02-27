@@ -34,6 +34,9 @@ public class Invoice {
     
     @Column(nullable = true)
     private String referenceNumber;
-    private boolean rejected = false;
+    private boolean rejected = false; //Para indicar si un pago fue rechazado 
+    private boolean paid=false; //Para indicar si un pago rechazado fue cobrado nuevamente
+    private boolean inProcess=false; //Para indicar si el pago se encuentra en proceso
+    private String terminalIds;
     private Long serviceId;
 }

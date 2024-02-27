@@ -16,24 +16,10 @@ import com.retailmanager.rmpaydashboard.models.Product;
 
 
 public interface ProductRepository extends CrudRepository<Product,Long>,PagingAndSortingRepository<Product,Long> {
-    /**
-     * Obtiene los productos que no están asociados a una cadena
-     * @param pageable Objeto para paginación
-     * @return Objeto de pagina de resultados
-     
-    public Page<Product> findByobjCustomerIsNull(Pageable pageable);*/
-    /**
-     * Obtiene los productos asociados a la cadena especificada o que no están asociados a una cadena
-     * @param objCostumer Cadena de la cual se quieren recupear los productos
-     * @param pageable Objeto de paginación
-     * @return Objeto de pagina de resultados
-     
-    public Page<Product> findByobjCustomerIsOrObjCustomerIsNull(Customer objCostumer,Pageable pageable);
-    */
-    
-    
-     
+   
     public Page<Product> findByCategoryIs(Category category,Pageable pageable);
+    @Query("SELECT p FROM Product p WHERE p.category.categoryId IN :categoryIds")
+    public Page<Product> findByCategoryIn(List<Long> categoryIds,Pageable pageable);
     /**
      * Recupera la información de un producto por codigo de producto o codigo de barras
      * @param productCode Codigo del producto

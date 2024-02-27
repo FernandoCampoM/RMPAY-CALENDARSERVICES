@@ -15,6 +15,7 @@ public class ProductDTO {
     private Long productId;
 
     @Size(max = 255, message = "{product.barcode.max}")
+    @NotBlank(message = "{product.barcode.empty}")
     private String barcode;
 
     @NotBlank(message = "{product.name.empty}")
@@ -31,10 +32,12 @@ public class ProductDTO {
     @NotNull(message = "{product.price.null}")
     @Min(value = 0, message = "{product.price.min}")
     private double price;
-    @NotNull(message = "{product.IdCategory.null}")
+    
     private Long idCategory;
-
+    private String nameCategory;
+    private Long idBusiness;
     @Size(max = 255, message = "{product.code.max}")
+    @NotBlank(message = "{product.code.empty}")
     private String code;
 
     // Inventory attributes
@@ -61,6 +64,8 @@ public class ProductDTO {
 
     public static ProductDTO tOProduct(Product product) {
         ProductDTO objProduct = new ProductDTO();
+        objProduct.setProductId(product.getProductId());
+        objProduct.setIdCategory(product.getCategory().getCategoryId());
         objProduct.setBarcode(product.getBarcode());
         objProduct.setName(product.getName());
         objProduct.setDescription(  product.getDescription());

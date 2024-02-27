@@ -3,6 +3,7 @@ package com.retailmanager.rmpaydashboard.services.services.UserService;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -24,10 +25,12 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadY
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.Service;
+import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
+import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
@@ -63,6 +66,8 @@ public class UserService implements IUserService{
     @Autowired
     private IBlackStoneService blackStoneService;
     String msgError = "";
+    @Autowired
+    private TerminalRepository serviceDBTerminal;
     
     /**
      * Save user data into the database and return the response entity
@@ -386,9 +391,31 @@ public class UserService implements IUserService{
                     if(objResponseB.getStatusCode()==HttpStatus.CREATED){
                         objBusinessDTO=(BusinessDTO)objResponseB.getBody();
                         if(prmRegistry.getAdditionalTerminals()!=null && prmRegistry.getAdditionalTerminals()!=0 && objBusinessDTO!=null){
+                            Business objBusiness=serviceDBBusiness.findById(objBusinessDTO.getBusinessId()).get();
+                            Service objService=serviceDBService.findById(prmRegistry.getServiceId()).get();
+                            Invoice objInvoice=new Invoice();
+                            List<Long> listTerminalIds=new ArrayList<Long>();
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
-                                    Invoice objInvoice=new Invoice();
+                                    for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
+                                        Terminal objTerminal=new Terminal();
+                                        objTerminal.setEnable(true);
+                                        objTerminal.setBusiness(objBusiness);
+                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setSerial(null);
+                                        objTerminal.setName(null);
+                                        objTerminal.setService(objService);
+                                        if(i==0){
+                                            objTerminal.setPrincipal(true);
+                                        }else{
+                                            objTerminal.setPrincipal(false);
+                                        }
+                                        objTerminal.setPayment(true);
+                                        objTerminal.setAutomaticPayments(prmRegistry.isAutomaticPayments());
+                                        objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                        listTerminalIds.add(objTerminal.getTerminalId());
+                                    }
+                                    
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
@@ -397,15 +424,78 @@ public class UserService implements IUserService{
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
-
+                                    objInvoice.setInProcess(false);
+                                    objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                                     emailService.notifyPaymentCreditCard(objEmailBodyData);
                                 break;
                                 case "ATHMOVIL":
+                                    for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
+                                        Terminal objTerminal=new Terminal();
+                                        objTerminal.setEnable(true);
+                                        objTerminal.setBusiness(objBusiness);
+                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setSerial(null);
+                                        objTerminal.setName(null);
+                                        objTerminal.setService(objService);
+                                        if(i==0){
+                                            objTerminal.setPrincipal(true);
+                                        }else{
+                                            objTerminal.setPrincipal(false);
+                                        }
+                                        objTerminal.setPayment(true);
+                                        objTerminal.setAutomaticPayments(prmRegistry.isAutomaticPayments());
+                                        objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                        listTerminalIds.add(objTerminal.getTerminalId());
+                                    }
+                                    objInvoice.setDate(LocalDate.now());
+                                    objInvoice.setTime(LocalTime.now());
+                                    objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
+                                    objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
+                                    objInvoice.setTotalAmount(amount);
+                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
+                                    objInvoice.setReferenceNumber(serviceReferenceNumber);
+                                    objInvoice.setServiceId(prmRegistry.getServiceId());
+                                    objInvoice.setInProcess(false);
+                                    objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
+                                    objInvoice=serviceDBInvoice.save(objInvoice);
+                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+
                                     emailService.notifyPaymentATHMovil(objEmailBodyData);
                                     break;
                                 case "BANK-ACCOUNT":
+                                    for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
+                                        Terminal objTerminal=new Terminal();
+                                        objTerminal.setEnable(false);
+                                        objTerminal.setBusiness(objBusiness);
+                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setSerial(null);
+                                        objTerminal.setName(null);
+                                        objTerminal.setService(objService);
+                                        if(i==0){
+                                            objTerminal.setPrincipal(true);
+                                        }else{
+                                            objTerminal.setPrincipal(false);
+                                        }
+                                        objTerminal.setPayment(false);
+                                        objTerminal.setAutomaticPayments(prmRegistry.isAutomaticPayments());
+                                        objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                        listTerminalIds.add(objTerminal.getTerminalId());
+                                    }
+                                    objInvoice.setDate(LocalDate.now());
+                                    objInvoice.setTime(LocalTime.now());
+                                    objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
+                                    objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
+                                    objInvoice.setTotalAmount(amount);
+                                    objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
+                                    objInvoice.setReferenceNumber(serviceReferenceNumber);
+                                    objInvoice.setServiceId(prmRegistry.getServiceId());
+                                    objInvoice.setInProcess(true);
+                                    objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
+
+                                    objInvoice=serviceDBInvoice.save(objInvoice);
+                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                                     emailService.notifyPaymentBankAccount(objEmailBodyData);
                                 break;
                             }

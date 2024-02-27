@@ -42,5 +42,10 @@ public class Terminal {
     private Service service;
     @Column(nullable = true)
     private LocalDate expirationDate;
+
+    private boolean automaticPayments;
+    private boolean isPayment;
+    private boolean isPrincipal;
+    
     // Otros campos y métodos según se necesite
 }

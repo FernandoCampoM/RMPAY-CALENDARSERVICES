@@ -295,6 +295,16 @@ public class ProductService implements IProductService {
     @Transactional()
     @Override
     public ResponseEntity<?> save( List<ProductDTO> listProductsDTO) {
+        if(listProductsDTO==null && listProductsDTO.isEmpty()){
+            return new ResponseEntity<String>("La lista de Productos no puede ser vacia ni null",HttpStatus.BAD_REQUEST);
+        }
+        Business business = this.serviceDBBusiness.findById(listProductsDTO.get(0).getIdBusiness()).orElse(null);
+        if(business==null){
+            EntidadNoExisteException objException = new EntidadNoExisteException(
+                    "El business con businessId "+listProductsDTO.get(0).getIdBusiness()+" no existe en la Base de datos");
+            
+            throw objException;
+        }
         List<ProductDTO> listProductsRTA=new ArrayList<>();
         for (ProductDTO productDTO : listProductsDTO) {
             if (productDTO.getCode() != null) {
@@ -312,13 +322,22 @@ public class ProductService implements IProductService {
                 }
             }
             Product objProduct = this.mapperBase.map(productDTO, Product.class);
-            Long categoryId=productDTO.getIdCategory();
-            if(categoryId!=null){
-                Optional<Category> optionalCategory = this.serviceDBCategory.findById(categoryId);
+            String  categoryName=productDTO.getNameCategory();
+            Long categoryId=0L;
+            if(categoryName!=null){
+                
+                Optional<Category> optionalCategory = this.serviceDBCategory.findFirstByNameAndBusiness(categoryName, business);
                 if(optionalCategory.isPresent()){
+                    categoryId=optionalCategory.get().getCategoryId();
                     objProduct.setCategory(optionalCategory.get());
                 }else{
-                    continue;
+                    Category objCategory = new Category();
+                    objCategory.setCategoryId(null);
+                    objCategory.setName(categoryName);
+                    objCategory.setBusiness(business);
+                    objCategory = this.serviceDBCategory.save(objCategory);
+                    categoryId=objCategory.getCategoryId();
+                    objProduct.setCategory(objCategory);
                 }
             }
             if(objProduct!=null){
@@ -456,5 +475,25 @@ public class ProductService implements IProductService {
             return "0";
         else
             return prmObject.toString();
+    }
+    @Override
+    public ResponseEntity<?> findByCategory(List<Long> categoryIds,Pageable pageable) {
+        ResponseEntity<?> rta = null;
+        if(categoryIds==null){
+            return new ResponseEntity<String>("Debe especificar una lista de categorías",HttpStatus.BAD_REQUEST);
+        }
+        List<Long> validatedCategoryIds =new ArrayList<>();
+        for(Long id : categoryIds){
+            if(this.serviceDBCategory.existsById(id)){
+                validatedCategoryIds.add(id);
+            }
+        }
+        Page<Product> result = new PageImpl<>(new ArrayList<>());
+        result = this.serviceDBProducts.findByCategoryIn(validatedCategoryIds, pageable);
+           
+       
+       Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
+        rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
+       return rta;
     }
 }
