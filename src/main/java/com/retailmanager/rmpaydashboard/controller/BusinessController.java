@@ -41,6 +41,10 @@ public class BusinessController {
     public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
         return this.businessService.findById(businessId);
     }
+    @GetMapping("/business/all")
+    public ResponseEntity<?> findAll(){
+        return this.businessService.findAll();
+    }
     /**
      * Find business by merchant ID.
      *

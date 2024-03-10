@@ -1,4 +1,5 @@
 package com.retailmanager.rmpaydashboard.repositories;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,4 +21,9 @@ public interface UserRepository extends  CrudRepository<User,Long>{
     void updateEnable(Long userID, boolean enable);
     
     Optional<User> findOneByEmail(String username);
+    @Query("SELECT u FROM User u WHERE u.enable = true and ELEMENT(u.business).additionalTerminals  > 0")
+    public List<User> findActives();
+
+    
+
 }

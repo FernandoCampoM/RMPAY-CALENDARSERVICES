@@ -636,5 +636,30 @@ public class UserService implements IUserService{
         return prmRegistry;
     }
 
+    @Override
+    public ResponseEntity<?> findAll() {
+        List<UserDTO> listUserDTO=new ArrayList<>();
+        Iterable<User> listUser=this.serviceDBUser.findAll();
+        listUser.forEach(objUser->{
+            if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
+                listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
+            }
+        });
+        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> getActivesClients() {
+        List<User> listUser=this.serviceDBUser.findActives();
+        List<UserDTO> listUserDTO=this.mapper.map(listUser, new TypeToken<List<UserDTO>>() {}.getType());
+        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> getUnregisteredClients(Long businessId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUnregisteredClients'");
+    }
+
    
 }

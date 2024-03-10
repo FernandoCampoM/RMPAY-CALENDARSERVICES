@@ -101,7 +101,7 @@ public class ProductsController {
     public ResponseEntity<?> findByCategory(@PageableDefault(size = 200,page = 0) Pageable pageable,@PathVariable Long categoryId){
         return productService.findByCategory(categoryId, pageable);
     }
-    @GetMapping("/products/category")
+    @PostMapping("/products/category")
     public ResponseEntity<?> findByCategory(@PageableDefault(size = 200,page = 0) Pageable pageable,@Valid @RequestBody List<Long> categoryIds){
         return productService.findByCategory(categoryIds, pageable);
     }

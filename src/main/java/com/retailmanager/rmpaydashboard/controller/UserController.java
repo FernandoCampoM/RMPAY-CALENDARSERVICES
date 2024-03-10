@@ -53,6 +53,15 @@ public class UserController {
     public ResponseEntity<?> findByUsername(@Valid @RequestParam(name = "username") @NotBlank(message = "username.notBlank") String username){
         return this.userService.findByUsername(username);
     }
+    /**
+     * A description of the entire Java function.
+     *
+     * @return         description of return value
+     */
+    @GetMapping("/users/all")
+    public ResponseEntity<?> findAll(){
+        return this.userService.findAll();
+    }
     
     /**
      * Save a user.
@@ -118,5 +127,6 @@ public class UserController {
     public ResponseEntity<?> newRegistry(@Valid @RequestBody RegistryDTO prmRegistry){
         return this.userService.registryWithBusiness(prmRegistry);
     }
+
 
 }

@@ -307,25 +307,27 @@ public class ProductService implements IProductService {
         }
         List<ProductDTO> listProductsRTA=new ArrayList<>();
         for (ProductDTO productDTO : listProductsDTO) {
+            Product objProduct=null;
             if (productDTO.getCode() != null) {
                 Optional<Product> optionalProduct = this.serviceDBProducts
                         .findOneByCodeOrBarcode(productDTO.getCode(), productDTO.getCode());
                 if (optionalProduct.isPresent()) {
-                    continue;
+                    objProduct=optionalProduct.get();
                 }
             }
-            if (productDTO.getBarcode() != null) {
+            if (objProduct==null && productDTO.getBarcode() != null) {
                 Optional<Product> optionalProduct = this.serviceDBProducts
                         .findOneByCodeOrBarcode(productDTO.getBarcode(), productDTO.getBarcode());
                 if (optionalProduct.isPresent()) {
-                    continue;
+                    objProduct=optionalProduct.get();
                 }
             }
-            Product objProduct = this.mapperBase.map(productDTO, Product.class);
+            if(objProduct==null){
+                objProduct = this.mapperBase.map(productDTO, Product.class);
+            }
             String  categoryName=productDTO.getNameCategory();
             Long categoryId=0L;
             if(categoryName!=null){
-                
                 Optional<Category> optionalCategory = this.serviceDBCategory.findFirstByNameAndBusiness(categoryName, business);
                 if(optionalCategory.isPresent()){
                     categoryId=optionalCategory.get().getCategoryId();

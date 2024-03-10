@@ -676,5 +676,25 @@ public class BusinessService implements IBusinessService {
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
                 throw objExeption;
     }
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> findAll() {
+        List<BusinessDTO> listBusinessDTO=new ArrayList<>();
+        Iterable<Business> listBusiness=this.serviceDBBusiness.findAll();
+        listBusiness.forEach(objBusiness->{
+            listBusinessDTO.add(this.mapper.map(objBusiness, BusinessDTO.class));
+        });
+        return new ResponseEntity<List<BusinessDTO>>(listBusinessDTO,HttpStatus.OK);
+    }
+    @Override
+    public ResponseEntity<?> getActivations() {
+        // TODO: FALTA IMPLEMENTAR
+        throw new UnsupportedOperationException("Unimplemented method 'getActivations'");
+    }
+    @Override
+    public ResponseEntity<?> getMonthActivations() {
+        // TODO: FALTA IMPLEMENTAR
+        throw new UnsupportedOperationException("Unimplemented method 'getMonthActivations'");
+    }
     
 }

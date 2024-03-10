@@ -43,6 +43,8 @@ public class Terminal {
     @Column(nullable = true)
     private LocalDate expirationDate;
 
+    private LocalDate lastTransmision;
+
     private boolean automaticPayments;
     private boolean isPayment;
     private boolean isPrincipal;
