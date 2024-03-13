@@ -25,8 +25,7 @@ public class Sale {
     @Column(name = "saleEndDate")
     private LocalDate saleEndDate;
 
-    @Column(name = "saleItems")
-    private String items;
+  
 
     @Column(name = "saleSubtotal", nullable = false)
     private double saleSubtotal;

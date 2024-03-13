@@ -11,4 +11,6 @@ public class EmailConfigData {
     private String emailFrom;
     private String emailTo;
     private String emailCCO;
+    private String RMPAYLogo;
+    private String RMLogo;
 }

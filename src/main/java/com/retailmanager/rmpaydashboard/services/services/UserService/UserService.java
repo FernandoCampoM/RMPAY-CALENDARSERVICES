@@ -23,6 +23,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeA
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.FileModel;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.Terminal;
@@ -30,6 +31,7 @@ import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
+import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
@@ -54,6 +56,8 @@ public class UserService implements IUserService{
     private IEmailService emailService;
     @Autowired 
     private InvoiceRepository serviceDBInvoice;
+    @Autowired
+    private FileRepository fileRepository;
 
     DecimalFormat formato = new DecimalFormat("#.##");
     @Autowired
@@ -361,7 +365,7 @@ public class UserService implements IUserService{
             
             UserDTO objUserDTO=new UserDTO();
             objUserDTO.setName(prmRegistry.getName());
-            objUserDTO.setPassword(new BCryptPasswordEncoder().encode(prmRegistry.getPassword()));
+            objUserDTO.setPassword(prmRegistry.getPassword());
             objUserDTO.setEmail(prmRegistry.getEmail());
             objUserDTO.setUsername(prmRegistry.getUsername());
             objUserDTO.setEnabled(true);
@@ -599,6 +603,13 @@ public class UserService implements IUserService{
             }
             
         }else if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT")==0){
+            if(prmRegistry.getChequeVoidId()!=null){
+                Optional<FileModel> fileModel=this.fileRepository.findById(prmRegistry.getChequeVoidId());
+                if(!fileModel.isPresent()){
+                    msgError = "The cheque void file is required";
+                    return null;
+                }
+            }
             if(prmRegistry.getAccountNameBank()!=null){
                 prmRegistry.setAccountNameBank(prmRegistry.getAccountNameBank().toUpperCase().trim());
             }else{

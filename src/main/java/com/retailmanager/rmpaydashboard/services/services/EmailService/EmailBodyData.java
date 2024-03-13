@@ -17,6 +17,9 @@ public class EmailBodyData {
     private double additionalTerminalsValue;
     private String paymethod;
     private String phone;
+
+    private boolean buyTerminal;
+    private String subject="";
     //PARA PAGO CON TARJETA
     private String nameoncard;
     private String creditcarnumber;

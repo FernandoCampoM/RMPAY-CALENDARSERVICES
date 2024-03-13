@@ -155,16 +155,21 @@ public class EmailService implements IEmailService{
      */
     @Override
     public void notifyPaymentBankAccount(EmailBodyData emailData) {
-        List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
-        String subject = "RECIBO DE PAGO VIA CUENTA BANCARIA";
-        String htmlBody = createBodyEmailBankAccount(emailData);
-        Optional<FileModel> fileModel=this.fileRepository.findById(emailData.getChequeVoidId());
-        byte[] file=null;
-        if(fileModel.isPresent()){
-            file=fileModel.get().getContenido();
+        try {
+            List<String> toList = Arrays.asList(emailData.getEmail());
+            List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+            String subject = "RECIBO DE PAGO VIA CUENTA BANCARIA";
+            String htmlBody = createBodyEmailBankAccount(emailData);
+            Optional<FileModel> fileModel=this.fileRepository.findById(emailData.getChequeVoidId());
+            byte[] file=null;
+            if(fileModel.isPresent()){
+                file=fileModel.get().getContenido();
+            }
+            sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, file, fileModel.get().getNombre());
+        }catch(Exception ex){
+            System.out.println("Error al enviar el correo a: "+emailData.getEmail()+" Error: " + ex.getMessage());
         }
-        sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, file, fileModel.get().getNombre());
+        
     }
 
     /**
@@ -236,8 +241,12 @@ public class EmailService implements IEmailService{
         List<String> toList = Arrays.asList(emailConfigData.getEmailTo());
         List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
         String subject = "CLIENTE SE HA INTENTADO REGISTRAR EN RMPAY PERO FALLÓ";
-        
+        if(emailData.isBuyTerminal()){
+            subject = "CLIENTE "+emailData.getBusinessName().toUpperCase()+" HA INTENTADO COMPRAR UNA TERMINAL EN RMPAY PERO FALLÓ";
+        }
+        emailData.setSubject(subject);
         String htmlBody = createBodyRegistrationError(emailData);
+        htmlBody=htmlBody.replace("-paymethod-", emailData.getPaymethod());
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
     }
 
@@ -311,231 +320,231 @@ public class EmailService implements IEmailService{
         if (emailData.isAutomaticPayments()) {
             mensageServicio = "Pago por saldo actual($" + emailData.getAmount() + ") y pagos siguientes automatizados";
         }
-        String message = "<!DOCTYPE html>\n"
-                + "<html>\n"
-                + "<head>\n"
-                + "    <style>\n"
-                + "        .row{\n"
-                + "            margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\n"
-                + "        }\n"
-                + "        .col1{\n"
-                + "            flex: 0 0 41.66667%;max-width: 41.66667%; text-align:right; margin:0px;\n"
-                + "        }\n"
-                + "        .col2{\n"
-                + "            flex: 0 0 41.66667%;max-width: 41.66667%;text-align:left;margin:0 0 0 10px\n"
-                + "        }\n"
-                + "    </style>\n"
-                + "</head>\n"
-                + "<body style=\"font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;\">\n"
-                + "    <div>\n"
-                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">\n"
-                + "            <tbody>\n"
-                + "                <tr>\n"
-                + "                    <td style=\"padding: 0in 0in 0in 0in\">\n"
-                + "                        <div align=\"center\">\n"
-                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">\n"
-                + "                                <tbody>\n"
-                + "                                    <tr>\n"
-                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: gainsboro\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">\n"
-                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">\n"
-                + "                                                                    <u></u><u></u></span></p>\n"
-                + "                                                        </td>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: white\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <div class=\"container\" style=\"max-width: 600px;margin: 0 auto;padding: 40px;background-color: white;\n"
-                + "                                                        border: 3px solid black;\">\n"
-                + "                                                            <div class=\"header\" style=\" display: flex;\n"
-                + "                                                            justify-content: space-between;\n"
-                + "                                                            align-items: center;\">\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 2;\n"
-                + "                                                                text-align: right;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"\" style=\"flex: 2;\n"
-                + "                                                                text-align: center; text-align: right;\n"
-                + "                                                                margin-left: 10%;\">\n"
-                + "                                                                    <img src='https://ivucontrolpr.com/static/media/logo.1ac3ac3b.png'\n"
-                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto;\">\n"
-                + "                                                                </div>\n"
-                + "                                                            </div><br>\n"
-                + "                                                            <u>RECIBO DE PAGO VIA TARJETA DE CREDITO</u>\n"
-                + "                                                            <br>\n"
-                + "                                                             <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n"
+        String message = "<!DOCTYPE html>"
+                + "<html>"
+                + "<head>"
+                + "    <style>"
+                + "        .row{"
+                + "            margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;"
+                + "        }"
+                + "        .col1{"
+                + "            flex: 0 0 41.66667%;max-width: 41.66667%; text-align:right; margin:0px;"
+                + "        }"
+                + "        .col2{"
+                + "            flex: 0 0 41.66667%;max-width: 41.66667%;text-align:left;margin:0 0 0 10px"
+                + "        }"
+                + "    </style>"
+                + "</head>"
+                + "<body style=\"font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;\">"
+                + "    <div>"
+                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">"
+                + "            <tbody>"
+                + "                <tr>"
+                + "                    <td style=\"padding: 0in 0in 0in 0in\">"
+                + "                        <div align=\"center\">"
+                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">"
+                + "                                <tbody>"
+                + "                                    <tr>"
+                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: gainsboro\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">"
+                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">"
+                + "                                                                    <u></u><u></u></span></p>"
+                + "                                                        </td>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: white\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <div class=\"container\" style=\"max-width: 600px;margin: 0 auto;padding: 40px;background-color: white;"
+                + "                                                        border: 3px solid black;\">"
+                + "                                                            <div class=\"header\" style=\" display: flex;"
+                + "                                                            justify-content: space-between;"
+                + "                                                            align-items: center;\">"
+                + "                                                                <div class=\"info-column\" style=\" flex: 2;"
+                + "                                                                text-align: right;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"\" style=\"flex: 2;"
+                + "                                                                text-align: center; text-align: right;"
+                + "                                                                margin-left: 10%;\">"
+                + "                                                                    <img src='" + this.emailConfigData.getRMPAYLogo() +"'" 
+                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto;\">"
+                + "                                                                </div>"
+                + "                                                            </div><br>"
+                + "                                                            <u>RECIBO DE PAGO VIA TARJETA DE CREDITO</u>"
+                + "                                                            <br>"
+                + "                                                             <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
                 + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\"> "
-                + "                                                                    <p>Fecha de solicitud: " + fechaActual.toString() + "</p>\n"
-                + "                                                                </div>\n"
-                + "                                                            </div>\n"
-                + "                                                                \n"
-                + "                                                            \n"
-                + "                                                            <u>Información de Cliente:</u>\n"
-                + "                                                            <br><br>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n"
-                + "                                                                \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \"> \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>\n"
-                + "                                                                </div> <br>\n"
-                + "                                                            <div style=\" margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">\n"
-                + "                                                                <u>Servicios solicitados:</u><p style=\"margin:0 0 0 10px;\"><strong>" + mensageServicio + "</strong> </p>\n"
-                + "                                                            </div>\n"
-                + "                                                            \n"
-                + "                                                            <div style=\"margin-right: 0px;width: 100%;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                <div  style=\"flex: 0 0 100%; max-width: 100%;width: 100%; text-align:right; margin:0px;\">\n";
+                + "                                                                    <p>Fecha de solicitud: " + fechaActual.toString() + "</p>"
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                               "
+                + "                                                           "
+                + "                                                            <u>Información de Cliente:</u>"
+                + "                                                            <br><br>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                               "
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>"
+                + "                                                                </div> <br>"
+                + "                                                            <div style=\" margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">"
+                + "                                                                <u>Servicios solicitados:</u><p style=\"margin:0 0 0 10px;\"><strong>" + mensageServicio + "</strong> </p>"
+                + "                                                            </div>"
+                + "                                                           "
+                + "                                                            <div style=\"margin-right: 0px;width: 100%;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 100%; max-width: 100%;width: 100%; text-align:right; margin:0px;\">";
         if (emailData.getRejectedPayments().isEmpty()) {
-            message = message + "                                               <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong> \n"
-                    + "                                                                    </p>\n"
-                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong> \n"
-                    + "                                                                    </p>\n"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong> \n"
-                    + "                                                                    </p>\n";
+            message = message + "                                               <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong>"
+                    + "                                                                    </p>"
+                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong>"
+                    + "                                                                    </p>"
+                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong>"
+                    + "                                                                    </p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
-                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>\n"
-                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>\n"
-                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br> \n";
+                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"
+                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>"
+                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br>";
             }
-            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br> \n";
+            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br>";
         }
-        message = message + "                                                   </div>\n"
-                + "                                                            </div>\n"                                                         
-                + "                                                            <br><br>\n"
-                + "                                                            <u>Información de Pago:</u>\n"
-                + "                                                            <div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Método de Pago</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">Tarjeta de Crédito</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">   \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Nombre de la tarjeta:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getNameoncard() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de Tarjeta de Crédito:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getCreditcarnumber() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Fecha de Expiración:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + mes + " " + emailData.getExpDateYear() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>CVV2:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getSecuritycode() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Tipo de Tarjeta:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getCardType() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Referencia de Pago:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getReferenceNumber() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Total pagado:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">$" + emailData.getAmount() + "</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div class=\"content\" style=\"margin-top: 20px;\n"
-                + "                                                            text-align: justify;\">\n"
-                + "                                                                <p>\n"
-                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda hacernos. No dude en ponerse en contacto con nuestro\n"
-                + "                                                                    equipo de soporte al cliente en <a href=\\\"mailto:info@retailmanagerpr.com\\\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Atentamente,\n"
-                + "                                                                </p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div style=\"display: flex;\n"
-                + "                                                            align-items: center;\n"
-                + "                                                            margin-top: 0px;\">\n"
-                + "                                                                <div class=\"logo-column\" style=\"flex: 1;\n"
-                + "                                                                text-align: center;\n"
-                + "                                                                margin-left: 40%;\">\n"
-                + "                                                                    <img src=\"http://91500b8596c8.sn.mynetname.net:4200/assets/icono.png\"\n"
-                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\"max-width: 170px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                    <strong>\n"
-                + "                                                                        <p>787-466-2091 <br>\n"
-                + "                                                                            601 Ave. Andalucia<br>\n"
-                + "                                                                            San Juan PR 00920</p>\n"
-                + "                                                                    </strong>\n"
-                + "                                                                </div>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                    <p>Copyright © IvuControlPR Todos los derechos reservados.</p>\n"
-                + "                                                            </div>\n"
-                + "                                                        </div>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%; background: #666c74\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td width=\"100%\" valign=\"top\"\n"
-                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"><span\n"
-                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por\n"
-                + "                                                                        favor no responder a este email. Los correos\n"
-                + "                                                                        electrónicos enviados a esta dirección no serán\n"
-                + "                                                                        respondidos. <br /><br />Copyright ©\n"
-                + "                                                                        IvuControlPR Todos los derechos\n"
-                + "                                                                        reservados.</span><u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">\n"
-                + "                                                <u></u><u></u>\n"
-                + "                                            </p>\n"
-                + "                                        </td>\n"
-                + "                                    </tr>\n"
-                + "                                </tbody>\n"
-                + "                            </table>\n"
-                + "                        </div>\n"
-                + "                    </td>\n"
-                + "                </tr>\n"
-                + "            </tbody>\n"
-                + "        </table>\n"
-                + "    </div>\n"
-                + "</body>\n"
+        message = message + "                                                   </div>"
+                + "                                                            </div>"                                                         
+                + "                                                            <br><br>"
+                + "                                                            <u>Información de Pago:</u>"
+                + "                                                            <div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Método de Pago</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">Tarjeta de Crédito</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Nombre de la tarjeta:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getNameoncard() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de Tarjeta de Crédito:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getCreditcarnumber() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Fecha de Expiración:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + mes + " " + emailData.getExpDateYear() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>CVV2:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getSecuritycode() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Tipo de Tarjeta:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getCardType() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Referencia de Pago:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getReferenceNumber() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Total pagado:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">$" + emailData.getAmount() + "</p>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"content\" style=\"margin-top: 20px;"
+                + "                                                            text-align: justify;\">"
+                + "                                                                <p>"
+                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda hacernos. No dude en ponerse en contacto con nuestro"
+                + "                                                                    equipo de soporte al cliente en <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento."
+                + "                                                                    <br><br>"
+                + "                                                                    Atentamente,"
+                + "                                                                </p>"
+                + "                                                            </div>"
+                + "                                                            <div style=\"display: flex;"
+                + "                                                            align-items: center;"
+                + "                                                            margin-top: 0px;\">"
+                + "                                                                <div class=\"logo-column\" style=\"flex: 1;"
+                + "                                                                text-align: center;"
+                + "                                                                margin-left: 40%;\">"
+                + "                                                                    <img src=\"" + this.emailConfigData.getRMLogo() +"\"" 
+                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\"max-width: 170px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                    <strong>"
+                + "                                                                        <p>787-466-2091 <br>"
+                + "                                                                            601 Ave. Andalucia<br>"
+                + "                                                                            San Juan PR 00920</p>"
+                + "                                                                    </strong>"
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                    <p>Copyright © IvuControlPR Todos los derechos reservados.</p>"
+                + "                                                            </div>"
+                + "                                                        </div>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%; background: #666c74\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td width=\"100%\" valign=\"top\""
+                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">"
+                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">"
+                + "                                                                <p class=\"v1MsoNormal\"><span"
+                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por"
+                + "                                                                        favor no responder a este email. Los correos"
+                + "                                                                        electrónicos enviados a esta dirección no serán"
+                + "                                                                        respondidos. <br /><br />Copyright ©"
+                + "                                                                        IvuControlPR Todos los derechos"
+                + "                                                                        reservados.</span><u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">"
+                + "                                                <u></u><u></u>"
+                + "                                            </p>"
+                + "                                        </td>"
+                + "                                    </tr>"
+                + "                                </tbody>"
+                + "                            </table>"
+                + "                        </div>"
+                + "                    </td>"
+                + "                </tr>"
+                + "            </tbody>"
+                + "        </table>"
+                + "    </div>"
+                + "</body>"
                 + "</html>";
         return message;
     }
@@ -553,231 +562,231 @@ public class EmailService implements IEmailService{
         }
 
         DecimalFormat formato = new DecimalFormat("#.00");
-        String message = "<!DOCTYPE html>\n"
-                + "<html>\n"
-                + "\n"
-                + "<head>\n"
-                + "    \n"
-                + "</head>\n"
-                + "\n"
-                + "<body style=\"font-family: Arial, sans-serif;\n"
-                + "margin: 0;\n"
-                + "padding: 0;\n"
-                + "background-color: #f4f4f4;\">\n"
-                + "    <div>\n"
-                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">\n"
-                + "            <tbody>\n"
-                + "                <tr>\n"
-                + "                    <td style=\"padding: 0in 0in 0in 0in\">\n"
-                + "                        <div align=\"center\">\n"
-                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">\n"
-                + "                                <tbody>\n"
-                + "                                    <tr>\n"
-                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: gainsboro\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">\n"
-                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">\n"
-                + "                                                                    <u></u><u></u></span></p>\n"
-                + "                                                        </td>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: white\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <div class=\"container\" style=\"max-width: 600px;\n"
-                + "                                                        margin: 0 auto;\n"
-                + "                                                        padding: 40px;\n"
-                + "                                                        background-color: white;\n"
-                + "                                                        border: 3px solid black;\n"
-                + "                                                        /* Añade el borde negro */\">\n"
-                + "                                                            <div class=\"header\" style=\" display: flex;\n"
-                + "                                                            justify-content: space-between;\n"
-                + "                                                            align-items: center;\">\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 2;\n"
-                + "                                                                text-align: right;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"\" style=\"flex: 2;\n"
-                + "                                                                text-align: center; text-align: right;\n"
-                + "                                                                margin-left: 10%;\">\n"
-                + "                                                                    <img src='https://ivucontrolpr.com/static/media/logo.1ac3ac3b.png'\n"
-                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto; \">\n"
-                + "                                                                </div>\n"
-                + "                                                            </div><br>\n"
-                + "                                                            <u>RECIBO DE PAGO VIA CUENTA BANCARIA</u>\n"
-                + "                                                            <br><br>\n"
-                + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\"> \n"
-                + "                                                                    <p>Fecha de solicitud: " + fechaActual.toString() + "</p>\n"
-                + "                                                                </div>\n"
-                + "                                                            </div>\n"
-                + "                                                            <br>\n"
-                + "                                                            <u>Información de Cliente:</u>\n"
-                + "                                                            <br><br>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n"
-                + "                                                                \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \"> \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>\n"
-                + "                                                                </div> <br>\n"
-                + "                                                            <div style=\" margin-right: 0px; display: flex;flex-wrap: wrap;\">\n"
-                + "                                                                <u>Servicios solicitados:</u><p style=\"margin:0 0 0 10px;\"><strong>" + mensageServicio + "</strong> </p>\n"
-                + "                                                            </div>\n"
-                + "                                                            \n"
-                + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">\n";
+        String message = "<!DOCTYPE html>"
+                + "<html>"
+                + ""
+                + "<head>"
+                + "   "
+                + "</head>"
+                + ""
+                + "<body style=\"font-family: Arial, sans-serif;"
+                + "margin: 0;"
+                + "padding: 0;"
+                + "background-color: #f4f4f4;\">"
+                + "    <div>"
+                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">"
+                + "            <tbody>"
+                + "                <tr>"
+                + "                    <td style=\"padding: 0in 0in 0in 0in\">"
+                + "                        <div align=\"center\">"
+                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">"
+                + "                                <tbody>"
+                + "                                    <tr>"
+                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: gainsboro\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">"
+                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">"
+                + "                                                                    <u></u><u></u></span></p>"
+                + "                                                        </td>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: white\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <div class=\"container\" style=\"max-width: 600px;"
+                + "                                                        margin: 0 auto;"
+                + "                                                        padding: 40px;"
+                + "                                                        background-color: white;"
+                + "                                                        border: 3px solid black;"
+                + "                                                        /* Añade el borde negro */\">"
+                + "                                                            <div class=\"header\" style=\" display: flex;"
+                + "                                                            justify-content: space-between;"
+                + "                                                            align-items: center;\">"
+                + "                                                                <div class=\"info-column\" style=\" flex: 2;"
+                + "                                                                text-align: right;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"\" style=\"flex: 2;"
+                + "                                                                text-align: center; text-align: right;"
+                + "                                                                margin-left: 10%;\">"
+                + "                                                                    <img src='" + this.emailConfigData.getRMPAYLogo() +"'" 
+                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto; \">"
+                + "                                                                </div>"
+                + "                                                            </div><br>"
+                + "                                                            <u>RECIBO DE PAGO VIA CUENTA BANCARIA</u>"
+                + "                                                            <br><br>"
+                + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">"
+                + "                                                                    <p>Fecha de solicitud: " + fechaActual.toString() + "</p>"
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                            <br>"
+                + "                                                            <u>Información de Cliente:</u>"
+                + "                                                            <br><br>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                               "
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>"
+                + "                                                                </div> <br>"
+                + "                                                            <div style=\" margin-right: 0px; display: flex;flex-wrap: wrap;\">"
+                + "                                                                <u>Servicios solicitados:</u><p style=\"margin:0 0 0 10px;\"><strong>" + mensageServicio + "</strong> </p>"
+                + "                                                            </div>"
+                + "                                                           "
+                + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">";
         if (emailData.getRejectedPayments().isEmpty()) {
-            message = message + "                                               <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong> \n"
-                    + "                                                                    </p>\n"
-                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong> \n"
-                    + "                                                                    </p>\n"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + formato.format(emailData.getAmount()) + " </strong> \n"
-                    + "                                                                    </p>\n";
+            message = message + "                                               <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong>"
+                    + "                                                                    </p>"
+                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong>"
+                    + "                                                                    </p>"
+                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + formato.format(emailData.getAmount()) + " </strong>"
+                    + "                                                                    </p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
-                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>\n"
-                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>\n"
-                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br> \n";
+                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"
+                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>"
+                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br>";
             }
-            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br> \n";
+            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br>";
         }
 
-        message = message + "                                             </div>\n"
-                + "                                                            </div>\n"
-                + "                                                            <br><br>\n"
-                + "                                                            <u>Información de Pago:</u><br><br>\n"
-                + "                                                            \n"
-                + "                                                            <div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\">\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Método de Pago: </strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">Cuenta Bancaria</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\">   \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Nombre de cuenta: </strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getAccountNameBank() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de cuenta:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getAccountNumberBank() + "</p>\n"
-                + "                                                            </div><div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\">  \n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de ruta y transito:</strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getRouteNumberBank() + "</p>\n"
-                + "                                                            </div>\n"
-                + "\n"
-                + "                                                            <div class=\"content\" style=\"margin-top: 20px;\n"
-                + "                                                            text-align: justify;\">\n"
-                + "                                                                <p>\n"
-                + "                                                                    El pago estará siendo procesado por el equipo de contabilidad, una vez esté confirmado el mismo sera aplicado a su cuenta.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Los pagos por ACH pueden tardar de 3 a 5 dias laborales para reflejarse en su cuenta de IVU control.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda tener. No dude en ponerse en contacto con nuestro\n"
-                + "                                                                    equipo de soporte al cliente en <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Atentamente,\n"
-                + "                                                                </p>\n"
-                + "\n"
-                + "                                                            </div>\n"
-                + "                                                            <div style=\"display: flex;\n"
-                + "                                                            \n"
-                + "                                                            align-items: center;\n"
-                + "                                                            margin-top: 0px;\">\n"
-                + "\n"
-                + "                                                                <div class=\"logo-column\" style=\"flex: 1;\n"
-                + "                                                                text-align: center;\n"
-                + "                                                                 margin-left: 40%;\">\n"
-                + "                                                                    <img src=\"http://91500b8596c8.sn.mynetname.net:4200/assets/icono.png\"\n"
-                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\" max-width: 170px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                    <strong>\n"
-                + "                                                                        <p>787-466-2091 <br>\n"
-                + "                                                                            601 Ave. Andalucia<br>\n"
-                + "                                                                            San Juan PR 00920</p>\n"
-                + "                                                                    </strong>\n"
-                + "\n"
-                + "                                                                </div>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                        <p>Copyright © IvuControlPR Todos los derechos reservados.</p>\n"
-                + "                                                                </div>\n"
-                + "                                                        </div>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%; background: #666c74\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td width=\"100%\" valign=\"top\"\n"
-                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"><span\n"
-                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por\n"
-                + "                                                                        favor no responder a este email. Los correos\n"
-                + "                                                                        electrónicos enviados a esta dirección no serán\n"
-                + "                                                                        respondidos. <br /><br />Copyright ©\n"
-                + "                                                                        IvuControlPR Todos los derechos\n"
-                + "                                                                        reservados.</span><u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">\n"
-                + "                                                <u></u><u></u>\n"
-                + "                                            </p>\n"
-                + "                                        </td>\n"
-                + "                                    </tr>\n"
-                + "                                </tbody>\n"
-                + "                            </table>\n"
-                + "                        </div>\n"
-                + "                    </td>\n"
-                + "                </tr>\n"
-                + "            </tbody>\n"
-                + "        </table>\n"
-                + "    </div>\n"
-                + "\n"
-                + "</body>\n"
-                + "\n"
+        message = message + "                                             </div>"
+                + "                                                            </div>"
+                + "                                                            <br><br>"
+                + "                                                            <u>Información de Pago:</u><br><br>"
+                + "                                                           "
+                + "                                                            <div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\">"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Método de Pago: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">Cuenta Bancaria</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\">  "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Nombre de cuenta: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getAccountNameBank() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de cuenta:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getAccountNumberBank() + "</p>"
+                + "                                                            </div><div style=\" width:100%;margin-right: 0px; display: flex;flex-wrap: wrap;\"> "
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de ruta y transito:</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getRouteNumberBank() + "</p>"
+                + "                                                            </div>"
+                + ""
+                + "                                                            <div class=\"content\" style=\"margin-top: 20px;"
+                + "                                                            text-align: justify;\">"
+                + "                                                                <p>"
+                + "                                                                    El pago estará siendo procesado por el equipo de contabilidad, una vez esté confirmado el mismo sera aplicado a su cuenta."
+                + "                                                                    <br><br>"
+                + "                                                                    Los pagos por ACH pueden tardar de 3 a 5 dias laborales para reflejarse en su cuenta de IVU control."
+                + "                                                                    <br><br>"
+                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda tener. No dude en ponerse en contacto con nuestro"
+                + "                                                                    equipo de soporte al cliente en <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento."
+                + "                                                                    <br><br>"
+                + "                                                                    Atentamente,"
+                + "                                                                </p>"
+                + ""
+                + "                                                            </div>"
+                + "                                                            <div style=\"display: flex;"
+                + "                                                           "
+                + "                                                            align-items: center;"
+                + "                                                            margin-top: 0px;\">"
+                + ""
+                + "                                                                <div class=\"logo-column\" style=\"flex: 1;"
+                + "                                                                text-align: center;"
+                + "                                                                 margin-left: 40%;\">"
+                + "                                                                   <img src=\"" + this.emailConfigData.getRMLogo() +"\"" 
+                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\" max-width: 170px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                    <strong>"
+                + "                                                                        <p>787-466-2091 <br>"
+                + "                                                                            601 Ave. Andalucia<br>"
+                + "                                                                            San Juan PR 00920</p>"
+                + "                                                                    </strong>"
+                + ""
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                        <p>Copyright © IvuControlPR Todos los derechos reservados.</p>"
+                + "                                                                </div>"
+                + "                                                        </div>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%; background: #666c74\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td width=\"100%\" valign=\"top\""
+                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">"
+                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + ""
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">"
+                + "                                                                <p class=\"v1MsoNormal\"><span"
+                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por"
+                + "                                                                        favor no responder a este email. Los correos"
+                + "                                                                        electrónicos enviados a esta dirección no serán"
+                + "                                                                        respondidos. <br /><br />Copyright ©"
+                + "                                                                        IvuControlPR Todos los derechos"
+                + "                                                                        reservados.</span><u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">"
+                + "                                                <u></u><u></u>"
+                + "                                            </p>"
+                + "                                        </td>"
+                + "                                    </tr>"
+                + "                                </tbody>"
+                + "                            </table>"
+                + "                        </div>"
+                + "                    </td>"
+                + "                </tr>"
+                + "            </tbody>"
+                + "        </table>"
+                + "    </div>"
+                + ""
+                + "</body>"
+                + ""
                 + "</html>";
         return message;
     }
@@ -791,214 +800,214 @@ public class EmailService implements IEmailService{
     private String createBodyEmailATHMovil(EmailBodyData emailData) {
         LocalDate fechaActual = LocalDate.now();
         DecimalFormat formato = new DecimalFormat("#.00");
-        String message = "<!DOCTYPE html>\n"
-                + "<html>\n"
-                + "\n"
-                + "<head>\n"
-                + "    \n"
-                + "</head>\n"
-                + "\n"
-                + "<body style=\"font-family: Arial, sans-serif;\n"
-                + "margin: 0;\n"
-                + "padding: 0;\n"
-                + "background-color: #f4f4f4;\">\n"
-                + "    <div>\n"
-                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">\n"
-                + "            <tbody>\n"
-                + "                <tr>\n"
-                + "                    <td style=\"padding: 0in 0in 0in 0in\">\n"
-                + "                        <div align=\"center\">\n"
-                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">\n"
-                + "                                <tbody>\n"
-                + "                                    <tr>\n"
-                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: gainsboro\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">\n"
-                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">\n"
-                + "                                                                    <u></u><u></u></span></p>\n"
-                + "                                                        </td>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: white\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <div class=\"container\" style=\"max-width: 600px;\n"
-                + "                                                        margin: 0 auto;\n"
-                + "                                                        padding: 40px;\n"
-                + "                                                        background-color: white;\n"
-                + "                                                        border: 3px solid black;\n"
-                + "                                                        /* Añade el borde negro */\">\n"
-                + "                                                            <div class=\"header\" style=\" display: flex;\n"
-                + "                                                            justify-content: space-between;\n"
-                + "                                                            align-items: center;\">\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 2;\n"
-                + "                                                                text-align: right;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"\" style=\"flex: 2;\n"
-                + "                                                                text-align: center; text-align: right;\n"
-                + "                                                                margin-left: 10%;\">\n"
-                + "                                                                    <img src='https://ivucontrolpr.com/static/media/logo.1ac3ac3b.png'\n"
-                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto; \">\n"
-                + "                                                                </div>\n"
-                + "                                                            </div><br>\n"
-                + "                                                            <u>RECIBO DE PAGO VIA <img src='https://www.ivucontrolpr.com/static/media/ath-movile-logo.png'\n"
-                + "                                                                alt='Logo' class='logo' style=\"max-width: 100px;\n"
-                + "                                                                height: auto;\n"
-                + "                                                                margin: 0 auto; \"></u>\n"
-                + "                                                                <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                    <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\"> \n"
-                + "                                                                        <p>Fecha de solicitud: " + fechaActual.toString() + "</p>\n"
-                + "                                                                    </div>\n"
-                + "                                                                </div>\n"
-                + "                                                            <u>Información de Cliente:</u>\n"
-                + "                                                            <br><br>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n"
-                + "                                                                \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \"> \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>\n"
-                + "                                                                </div> <br>\n"
-                + "                                                            <div style=\" margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">\n"
+        String message = "<!DOCTYPE html>"
+                + "<html>"
+                + ""
+                + "<head>"
+                + "   "
+                + "</head>"
+                + ""
+                + "<body style=\"font-family: Arial, sans-serif;"
+                + "margin: 0;"
+                + "padding: 0;"
+                + "background-color: #f4f4f4;\">"
+                + "    <div>"
+                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">"
+                + "            <tbody>"
+                + "                <tr>"
+                + "                    <td style=\"padding: 0in 0in 0in 0in\">"
+                + "                        <div align=\"center\">"
+                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">"
+                + "                                <tbody>"
+                + "                                    <tr>"
+                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: gainsboro\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">"
+                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">"
+                + "                                                                    <u></u><u></u></span></p>"
+                + "                                                        </td>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: white\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <div class=\"container\" style=\"max-width: 600px;"
+                + "                                                        margin: 0 auto;"
+                + "                                                        padding: 40px;"
+                + "                                                        background-color: white;"
+                + "                                                        border: 3px solid black;"
+                + "                                                        /* Añade el borde negro */\">"
+                + "                                                            <div class=\"header\" style=\" display: flex;"
+                + "                                                            justify-content: space-between;"
+                + "                                                            align-items: center;\">"
+                + "                                                                <div class=\"info-column\" style=\" flex: 2;"
+                + "                                                                text-align: right;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"\" style=\"flex: 2;"
+                + "                                                                text-align: center; text-align: right;"
+                + "                                                                margin-left: 10%;\">"
+                + "                                                                    <img src='" + this.emailConfigData.getRMPAYLogo() +"'" 
+                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto; \">"
+                + "                                                                </div>"
+                + "                                                            </div><br>"
+                + "                                                            <u>RECIBO DE PAGO VIA <img src='https://www.ivucontrolpr.com/static/media/ath-movile-logo.png'"
+                + "                                                                alt='Logo' class='logo' style=\"max-width: 100px;"
+                + "                                                                height: auto;"
+                + "                                                                margin: 0 auto; \"></u>"
+                + "                                                                <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                    <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">"
+                + "                                                                        <p>Fecha de solicitud: " + fechaActual.toString() + "</p>"
+                + "                                                                    </div>"
+                + "                                                                </div>"
+                + "                                                            <u>Información de Cliente:</u>"
+                + "                                                            <br><br>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                               "
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>"
+                + "                                                                </div> <br>"
+                + "                                                            <div style=\" margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">"
                 + "                                                                <u>Servicios solicitados:</u>"
-                + "                                                            </div>\n"
-                + "                                                            \n"
-                + "                                                            <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">\n";
+                + "                                                            </div>"
+                + "                                                           "
+                + "                                                            <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">";
 //Valida si el pago corresponde a un pago rechazado
         if (emailData.getRejectedPayments().isEmpty()) {
-            message = message + "                                                   <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong> \n"
-                    + "                                                                    </p>\n"
-                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong> \n"
-                    + "                                                                    </p>\n"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong> </p> \n";
+            message = message + "                                                   <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong>"
+                    + "                                                                    </p>"
+                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong>"
+                    + "                                                                    </p>"
+                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong> </p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
-                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>\n"
-                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>\n"
-                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br> \n";
+                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"
+                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>"
+                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br>";
             }
-            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br> \n";
+            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br>";
         }
-        message = message + "                                          </div>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div class=\"content\" style=\"margin-top: 20px;\n"
-                + "                                                            text-align: justify;\">\n"
-                + "                                                                <p>\n"
-                + "                                                                    El pago estará siendo revisado por el equipo de contabilidad, una vez esté confirmado el mismo sera aplicado a su cuenta.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Los pagos por ATH móvil pueden tardar 1 o 2 dias laborales para reflejarse en su cuenta de IVU control.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda tener. No dude en ponerse en contacto con nuestro\n"
-                + "                                                                    equipo de soporte al cliente en <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Atentamente,\n"
-                + "                                                                </p>\n"
-                + "\n"
-                + "                                                            </div>\n"
-                + "                                                            <div style=\"display: flex;\n"
-                + "                                                            \n"
-                + "                                                            align-items: center;\n"
-                + "                                                            margin-top: 0px;\">\n"
-                + "\n"
-                + "                                                                <div class=\"logo-column\" style=\"flex: 1;\n"
-                + "                                                                text-align: center;\n"
-                + "                                                                 margin-left: 40%;\">\n"
-                + "                                                                    <img src=\"http://91500b8596c8.sn.mynetname.net:4200/assets/icono.png\"\n"
-                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\" max-width: 170px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                    <strong>\n"
-                + "                                                                        <p>787-466-2091 <br>\n"
-                + "                                                                            601 Ave. Andalucia<br>\n"
-                + "                                                                            San Juan PR 00920</p>\n"
-                + "                                                                    </strong>\n"
-                + "\n"
-                + "                                                                </div>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                        <p>Copyright © IvuControlPR Todos los derechos reservados.</p>\n"
-                + "                                                                </div>\n"
-                + "                                                        </div>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%; background: #666c74\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td width=\"100%\" valign=\"top\"\n"
-                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"><span\n"
-                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por\n"
-                + "                                                                        favor no responder a este email. Los correos\n"
-                + "                                                                        electrónicos enviados a esta dirección no serán\n"
-                + "                                                                        respondidos. <br /><br />Copyright ©\n"
-                + "                                                                        IvuControlPR Todos los derechos\n"
-                + "                                                                        reservados.</span><u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">\n"
-                + "                                                <u></u><u></u>\n"
-                + "                                            </p>\n"
-                + "                                        </td>\n"
-                + "                                    </tr>\n"
-                + "                                </tbody>\n"
-                + "                            </table>\n"
-                + "                        </div>\n"
-                + "                    </td>\n"
-                + "                </tr>\n"
-                + "            </tbody>\n"
-                + "        </table>\n"
-                + "    </div>\n"
-                + "\n"
-                + "</body>\n"
-                + "\n"
+        message = message + "                                          </div>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"content\" style=\"margin-top: 20px;"
+                + "                                                            text-align: justify;\">"
+                + "                                                                <p>"
+                + "                                                                    El pago estará siendo revisado por el equipo de contabilidad, una vez esté confirmado el mismo sera aplicado a su cuenta."
+                + "                                                                    <br><br>"
+                + "                                                                    Los pagos por ATH móvil pueden tardar 1 o 2 dias laborales para reflejarse en su cuenta de IVU control."
+                + "                                                                    <br><br>"
+                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda tener. No dude en ponerse en contacto con nuestro"
+                + "                                                                    equipo de soporte al cliente en <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento."
+                + "                                                                    <br><br>"
+                + "                                                                    Atentamente,"
+                + "                                                                </p>"
+                + ""
+                + "                                                            </div>"
+                + "                                                            <div style=\"display: flex;"
+                + "                                                           "
+                + "                                                            align-items: center;"
+                + "                                                            margin-top: 0px;\">"
+                + ""
+                + "                                                                <div class=\"logo-column\" style=\"flex: 1;"
+                + "                                                                text-align: center;"
+                + "                                                                 margin-left: 40%;\">"
+                + "                                                                    <img src=\"" + this.emailConfigData.getRMLogo() +"\"" 
+                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\" max-width: 170px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                    <strong>"
+                + "                                                                        <p>787-466-2091 <br>"
+                + "                                                                            601 Ave. Andalucia<br>"
+                + "                                                                            San Juan PR 00920</p>"
+                + "                                                                    </strong>"
+                + ""
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                        <p>Copyright © IvuControlPR Todos los derechos reservados.</p>"
+                + "                                                                </div>"
+                + "                                                        </div>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%; background: #666c74\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td width=\"100%\" valign=\"top\""
+                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">"
+                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + ""
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">"
+                + "                                                                <p class=\"v1MsoNormal\"><span"
+                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por"
+                + "                                                                        favor no responder a este email. Los correos"
+                + "                                                                        electrónicos enviados a esta dirección no serán"
+                + "                                                                        respondidos. <br /><br />Copyright ©"
+                + "                                                                        IvuControlPR Todos los derechos"
+                + "                                                                        reservados.</span><u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">"
+                + "                                                <u></u><u></u>"
+                + "                                            </p>"
+                + "                                        </td>"
+                + "                                    </tr>"
+                + "                                </tbody>"
+                + "                            </table>"
+                + "                        </div>"
+                + "                    </td>"
+                + "                </tr>"
+                + "            </tbody>"
+                + "        </table>"
+                + "    </div>"
+                + ""
+                + "</body>"
+                + ""
                 + "</html>";
         return message;
     }
@@ -1010,197 +1019,193 @@ public class EmailService implements IEmailService{
      */
     private String createBodyRegistrationError(EmailBodyData emailData){
         LocalDate fechaActual = LocalDate.now();
-        String msg="<!DOCTYPE html>\n" +
-"<html>\n" +
-"\n" +
-"<head> </head>\n" +
-"\n" +
-"<body style=\"font-family: Arial, sans-serif;margin: 0;padding: 0;background-color: #f4f4f4;\">\n" +
-"   <div>\n" +
-"      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">\n" +
-"         <tbody>\n" +
-"            <tr>\n" +
-"               <td style=\"padding: 0in 0in 0in 0in\">\n" +
-"                  <div align=\"center\">\n" +
-"                     <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">\n" +
-"                        <tbody>\n" +
-"                           <tr>\n" +
-"                              <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">\n" +
-"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>\n" +
-"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                    style=\"width: 100.0%; background: gainsboro\">\n" +
-"                                    <tbody>\n" +
-"                                       <tr>\n" +
-"                                          <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">\n" +
-"                                             <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">\n" +
-"                                                   <u></u><u></u></span></p>\n" +
-"                                          </td>\n" +
-"                                       </tr>\n" +
-"                                    </tbody>\n" +
-"                                 </table>\n" +
-"                                 <p class=\"v1MsoNormal\"><u></u> <u></u></p>\n" +
-"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                    style=\"width: 100.0%; background: white\">\n" +
-"                                    <tbody>\n" +
-"                                       <tr>\n" +
-"                                          <div class=\"container\"\n" +
-"                                             style=\"max-width: 600px;                                                        margin: 0 auto;                                                        padding: 40px;                                                        background-color: white;                                                        border: 3px solid black;                                                        /* Añade el borde negro */\">\n" +
-"                                             <div class=\"header\"\n" +
-"                                                style=\" display: flex;                                                        justify-content: space-between;                                                        align-items: center;\">\n" +
-"                                                <div class=\"info-column\"\n" +
-"                                                   style=\" flex: 2;                                                        text-align: right;\">\n" +
-"                                                </div>\n" +
-"                                                <div class=\"\"\n" +
-"                                                   style=\"flex: 2;                                                        text-align: center; text-align: right;                                                        margin-left: 10%;\">\n" +
-"                                                   <img src='https://ivucontrolpr.com/static/media/logo.1ac3ac3b.png'\n" +
-"                                                      alt='Logo' class='logo'\n" +
-"                                                      style=\"max-width: 300px;                                                                        height: auto;                                                                        margin: 0 auto; \">\n" +
-"                                                </div>\n" +
-"                                             </div><br> <u>CLIENTE SE HA INTENTADO REGISTRAR EN RMPAY PERO\n" +
-"                                                <strong>FALLÓ</strong> </u>\n" +
-"                                             <div\n" +
-"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n" +
-"                                                <div\n" +
-"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">\n" +
+        String msg="<!DOCTYPE html>" +
+"<html>" +
+"" +
+"<head> </head>" +
+"" +
+"<body style=\"font-family: Arial, sans-serif;margin: 0;padding: 0;background-color: #f4f4f4;\">" +
+"   <div>" +
+"      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">" +
+"         <tbody>" +
+"            <tr>" +
+"               <td style=\"padding: 0in 0in 0in 0in\">" +
+"                  <div align=\"center\">" +
+"                     <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">" +
+"                        <tbody>" +
+"                           <tr>" +
+"                              <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">" +
+"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>" +
+"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                    style=\"width: 100.0%; background: gainsboro\">" +
+"                                    <tbody>" +
+"                                       <tr>" +
+"                                          <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">" +
+"                                             <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">" +
+"                                                   <u></u><u></u></span></p>" +
+"                                          </td>" +
+"                                       </tr>" +
+"                                    </tbody>" +
+"                                 </table>" +
+"                                 <p class=\"v1MsoNormal\"><u></u> <u></u></p>" +
+"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                    style=\"width: 100.0%; background: white\">" +
+"                                    <tbody>" +
+"                                       <tr>" +
+"                                          <div class=\"container\"" +
+"                                             style=\"max-width: 600px;                                                        margin: 0 auto;                                                        padding: 40px;                                                        background-color: white;                                                        border: 3px solid black;                                                        /* Añade el borde negro */\">" +
+"                                             <div class=\"header\"" +
+"                                                style=\" display: flex;                                                        justify-content: space-between;                                                        align-items: center;\">" +
+"                                                <div class=\"info-column\"" +
+"                                                   style=\" flex: 2;                                                        text-align: right;\">" +
+"                                                </div>" +
+"                                                <div class=\"\"" +
+"                                                   style=\"flex: 2;                                                        text-align: center; text-align: right;                                                        margin-left: 10%;\">" +
+"                                                   <img src='" + this.emailConfigData.getRMPAYLogo() +"'" +
+"                                                      alt='Logo' class='logo'" +
+"                                                      style=\"max-width: 300px;                                                                        height: auto;                                                                        margin: 0 auto; \">" +
+"                                                </div>" +
+"                                             </div><br> <u><strong>" + emailData.getSubject() + "</strong> </u>" +
+"                                             <div" +
+"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">" +
+"                                                <div" +
+"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">" +
 "                                                   <p>Fecha de solicitud: " + fechaActual.toString() +"</p>"+
-"                                                </div>\n" +
-"                                             </div>\n" +
-"                                             <u>Información de Cliente:</u> <br><br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right; margin:0px;\">\n" +
-"                                                   <strong>NOMBRE: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">\n" +
+"                                                </div>" +
+"                                             </div>" +
+"                                             <u>Información de Cliente:</u> <br><br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right; margin:0px;\">" +
+"                                                   <strong>NOMBRE: </strong>" +
+"                                                </p>" +
+"                                                <p" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" +
 "                                                   " + emailData.getName() +" ,</p>" +
-"                                             </div>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong>NEGOCIO: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">\n" +
+"                                             </div>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong>NEGOCIO: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getBusinessName() +",</p>" +
-"                                             </div>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong># MERCHANT: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong># MERCHANT: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getMerchantId()+" ,</p>" +
-"                                             </div> <br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong> SERVICIOS SOLICITADOS: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div> <br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong> SERVICIOS SOLICITADOS: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getServiceDescription() +",</p>" +
-"                                             </div> <br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong>CANTIDAD DE TERMINALES: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div> <br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong>CANTIDAD DE TERMINALES: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getAdditionalTerminals() +",</p>" +
-"                                             </div> <br>\n" +
-"                                             <u>Información de Pago:</u> <br><br>\n" +
-"                                             -paymethod-\n" +
-"                                             <p>Cordilmente, <br> Equipo de Soporte de RMPAY</p>\n" +
-"                                             <div\n" +
-"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n" +
-"                                                <div\n" +
-"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">\n" +
-"\n" +
-"\n" +
-"                                                   <div\n" +
-"                                                      style=\"display: flex;\n" +
-"                                                                                                               \n" +
-"                                                                                                               align-items: center;\n" +
-"                                                                                                               margin-top: 0px;\">\n" +
-"                                                      <div class=\"logo-column\"\n" +
-"                                                         style=\"flex: 1;\n" +
-"                                                                                                                      text-align: center;\n" +
-"                                                                                                                       margin-left: 40%;\">\n" +
-"                                                         <img\n" +
-"                                                            src=\\\"http://91500b8596c8.sn.mynetname.net:4200/assets/icono.png\\\"\n" +
-"                                                            alt=\\\" Logo 1\\\" class=\\\"logo\\\" style=\\\" max-width: 170px;\n" +
-"                                                            height: auto; margin: 0 auto;\\\">\n" +
-"                                                      </div>\n" +
-"                                                      <div class=\"info-column\"\n" +
-"                                                         style=\" flex: 1;\n" +
-"                                                                                                                      text-align: center; margin-left: 0;\">\n" +
-"                                                         <strong>\n" +
-"                                                            <p>787-466-2091 <br> 601 Ave. Andalucia<br> San\n" +
-"                                                               Juan PR 00920</p>\n" +
-"                                                         </strong>\n" +
-"                                                      </div>\n" +
-"                                                   </div>\n" +
-"                                                   <div class=\"info-column\"\n" +
-"                                                      style=\" flex: 1;\n" +
-"                                                                                                                   text-align: center; margin-left: 0;\">\n" +
-"                                                      <p>Copyright © IvuControlPR Todos los derechos reservados.</p>\n" +
-"                                                   </div>\n" +
-"                                                </div>\n" +
-"                                       </tr>\n" +
-"                                    </tbody>\n" +
-"                                 </table>\n" +
-"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>\n" +
-"                                 <div align=\"center\">\n" +
-"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                       style=\"width: 100.0%; background: #666c74\">\n" +
-"                                       <tbody>\n" +
-"                                          <tr>\n" +
-"                                             <td width=\"100%\" valign=\"top\"\n" +
-"                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">\n" +
-"                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>\n" +
-"                                             </td>\n" +
-"                                          </tr>\n" +
-"                                       </tbody>\n" +
-"                                    </table>\n" +
-"                                 </div>\n" +
-"                                 <div align=\"center\">\n" +
-"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                       style=\"width: 100.0%\">\n" +
-"                                       <tbody>\n" +
-"                                          <tr>\n" +
-"                                             <td style=\"padding: 5.25pt 0in 0in 0in\">\n" +
-"                                                <p class=\"v1MsoNormal\"><span\n" +
-"                                                      style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por\n" +
-"                                                      favor no responder a este email. Los correos electrónicos enviados\n" +
-"                                                      a esta dirección no serán respondidos. <br /><br />Copyright ©\n" +
-"                                                      IvuControlPR Todos los derechos reservados.</span><u></u><u></u>\n" +
-"                                                </p>\n" +
-"                                             </td>\n" +
-"                                          </tr>\n" +
-"                                       </tbody>\n" +
-"                                    </table>\n" +
-"                                 </div>\n" +
-"                                 <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\"> <u></u><u></u> </p>\n" +
-"                              </td>\n" +
-"                           </tr>\n" +
-"                        </tbody>\n" +
-"                     </table>\n" +
-"                  </div>\n" +
-"               </td>\n" +
-"            </tr>\n" +
-"         </tbody>\n" +
-"      </table>\n" +
-"   </div>\n" +
-"</body>\n" +
-"\n" +
+"                                             </div> <br>" +
+"                                             <u>Información de Pago:</u> <br><br>" +
+"                                             -paymethod-" +
+"                                             <p>Cordilmente, <br> Equipo de Soporte de RMPAY</p>" +
+"                                             <div" +
+"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">" +
+"                                                <div" +
+"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">" +
+"" +
+"" +
+"                                                   <div" +
+"                                                      style=\"display: flex;" +
+"                                                                                                              " +
+"                                                                                                               align-items: center;" +
+"                                                                                                               margin-top: 0px;\">" +
+"                                                      <div class=\"logo-column\"" +
+"                                                         style=\"flex: 1; text-align: center; margin-left: 40%;\">" +
+"                                                         <img src=\"" + this.emailConfigData.getRMLogo() +"\"" +
+"                                                            alt=\" Logo 1\" class=\"logo\" style=\" max-width: 170px;" +
+"                                                            height: auto; margin: 0 auto;\">" +
+"                                                      </div>" +
+"                                                      <div class=\"info-column\"" +
+"                                                         style=\" flex: 1;" +
+"                                                                                                                      text-align: center; margin-left: 0;\">" +
+"                                                         <strong>" +
+"                                                            <p>787-466-2091 <br> 601 Ave. Andalucia<br> San" +
+"                                                               Juan PR 00920</p>" +
+"                                                         </strong>" +
+"                                                      </div>" +
+"                                                   </div>" +
+"                                                   <div class=\"info-column\"" +
+"                                                      style=\" flex: 1;" +
+"                                                                                                                   text-align: center; margin-left: 0;\">" +
+"                                                      <p>Copyright © IvuControlPR Todos los derechos reservados.</p>" +
+"                                                   </div>" +
+"                                                </div>" +
+"                                       </tr>" +
+"                                    </tbody>" +
+"                                 </table>" +
+"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>" +
+"                                 <div align=\"center\">" +
+"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                       style=\"width: 100.0%; background: #666c74\">" +
+"                                       <tbody>" +
+"                                          <tr>" +
+"                                             <td width=\"100%\" valign=\"top\"" +
+"                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">" +
+"                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>" +
+"                                             </td>" +
+"                                          </tr>" +
+"                                       </tbody>" +
+"                                    </table>" +
+"                                 </div>" +
+"                                 <div align=\"center\">" +
+"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                       style=\"width: 100.0%\">" +
+"                                       <tbody>" +
+"                                          <tr>" +
+"                                             <td style=\"padding: 5.25pt 0in 0in 0in\">" +
+"                                                <p class=\"v1MsoNormal\"><span" +
+"                                                      style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por" +
+"                                                      favor no responder a este email. Los correos electrónicos enviados" +
+"                                                      a esta dirección no serán respondidos. <br /><br />Copyright ©" +
+"                                                      IvuControlPR Todos los derechos reservados.</span><u></u><u></u>" +
+"                                                </p>" +
+"                                             </td>" +
+"                                          </tr>" +
+"                                       </tbody>" +
+"                                    </table>" +
+"                                 </div>" +
+"                                 <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\"> <u></u><u></u> </p>" +
+"                              </td>" +
+"                           </tr>" +
+"                        </tbody>" +
+"                     </table>" +
+"                  </div>" +
+"               </td>" +
+"            </tr>" +
+"         </tbody>" +
+"      </table>" +
+"   </div>" +
+"</body>" +
+"" +
 "</html>";
         return msg;
     }
@@ -1219,179 +1224,179 @@ public class EmailService implements IEmailService{
 
         emailData.setAmount(emailData.getAmount() + 25);
 
-        String body = "<!DOCTYPE html>\n"
-                + "<html>\n"
-                + "<head>\n"
-                + "</head>\n"
-                + "<body style=\"font-family: Arial, sans-serif;\n"
-                + "margin: 0;\n"
-                + "padding: 0;\n"
-                + "background-color: #f4f4f4;\">\n"
-                + "    <div>\n"
-                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">\n"
-                + "            <tbody>\n"
-                + "                <tr>\n"
-                + "                    <td style=\"padding: 0in 0in 0in 0in\">\n"
-                + "                        <div align=\"center\">\n"
-                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">\n"
-                + "                                <tbody>\n"
-                + "                                    <tr>\n"
-                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: gainsboro\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">\n"
-                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">\n"
-                + "                                                                    <u></u><u></u></span></p>\n"
-                + "                                                        </td>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>\n"
-                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                style=\"width: 100.0%; background: white\">\n"
-                + "                                                <tbody>\n"
-                + "                                                    <tr>\n"
-                + "                                                        <div class=\"container\" style=\"max-width: 600px;\n"
-                + "                                                        margin: 0 auto;\n"
-                + "                                                        padding: 40px;\n"
-                + "                                                        background-color: white;\n"
-                + "                                                        border: 3px solid black;\n"
-                + "                                                        /* Añade el borde negro */\">\n"
-                + "                                                            <div class=\"header\" style=\" display: flex;\n"
-                + "                                                            justify-content: space-between;\n"
-                + "                                                            align-items: center;\">\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 2;\n"
-                + "                                                                text-align: right;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"\" style=\"flex: 2;\n"
-                + "                                                                text-align: center; text-align: right;\n"
-                + "                                                                margin-left: 10%;\">\n"
-                + "                                                                    <img src='https://ivucontrolpr.com/static/media/logo.1ac3ac3b.png'\n"
-                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto; \">\n"
-                + "                                                                </div>\n"
-                + "                                                            </div><br>\n"
-                + "                                                            <u>Información de Cliente:</u>\n"
-                + "                                                            <br><br>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px; \">\n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>\n"
-                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px; \"> \n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;\">\n"
-                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>\n"
-                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;\n"
-                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>\n"
-                + "                                                                </div> <br>\n"
-                + "                                                            <div class=\"content\" style=\"margin-top: 20px;\n"
-                + "                                                            text-align: justify;\">\n"
-                + "                                                                <p>\n"
-                + "                                                                    Estimado Cliente de ivucontrolpr.com,\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Esperamos que se encuentre bien. Queremos informarle que recientemente se intento procesar un pago a traves de \n"
-                + "                                                                    ACH en su cuenta, el cual lamentablemente fue rechazado. Como resultado se aplicara una penalidad de $25 por el pago rechazado,\n"
-                + "                                                                    que se añadira al saldo de su cuenta.\n"
-                + "                                                                </p>\n"
-                + "                                                                <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                    <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\"> \n"
-                + "                                                                        <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getInvoiceNumber() + ": $" + formato.format(emailData.getAmount() - 25.00) + "</strong></p>\n"
-                + "                                                                        <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>\n"
-                + "                                                                        <p><strong>TOTAL DE PAGO: $" + formato.format(emailData.getAmount()) + "</strong> \n"
-                + "                                                                    </div>\n"
-                + "                                                                </div>\n"
-                + "                                                                <p>\n"
-                + "                                                                    Para evitar futuros inconvenientes y asegurarnos de que su cuenta esté al dia, le solicitamos que nos indique \n"
-                + "                                                                    cuándo podemos intentar nuevamente el pago a través de ACH o si tiene la intención de utilizar otro método de pago. \n"
-                + "                                                                    Su cooperación es fundamental para mantener su cuenta al corriente y sin interrupciones en los servicios que ofrecemos.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Si tiene alguna pregunta o necesita asistencia adicional, no dude en ponerse en contacto con nuestro equipo de servicio al cliente. \n"
-                + "                                                                    Estamos aqui para ayudarle en todo lo que necesite.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Agradecemos su atención a este asunto y esperamos poder resolverlo de manera satisfactoria para ambas partes.\n"
-                + "                                                                    <br><br>\n"
-                + "                                                                    Atentamente,\n"
-                + "                                                                </p>\n"
-                + "                                                            </div>\n"
-                + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">\n"
-                + "                                                                <div  style=\"flex: 0 0 50%; width:50%; max-width: 50%; text-align:left; margin:0px;\">\n"
-                + "                                                                    <p>\n"
-                + "                                                                        ivucontrolpr.com<br>\n"
-                + "                                                                        Retail Manager PR LLC <br>\n"
-                + "                                                                        Ave. Andalucia 601 San Juan PR 00920<br>\n"
-                + "                                                                        787-466-2091<br>\n"
-                + "                                                                        <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a>\n"
-                + "                                                                    </p>\n"
-                + "                                                                </div>\n"
-                + "                                                                <div  style=\"flex: 0 0 50%; width:50%; max-width: 50%; text-align:right; margin:0px;\n"
-                + "                                                                display: flex;align-items: center;justify-content: flex-end;\">\n"
-                + "                                                                    <img src=\"http://91500b8596c8.sn.mynetname.net:4200/assets/icono.png\"\n"
-                + "                                                                        alt=\"Logo 1\"  style=\" max-width: 170px;height: fit-content;\">\n"
-                + "                                                                </div>\n"
-                + "                                                            </div>\n"
-                + "                                                        </div>\n"
-                + "                                                    </tr>\n"
-                + "                                                </tbody>\n"
-                + "                                            </table>\n"
-                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>\n"
-                + "                                            </p>\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%; background: #666c74\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td width=\"100%\" valign=\"top\"\n"
-                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "                                            <div align=\"center\">\n"
-                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n"
-                + "                                                    style=\"width: 100.0%\">\n"
-                + "                                                    <tbody>\n"
-                + "                                                        <tr>\n"
-                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">\n"
-                + "                                                                <p class=\"v1MsoNormal\"><span\n"
-                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por\n"
-                + "                                                                        favor no responder a este email. Los correos\n"
-                + "                                                                        electrónicos enviados a esta dirección no serán\n"
-                + "                                                                        respondidos. <br /><br />Copyright ©\n"
-                + "                                                                        IvuControlPR Todos los derechos\n"
-                + "                                                                        reservados.</span><u></u><u></u></p>\n"
-                + "                                                            </td>\n"
-                + "                                                        </tr>\n"
-                + "                                                    </tbody>\n"
-                + "                                                </table>\n"
-                + "                                            </div>\n"
-                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">\n"
-                + "                                                <u></u><u></u>\n"
-                + "                                            </p>\n"
-                + "                                        </td>\n"
-                + "                                    </tr>\n"
-                + "                                </tbody>\n"
-                + "                            </table>\n"
-                + "                        </div>\n"
-                + "                    </td>\n"
-                + "                </tr>\n"
-                + "            </tbody>\n"
-                + "        </table>\n"
-                + "    </div>\n"
-                + "</body>\n"
+        String body = "<!DOCTYPE html>"
+                + "<html>"
+                + "<head>"
+                + "</head>"
+                + "<body style=\"font-family: Arial, sans-serif;"
+                + "margin: 0;"
+                + "padding: 0;"
+                + "background-color: #f4f4f4;\">"
+                + "    <div>"
+                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">"
+                + "            <tbody>"
+                + "                <tr>"
+                + "                    <td style=\"padding: 0in 0in 0in 0in\">"
+                + "                        <div align=\"center\">"
+                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">"
+                + "                                <tbody>"
+                + "                                    <tr>"
+                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: gainsboro\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">"
+                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">"
+                + "                                                                    <u></u><u></u></span></p>"
+                + "                                                        </td>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: white\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <div class=\"container\" style=\"max-width: 600px;"
+                + "                                                        margin: 0 auto;"
+                + "                                                        padding: 40px;"
+                + "                                                        background-color: white;"
+                + "                                                        border: 3px solid black;"
+                + "                                                        /* Añade el borde negro */\">"
+                + "                                                            <div class=\"header\" style=\" display: flex;"
+                + "                                                            justify-content: space-between;"
+                + "                                                            align-items: center;\">"
+                + "                                                                <div class=\"info-column\" style=\" flex: 2;"
+                + "                                                                text-align: right;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"\" style=\"flex: 2;"
+                + "                                                                text-align: center; text-align: right;"
+                + "                                                                margin-left: 10%;\">"
+                + "                                                                    <img src='" + this.emailConfigData.getRMPAYLogo() +"'" +
+                "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto; \">"
+                + "                                                                </div>"
+                + "                                                            </div><br>"
+                + "                                                            <u>Información de Cliente:</u>"
+                + "                                                            <br><br>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;\">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>"
+                + "                                                                </div> <br>"
+                + "                                                            <div class=\"content\" style=\"margin-top: 20px;"
+                + "                                                            text-align: justify;\">"
+                + "                                                                <p>"
+                + "                                                                    Estimado Cliente de ivucontrolpr.com,"
+                + "                                                                    <br><br>"
+                + "                                                                    Esperamos que se encuentre bien. Queremos informarle que recientemente se intento procesar un pago a traves de"
+                + "                                                                    ACH en su cuenta, el cual lamentablemente fue rechazado. Como resultado se aplicara una penalidad de $25 por el pago rechazado,"
+                + "                                                                    que se añadira al saldo de su cuenta."
+                + "                                                                </p>"
+                + "                                                                <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                    <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">"
+                + "                                                                        <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getInvoiceNumber() + ": $" + formato.format(emailData.getAmount() - 25.00) + "</strong></p>"
+                + "                                                                        <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>"
+                + "                                                                        <p><strong>TOTAL DE PAGO: $" + formato.format(emailData.getAmount()) + "</strong>"
+                + "                                                                    </div>"
+                + "                                                                </div>"
+                + "                                                                <p>"
+                + "                                                                    Para evitar futuros inconvenientes y asegurarnos de que su cuenta esté al dia, le solicitamos que nos indique"
+                + "                                                                    cuándo podemos intentar nuevamente el pago a través de ACH o si tiene la intención de utilizar otro método de pago."
+                + "                                                                    Su cooperación es fundamental para mantener su cuenta al corriente y sin interrupciones en los servicios que ofrecemos."
+                + "                                                                    <br><br>"
+                + "                                                                    Si tiene alguna pregunta o necesita asistencia adicional, no dude en ponerse en contacto con nuestro equipo de servicio al cliente."
+                + "                                                                    Estamos aqui para ayudarle en todo lo que necesite."
+                + "                                                                    <br><br>"
+                + "                                                                    Agradecemos su atención a este asunto y esperamos poder resolverlo de manera satisfactoria para ambas partes."
+                + "                                                                    <br><br>"
+                + "                                                                    Atentamente,"
+                + "                                                                </p>"
+                + "                                                            </div>"
+                + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 50%; width:50%; max-width: 50%; text-align:left; margin:0px;\">"
+                + "                                                                    <p>"
+                + "                                                                        ivucontrolpr.com<br>"
+                + "                                                                        Retail Manager PR LLC <br>"
+                + "                                                                        Ave. Andalucia 601 San Juan PR 00920<br>"
+                + "                                                                        787-466-2091<br>"
+                + "                                                                        <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a>"
+                + "                                                                    </p>"
+                + "                                                                </div>"
+                + "                                                                <div  style=\"flex: 0 0 50%; width:50%; max-width: 50%; text-align:right; margin:0px;"
+                + "                                                                display: flex;align-items: center;justify-content: flex-end;\">"
+                + "                                                                   <img src=\"" + this.emailConfigData.getRMLogo() +"\"" 
+                + "                                                                        alt=\"Logo 1\"  style=\" max-width: 170px;height: fit-content;\">"
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                        </div>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%; background: #666c74\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td width=\"100%\" valign=\"top\""
+                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">"
+                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">"
+                + "                                                                <p class=\"v1MsoNormal\"><span"
+                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por"
+                + "                                                                        favor no responder a este email. Los correos"
+                + "                                                                        electrónicos enviados a esta dirección no serán"
+                + "                                                                        respondidos. <br /><br />Copyright ©"
+                + "                                                                        IvuControlPR Todos los derechos"
+                + "                                                                        reservados.</span><u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">"
+                + "                                                <u></u><u></u>"
+                + "                                            </p>"
+                + "                                        </td>"
+                + "                                    </tr>"
+                + "                                </tbody>"
+                + "                            </table>"
+                + "                        </div>"
+                + "                    </td>"
+                + "                </tr>"
+                + "            </tbody>"
+                + "        </table>"
+                + "    </div>"
+                + "</body>"
                 + "</html>";
         return body;
     }
@@ -1403,217 +1408,216 @@ public class EmailService implements IEmailService{
      * @return             the newly created email body
      */
     private String createBodyNewRegistry(EmailBodyData emailData){
-        String msg="<!DOCTYPE html>\n" +
-"<html>\n" +
-"\n" +
-"<head> </head>\n" +
-"\n" +
-"<body style=\"font-family: Arial, sans-serif;margin: 0;padding: 0;background-color: #f4f4f4;\">\n" +
-"   <div>\n" +
-"      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">\n" +
-"         <tbody>\n" +
-"            <tr>\n" +
-"               <td style=\"padding: 0in 0in 0in 0in\">\n" +
-"                  <div align=\"center\">\n" +
-"                     <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">\n" +
-"                        <tbody>\n" +
-"                           <tr>\n" +
-"                              <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">\n" +
-"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>\n" +
-"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                    style=\"width: 100.0%; background: gainsboro\">\n" +
-"                                    <tbody>\n" +
-"                                       <tr>\n" +
-"                                          <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">\n" +
-"                                             <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">\n" +
-"                                                   <u></u><u></u></span></p>\n" +
-"                                          </td>\n" +
-"                                       </tr>\n" +
-"                                    </tbody>\n" +
-"                                 </table>\n" +
-"                                 <p class=\"v1MsoNormal\"><u></u> <u></u></p>\n" +
-"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                    style=\"width: 100.0%; background: white\">\n" +
-"                                    <tbody>\n" +
-"                                       <tr>\n" +
-"                                          <div class=\"container\"\n" +
-"                                             style=\"max-width: 600px;                                                        margin: 0 auto;                                                        padding: 40px;                                                        background-color: white;                                                        border: 3px solid black;                                                        /* Añade el borde negro */\">\n" +
-"                                             <div class=\"header\"\n" +
-"                                                style=\" display: flex;                                                        justify-content: space-between;                                                        align-items: center;\">\n" +
-"                                                <div class=\"info-column\"\n" +
-"                                                   style=\" flex: 2;                                                        text-align: right;\">\n" +
-"                                                </div>\n" +
-"                                                <div class=\"\"\n" +
-"                                                   style=\"flex: 2;                                                        text-align: center; text-align: right;                                                        margin-left: 10%;\">\n" +
-"                                                   <img src='https://ivucontrolpr.com/static/media/logo.1ac3ac3b.png'\n" +
-"                                                      alt='Logo' class='logo'\n" +
-"                                                      style=\"max-width: 300px;                                                                        height: auto;                                                                        margin: 0 auto; \">\n" +
-"                                                </div>\n" +
-"                                             </div><br> <u>NUEVO CLIENTE REGISTRADO EN RMPAY </u>\n" +
-"                                             <div\n" +
-"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n" +
-"                                                <div\n" +
-"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">\n" +
+        String msg="<!DOCTYPE html>" +
+"<html>" +
+"" +
+"<head> </head>" +
+"" +
+"<body style=\"font-family: Arial, sans-serif;margin: 0;padding: 0;background-color: #f4f4f4;\">" +
+"   <div>" +
+"      <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">" +
+"         <tbody>" +
+"            <tr>" +
+"               <td style=\"padding: 0in 0in 0in 0in\">" +
+"                  <div align=\"center\">" +
+"                     <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">" +
+"                        <tbody>" +
+"                           <tr>" +
+"                              <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">" +
+"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>" +
+"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                    style=\"width: 100.0%; background: gainsboro\">" +
+"                                    <tbody>" +
+"                                       <tr>" +
+"                                          <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">" +
+"                                             <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">" +
+"                                                   <u></u><u></u></span></p>" +
+"                                          </td>" +
+"                                       </tr>" +
+"                                    </tbody>" +
+"                                 </table>" +
+"                                 <p class=\"v1MsoNormal\"><u></u> <u></u></p>" +
+"                                 <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                    style=\"width: 100.0%; background: white\">" +
+"                                    <tbody>" +
+"                                       <tr>" +
+"                                          <div class=\"container\"" +
+"                                             style=\"max-width: 600px;                                                        margin: 0 auto;                                                        padding: 40px;                                                        background-color: white;                                                        border: 3px solid black;                                                        /* Añade el borde negro */\">" +
+"                                             <div class=\"header\"" +
+"                                                style=\" display: flex;                                                        justify-content: space-between;                                                        align-items: center;\">" +
+"                                                <div class=\"info-column\"" +
+"                                                   style=\" flex: 2;                                                        text-align: right;\">" +
+"                                                </div>" +
+"                                                <div class=\"\"" +
+"                                                   style=\"flex: 2;                                                        text-align: center; text-align: right;                                                        margin-left: 10%;\">" +
+"                                                   <img src='" + this.emailConfigData.getRMPAYLogo() +"'" +
+"                                                      alt='Logo' class='logo'" +
+"                                                      style=\"max-width: 300px;                                                                        height: auto;                                                                        margin: 0 auto; \">" +
+"                                                </div>" +
+"                                             </div><br> <u>NUEVO CLIENTE REGISTRADO EN RMPAY </u>" +
+"                                             <div" +
+"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">" +
+"                                                <div" +
+"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">" +
 "                                                   <p>Fecha de solicitud: " + LocalDate.now().toString() +"</p>" +
-"                                                </div>\n" +
-"                                             </div>\n" +
-"                                             <u>Información de Cliente:</u> <br><br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right; margin:0px;\">\n" +
-"                                                   <strong>NOMBRE: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">\n" +
+"                                                </div>" +
+"                                             </div>" +
+"                                             <u>Información de Cliente:</u> <br><br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right; margin:0px;\">" +
+"                                                   <strong>NOMBRE: </strong>" +
+"                                                </p>" +
+"                                                <p" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" +
 "                                                   " + emailData.getName() +",</p>" +
-"                                             </div>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong>NEGOCIO: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">\n" +
+"                                             </div>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong>NEGOCIO: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getBusinessName()+" ,</p>" +
-"                                             </div>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong># MERCHANT: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong># MERCHANT: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getMerchantId() +",</p>" +
-"                                             </div> <br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong># TELEFONO: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div> <br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong># TELEFONO: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getPhone() +",</p>" +
-"                                             </div> <br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong># NOMBRE DEL NEGOCIO: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div> <br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong># NOMBRE DEL NEGOCIO: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getBusinessName() +",</p>" +
-"                                             </div> <br>\n" +
-"                                             \n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong> SERVICIOS SOLICITADOS: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div> <br>" +
+"                                            " +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong> SERVICIOS SOLICITADOS: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getServiceDescription() +",</p>" +
-"                                             </div> <br>\n" +
-"                                             <div\n" +
-"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">\n" +
-"                                                <p class=\"col1\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">\n" +
-"                                                   <strong>CANTIDAD DE TERMINALES: </strong>\n" +
-"                                                </p>\n" +
-"                                                <p class=\"col2\"\n" +
-"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">\n" +
+"                                             </div> <br>" +
+"                                             <div" +
+"                                                style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">" +
+"                                                <p class=\"col1\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%; text-align:right;margin:0px\">" +
+"                                                   <strong>CANTIDAD DE TERMINALES: </strong>" +
+"                                                </p>" +
+"                                                <p class=\"col2\"" +
+"                                                   style=\"flex: 0 0 41.66667%;width:41.66667%;                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px; \">" +
 "                                                   " + emailData.getAdditionalTerminals()+" ,</p>" +
-"                                             </div> <br>\n" +
-"                                             <u>Información de Pago:</u> <br><br>\n" +
-"                                             -paymethod-\n" +
-"                                             <p>Cordilmente, <br> Equipo de Soporte de RMPAY</p>\n" +
-"                                             <div\n" +
-"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">\n" +
-"                                                <div\n" +
-"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">\n" +
-"\n" +
-"\n" +
-"                                                   <div\n" +
-"                                                      style=\"display: flex;\n" +
-"                                                                                                               \n" +
-"                                                                                                               align-items: center;\n" +
-"                                                                                                               margin-top: 0px;\">\n" +
-"                                                      <div class=\"logo-column\"\n" +
-"                                                         style=\"flex: 1;\n" +
-"                                                                                                                      text-align: center;\n" +
-"                                                                                                                       margin-left: 40%;\">\n" +
-"                                                         <img\n" +
-"                                                            src=\\\"http://91500b8596c8.sn.mynetname.net:4200/assets/icono.png\\\"\n" +
-"                                                            alt=\\\" Logo 1\\\" class=\\\"logo\\\" style=\\\" max-width: 170px;\n" +
-"                                                            height: auto; margin: 0 auto;\\\">\n" +
-"                                                      </div>\n" +
-"                                                      <div class=\"info-column\"\n" +
-"                                                         style=\" flex: 1;\n" +
-"                                                                                                                      text-align: center; margin-left: 0;\">\n" +
-"                                                         <strong>\n" +
-"                                                            <p>787-466-2091 <br> 601 Ave. Andalucia<br> San\n" +
-"                                                               Juan PR 00920</p>\n" +
-"                                                         </strong>\n" +
-"                                                      </div>\n" +
-"                                                   </div>\n" +
-"                                                   <div class=\"info-column\"\n" +
-"                                                      style=\" flex: 1;\n" +
-"                                                                                                                   text-align: center; margin-left: 0;\">\n" +
-"                                                      <p>Copyright © IvuControlPR Todos los derechos reservados.</p>\n" +
-"                                                   </div>\n" +
-"                                                </div>\n" +
-"                                       </tr>\n" +
-"                                    </tbody>\n" +
-"                                 </table>\n" +
-"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>\n" +
-"                                 <div align=\"center\">\n" +
-"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                       style=\"width: 100.0%; background: #666c74\">\n" +
-"                                       <tbody>\n" +
-"                                          <tr>\n" +
-"                                             <td width=\"100%\" valign=\"top\"\n" +
-"                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">\n" +
-"                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>\n" +
-"                                             </td>\n" +
-"                                          </tr>\n" +
-"                                       </tbody>\n" +
-"                                    </table>\n" +
-"                                 </div>\n" +
-"                                 <div align=\"center\">\n" +
-"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"\n" +
-"                                       style=\"width: 100.0%\">\n" +
-"                                       <tbody>\n" +
-"                                          <tr>\n" +
-"                                             <td style=\"padding: 5.25pt 0in 0in 0in\">\n" +
-"                                                <p class=\"v1MsoNormal\"><span\n" +
-"                                                      style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por\n" +
-"                                                      favor no responder a este email. Los correos electrónicos enviados\n" +
-"                                                      a esta dirección no serán respondidos. <br /><br />Copyright ©\n" +
-"                                                      IvuControlPR Todos los derechos reservados.</span><u></u><u></u>\n" +
-"                                                </p>\n" +
-"                                             </td>\n" +
-"                                          </tr>\n" +
-"                                       </tbody>\n" +
-"                                    </table>\n" +
-"                                 </div>\n" +
-"                                 <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\"> <u></u><u></u> </p>\n" +
-"                              </td>\n" +
-"                           </tr>\n" +
-"                        </tbody>\n" +
-"                     </table>\n" +
-"                  </div>\n" +
-"               </td>\n" +
-"            </tr>\n" +
-"         </tbody>\n" +
-"      </table>\n" +
-"   </div>\n" +
-"</body>\n" +
-"\n" +
+"                                             </div> <br>" +
+"                                             <u>Información de Pago:</u> <br><br>" +
+"                                             -paymethod-" +
+"                                             <p>Cordilmente, <br> Equipo de Soporte de RMPAY</p>" +
+"                                             <div" +
+"                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">" +
+"                                                <div" +
+"                                                   style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">" +
+"" +
+"" +
+"                                                   <div" +
+"                                                      style=\"display: flex;" +
+"                                                                                                              " +
+"                                                                                                               align-items: center;" +
+"                                                                                                               margin-top: 0px;\">" +
+"                                                      <div class=\"logo-column\"" +
+"                                                         style=\"flex: 1;" +
+"                                                                                                                      text-align: center;" +
+"                                                                                                                       margin-left: 40%;\">" +
+"                                                         <img src=\"" + this.emailConfigData.getRMLogo() +"\"" +
+"                                                            alt=\"Logo 1\" class=\"logo\" style=\" max-width: 170px;" +
+"                                                            height: auto; margin: 0 auto;\">" +
+"                                                      </div>" +
+"                                                      <div class=\"info-column\"" +
+"                                                         style=\" flex: 1;" +
+"                                                                                                                      text-align: center; margin-left: 0;\">" +
+"                                                         <strong>" +
+"                                                            <p>787-466-2091 <br> 601 Ave. Andalucia<br> San" +
+"                                                               Juan PR 00920</p>" +
+"                                                         </strong>" +
+"                                                      </div>" +
+"                                                   </div>" +
+"                                                   <div class=\"info-column\"" +
+"                                                      style=\" flex: 1;" +
+"                                                                                                                   text-align: center; margin-left: 0;\">" +
+"                                                      <p>Copyright © IvuControlPR Todos los derechos reservados.</p>" +
+"                                                   </div>" +
+"                                                </div>" +
+"                                       </tr>" +
+"                                    </tbody>" +
+"                                 </table>" +
+"                                 <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span> </p>" +
+"                                 <div align=\"center\">" +
+"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                       style=\"width: 100.0%; background: #666c74\">" +
+"                                       <tbody>" +
+"                                          <tr>" +
+"                                             <td width=\"100%\" valign=\"top\"" +
+"                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">" +
+"                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>" +
+"                                             </td>" +
+"                                          </tr>" +
+"                                       </tbody>" +
+"                                    </table>" +
+"                                 </div>" +
+"                                 <div align=\"center\">" +
+"                                    <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"" +
+"                                       style=\"width: 100.0%\">" +
+"                                       <tbody>" +
+"                                          <tr>" +
+"                                             <td style=\"padding: 5.25pt 0in 0in 0in\">" +
+"                                                <p class=\"v1MsoNormal\"><span" +
+"                                                      style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por" +
+"                                                      favor no responder a este email. Los correos electrónicos enviados" +
+"                                                      a esta dirección no serán respondidos. <br /><br />Copyright ©" +
+"                                                      IvuControlPR Todos los derechos reservados.</span><u></u><u></u>" +
+"                                                </p>" +
+"                                             </td>" +
+"                                          </tr>" +
+"                                       </tbody>" +
+"                                    </table>" +
+"                                 </div>" +
+"                                 <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\"> <u></u><u></u> </p>" +
+"                              </td>" +
+"                           </tr>" +
+"                        </tbody>" +
+"                     </table>" +
+"                  </div>" +
+"               </td>" +
+"            </tr>" +
+"         </tbody>" +
+"      </table>" +
+"   </div>" +
+"</body>" +
+"" +
 "</html>";
         return msg;
     }
@@ -1625,6 +1629,8 @@ public class EmailService implements IEmailService{
         valueObject.setEmailFrom( obj[1].toString());
         valueObject.setEmailTo( obj[2].toString());
         valueObject.setEmailCCO( obj[3].toString());
+        valueObject.setRMPAYLogo( obj[4].toString());
+        valueObject.setRMLogo( obj[5].toString());
         HashMap<String, String> map = new HashMap<>();
         boolean bandera=false;
         if (valueObject!=null) {

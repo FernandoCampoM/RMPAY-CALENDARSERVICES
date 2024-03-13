@@ -278,8 +278,6 @@ public class TerminalService implements ITerminalService {
         if(prmTerminal==null){
             return new ResponseEntity<String>(msgError,HttpStatus.BAD_REQUEST);
         }
-        
-
         ResponseEntity<?> rta;
         Business objBusiness= null;
         Terminal objTerminal =this.mapper.map(prmTerminal, Terminal.class);
@@ -324,6 +322,7 @@ public class TerminalService implements ITerminalService {
                     objEmailBodyData.setAmount(amount);
                     objEmailBodyData.setServiceDescription(objService.getServiceDescription());
                     objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
+                    objEmailBodyData.setBuyTerminal(true);
                     objTerminal.setService(objService);
                     objTerminal.setBusiness(existBusiness.get());  
                     switch (prmTerminal.getPaymethod()){
@@ -341,6 +340,7 @@ public class TerminalService implements ITerminalService {
                                 map.put("msg", "Por favor comuniquese con el administrador de la página.");
                                 return new ResponseEntity<HashMap<String,String>>(map,HttpStatus.BAD_REQUEST);
                             }
+                            System.out.println("respPayment: "+respPayment.getResponseCode());
                             if(respPayment.getResponseCode()!=200){
                                 emailService.notifyErrorRegister(objEmailBodyData);
                                 HashMap <String, String> objError=new HashMap<String, String>();

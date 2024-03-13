@@ -36,16 +36,13 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         } catch (IOException e) {
             
         }
-        
         UsernamePasswordAuthenticationToken usernamePAT= new UsernamePasswordAuthenticationToken(
             authCredentials.getUsername(), authCredentials.getPassword(),Collections.emptyList());
-        
-            
         return getAuthenticationManager().authenticate(usernamePAT);
     }
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-            Authentication authResult) throws IOException, ServletException {
+        Authentication authResult) throws IOException, ServletException {
         
         UserDetailsImpl userDetails=(UserDetailsImpl) authResult.getPrincipal();
 

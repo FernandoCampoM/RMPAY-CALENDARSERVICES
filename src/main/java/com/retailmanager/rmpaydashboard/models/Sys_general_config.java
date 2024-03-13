@@ -20,7 +20,7 @@ public class Sys_general_config {
     @Column(nullable = false)
     private String configname;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(MAX)")
     private String configvalue;
 
     @Column(nullable = false)

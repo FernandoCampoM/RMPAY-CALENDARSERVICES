@@ -12,4 +12,6 @@ public interface ISaleService {
     public ResponseEntity<?> getAllSales(String merchantId);
     public ResponseEntity<?> getCompletedSales(String merchantId);
     public ResponseEntity<?> getCompletedSalesByDateRange(String merchantId,LocalDate startDate, LocalDate endDate);
+
+    
 }

@@ -31,6 +31,8 @@ public interface Sys_general_configRepository extends CrudRepository<Sys_general
                 "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.AppKey') AS appKey, " + 
                 "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.emailFrom') AS emailFrom, " + 
                 "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.emailTo') AS emailTo, " + 
-                "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.emailCCO') AS emailCCO ", nativeQuery = true)
+                "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.emailCCO') AS emailCCO, " + 
+                "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.RMPAYLogo') AS RMPAYLogo, "+
+                "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.email.RMLogo') AS RMLogo ", nativeQuery = true)
     public Object[] getEmailConfig();
 }
