@@ -37,6 +37,7 @@ public class UserDTO {
     private String phone;
     
     private LocalDate registerDate;
+    private LocalDate lastLogin;
     private List<BusinessDTO> business;
 
 }

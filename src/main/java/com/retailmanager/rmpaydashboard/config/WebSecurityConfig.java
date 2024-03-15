@@ -1,4 +1,5 @@
 package com.retailmanager.rmpaydashboard.config;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.security.JWTAthenticationFilter;
 import com.retailmanager.rmpaydashboard.security.JWTAuthorizationFilter;
 
@@ -22,8 +24,8 @@ import lombok.RequiredArgsConstructor;
 @EnableMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig {
 
-
-
+    @Autowired
+    private UserRepository usuarioRepository;
     private final JWTAuthorizationFilter jwtAuthorizationFilter;
 
     
@@ -34,6 +36,7 @@ public class WebSecurityConfig {
         JWTAthenticationFilter jwtAthenticationFilter= new JWTAthenticationFilter();
         jwtAthenticationFilter.setAuthenticationManager(authenticationManager);
         jwtAthenticationFilter.setFilterProcessesUrl("/login");
+        jwtAthenticationFilter.setUsuarioRepository(usuarioRepository);
 
         return http.csrf(csrf->csrf.disable())
                 .authorizeHttpRequests(authRequest->authRequest

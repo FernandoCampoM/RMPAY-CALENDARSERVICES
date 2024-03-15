@@ -1,6 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.SaleService;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.modelmapper.ModelMapper;
@@ -13,12 +14,16 @@ import org.springframework.stereotype.Service;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Sale;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
+import com.google.gson.Gson;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class SaleService implements ISaleService {
@@ -54,6 +59,7 @@ public class SaleService implements ISaleService {
             try{
                 sale.setTerminal(terminal);
                 sale.setBusiness(business);
+                sale.setItemsList(jsonToListItems(saleDTO.getItems(),sale));
                 sale=this.serviceDBSale.save(sale);
                 saleDTO.setSaleID(sale.getSaleID());
                 return new ResponseEntity<>(saleDTO,HttpStatus.CREATED);
@@ -106,5 +112,26 @@ public class SaleService implements ISaleService {
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
     
+
+    private List<ItemForSale> jsonToListItems(String json, Sale sale){
+        try {
+            if(json==null){
+                return new ArrayList<>();
+            }
+            //Gson gson = new Gson();
+            
+            //List<ItemForSale> items = gson.fromJson(json, new com.google.gson.reflect.TypeToken<List<ItemForSale>>(){}.getType());
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            // Convertir JSON a lista de objetos
+            List<ItemForSale> items = objectMapper.readValue(json, new TypeReference<List<ItemForSale>>() {});
+            items.forEach(item -> item.setSale(sale));
+            return items;
+        }catch(Exception e){
+            System.out.println("Eror en SaleService.jsonToListItems: "+e.getMessage());
+        }
+        
+        return new ArrayList<>();
+    }
     
 }

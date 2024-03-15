@@ -62,6 +62,15 @@ public class UserController {
     public ResponseEntity<?> findAll(){
         return this.userService.findAll();
     }
+    /**
+     * Find all unregistered users.
+     *
+     * @return         response entity with all unregistered users
+     */
+    @GetMapping("/users/unregistered")
+    public ResponseEntity<?> getUnregisteredClients(){
+        return this.userService.getUnregisteredClients();
+    }
     
     /**
      * Save a user.

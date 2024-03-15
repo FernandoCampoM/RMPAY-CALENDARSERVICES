@@ -23,7 +23,7 @@ public interface IUserService {
     public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry);
     public ResponseEntity<?> findAll();
     public ResponseEntity<?> getActivesClients();
-    public ResponseEntity<?> getUnregisteredClients(Long businessId);
+    public ResponseEntity<?> getUnregisteredClients();
     
 
     

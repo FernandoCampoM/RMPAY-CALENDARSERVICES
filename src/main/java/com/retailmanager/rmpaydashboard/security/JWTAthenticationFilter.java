@@ -2,14 +2,17 @@ package com.retailmanager.rmpaydashboard.security;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.LocalDate;
 import java.util.Collections;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,7 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    
+    private UserRepository usuarioRepository;
     
     /** 
      * @param request
@@ -45,7 +48,7 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         Authentication authResult) throws IOException, ServletException {
         
         UserDetailsImpl userDetails=(UserDetailsImpl) authResult.getPrincipal();
-
+        usuarioRepository.updateLastLogin(userDetails.getUserObject().getUserID(),LocalDate.now());    
         String token=TokenUtils.createToken(userDetails.getUserObject());
         
         Token fullToken=new Token();
@@ -57,5 +60,8 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         response.getWriter().flush();
 
         super.successfulAuthentication(request, response, chain, authResult);
+    }
+    public void setUsuarioRepository(UserRepository usuarioRepository) {
+        this.usuarioRepository = usuarioRepository;
     }
 }

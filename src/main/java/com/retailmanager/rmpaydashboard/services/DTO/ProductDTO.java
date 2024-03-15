@@ -47,6 +47,11 @@ public class ProductDTO {
 
     @NotNull(message = "{product.municipal.null}")
     private boolean municipal;
+    @NotNull(message = "{product.reducedTax.null}")
+    private boolean reducedTax;
+    
+    @NotNull(message = "{product.quantity.null}")
+    private int quantity;
 
     @NotNull(message = "{product.inventoryLevel.null}")
     @Min(value = 0, message = "{product.inventoryLevel.min}")

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.*;
 
@@ -25,7 +27,8 @@ public class Sale {
     @Column(name = "saleEndDate")
     private LocalDate saleEndDate;
 
-  
+    @Column(name = "saleItems", nullable = true, columnDefinition = "varchar(MAX)")
+    private String items;
 
     @Column(name = "saleSubtotal", nullable = false)
     private double saleSubtotal;
@@ -66,6 +69,9 @@ public class Sale {
     @Column(name = "saleToRefund")
     private Integer saleToRefund;
 
+    @Column(nullable = false, columnDefinition = "float default 0")
+    private Double tipAmount;
+
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "businessId")
     private Business business;
@@ -73,5 +79,8 @@ public class Sale {
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "terminalId")
     private Terminal terminal;
+    
+    @OneToMany(mappedBy = "sale",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    public List<ItemForSale> itemsList = new ArrayList<>();
 
 }

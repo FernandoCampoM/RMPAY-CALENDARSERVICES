@@ -42,6 +42,9 @@ public class User {
     private boolean enable=false;
     @Column(nullable = true)
     private LocalDate registerDate;
+    @Column(nullable = true)
+    private LocalDate lastLogin;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,columnDefinition = "VARCHAR(14)")
     private Rol rol;

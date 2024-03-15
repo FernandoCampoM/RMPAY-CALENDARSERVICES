@@ -102,6 +102,7 @@ public class UserService implements IUserService{
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmUser.getUsername()+" ya existe en la Base de datos");
                 throw objExeption;
             }
+        prmUser.setLastLogin(LocalDate.now());
         prmUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
         
         ResponseEntity<?> rta;
@@ -647,7 +648,13 @@ public class UserService implements IUserService{
         return prmRegistry;
     }
 
+    /**
+     * Obtains all users from the database and maps them to DTOs.
+     *
+     * @return         	ResponseEntity containing a list of users in DTO form with HttpStatus.OK
+     */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> findAll() {
         List<UserDTO> listUserDTO=new ArrayList<>();
         Iterable<User> listUser=this.serviceDBUser.findAll();
@@ -659,17 +666,35 @@ public class UserService implements IUserService{
         return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
     }
 
+    /**
+     * Retrieves active clients from the database and maps them to DTOs.
+     *
+     * @return         ResponseEntity containing a list of active clients in DTO form with HttpStatus.OK
+     */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getActivesClients() {
         List<User> listUser=this.serviceDBUser.findActives();
         List<UserDTO> listUserDTO=this.mapper.map(listUser, new TypeToken<List<UserDTO>>() {}.getType());
         return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
     }
 
+    /**
+     * Retrieves unregistered clients from the database.
+     * unregistered clients are clients that have not logged in for more than 10 days.
+     * @return         	Returns a ResponseEntity with a list of unregistered clients and HTTP status OK
+     */
     @Override
-    public ResponseEntity<?> getUnregisteredClients(Long businessId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getUnregisteredClients'");
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getUnregisteredClients() {
+        LocalDate date = LocalDate.now();
+        date=date.minusDays(10);
+        List<User> listUser=this.serviceDBUser.findByLastLoginIsNullOrLastLoginLessThan(date);
+        listUser.forEach(user->{
+            user.setBusiness(null);
+        });
+        List<UserDTO> listUserDTO=this.mapper.map(listUser, new TypeToken<List<UserDTO>>() {}.getType());
+        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
     }
 
    
