@@ -3,6 +3,7 @@ package com.retailmanager.rmpaydashboard.services.services.ReportsServices;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -17,6 +18,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Sale;
+import com.retailmanager.rmpaydashboard.models.Transactions;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
 
@@ -42,7 +44,8 @@ public class ReportService implements IReportService {
     @Transactional(readOnly = true)
     public ResponseEntity<?> getDailySummary(Long businessId) {
         DailySummaryDTO dailySummaryDTO=new DailySummaryDTO();
-        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId);
+        LocalDate currentDate= LocalDate.now();
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,currentDate,currentDate);
         Object [] dailySummaryV=null;
         if(dailySummary!=null && dailySummary[0]!=null){
             dailySummaryV=(Object[]) dailySummary[0];
@@ -70,7 +73,7 @@ public class ReportService implements IReportService {
         if(dailySummaryV[4]!=null){
             dailySummaryDTO.setEstimatedRedTax(Double.parseDouble(dailySummaryV[4].toString()));
         }
-        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDate("SALE", "SUCCEED", business, LocalDate.now());
+        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween("SALE", "SUCCEED", business, LocalDate.now(), LocalDate.now());
         Double benefit=0.0;
         Double propinas=0.0;
         if(sales!=null && sales.size()>0){
@@ -111,10 +114,91 @@ public class ReportService implements IReportService {
         return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
     }
 
+    /**
+     * Generate a summary Sales report by date range for a given business ID.
+     *
+     * @param  businessId  The ID of the business
+     * @param  startDate   The start date of the date range
+     * @param  endDate     The end date of the date range
+     * @return             ResponseEntity containing the daily summary DTO
+     */
     @Override
     public ResponseEntity<?> getSummaryByDateRangee(Long businessId, LocalDate startDate, LocalDate endDate) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getSummaryByDateRangee'");
+        DailySummaryDTO dailySummaryDTO=new DailySummaryDTO();
+        
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,startDate,endDate);
+        Object [] dailySummaryV=null;
+        if(dailySummary!=null && dailySummary[0]!=null){
+            dailySummaryV=(Object[]) dailySummary[0];
+        }else{
+            return new ResponseEntity<String>("{\"message\":\"No existen ventas para el Business con businessId "+businessId+"\"}",HttpStatus.NOT_FOUND);
+        }
+        Business business=serviceDBBusiness.findById(businessId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+
+        if(dailySummaryV[0]!=null){
+            dailySummaryDTO.setTotalSales(Double.parseDouble(dailySummaryV[0].toString()));
+        }
+        if(dailySummaryV[1]!=null){
+            dailySummaryDTO.setTotalRefunds(Double.parseDouble(dailySummaryV[1].toString()));
+        }
+        if(dailySummaryV[2]!=null){
+            dailySummaryDTO.setStateTax(Double.parseDouble(dailySummaryV[2].toString()));
+        }
+        if(dailySummaryV[3]!=null){
+            dailySummaryDTO.setMunicipalTax(Double.parseDouble(dailySummaryV[3].toString()));
+        }
+        if(dailySummaryV[4]!=null){
+            dailySummaryDTO.setEstimatedRedTax(Double.parseDouble(dailySummaryV[4].toString()));
+        }
+        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween("SALE", "SUCCEED", business, startDate, endDate);
+        HashMap<String, Double> payMethosSales= new HashMap<>();
+        Double benefit=0.0;
+        Double propinas=0.0;
+        if(sales!=null && sales.size()>0){
+            for(Sale sale:sales){
+                for(ItemForSale item:sale.getItemsList()){
+                    benefit+=item.getGrossProfit();
+                }
+                for(Transactions transaction:sale.getTransactions()){
+                    if(payMethosSales.containsKey(transaction.getPaymentType())){
+                        payMethosSales.put(transaction.getPaymentType(), payMethosSales.get(transaction.getPaymentType())+transaction.getAmount());
+                    }else{
+                        payMethosSales.put(transaction.getPaymentType(), transaction.getAmount());
+                    }
+                }
+                propinas+=sale.getTipAmount();
+            }
+        }
+        dailySummaryDTO.setBenefit(benefit);
+        dailySummaryDTO.setTotalTips(propinas);
+        for(Map.Entry<String, Double> entry : payMethosSales.entrySet()) {
+            HashMap<String,String> payMethosSalesV=new HashMap<>();
+            payMethosSalesV.put("paymentType", entry.getKey());
+            payMethosSalesV.put("totalAmount", entry.getValue().toString());
+            dailySummaryDTO.getBestSellingPayMethods().add(payMethosSalesV);
+        }
+        //TODO: FALTA EL RPORTE DE LAS DEVOLUCIONES
+        Object [] refundSummary=this.serviceDBSale.refundSumaryByRange(businessId, startDate, endDate);
+       
+        for(int i=0;i<refundSummary.length;i++){
+            HashMap<String,String> data=new HashMap<>();
+            Object [] refundSummaryV=(Object[]) refundSummary[i];
+            if(refundSummaryV[0]!=null){
+                data.put("patymentType", objectToString(refundSummaryV[0]));
+            }
+            if(refundSummaryV[1]!=null){
+                data.put("totalAmount", objectToString(refundSummaryV[1]));
+            }
+            dailySummaryDTO.getRefundsSummay().add(data);
+        }
+        
+        dailySummaryDTO.setSalesByCategory(null);
+        dailySummaryDTO.setBestSellingProducts(null);
+        
+        return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
     }
 
     @Override

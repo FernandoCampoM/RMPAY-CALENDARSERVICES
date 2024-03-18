@@ -83,4 +83,7 @@ public class Sale {
     @OneToMany(mappedBy = "sale",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     public List<ItemForSale> itemsList = new ArrayList<>();
 
+    @OneToMany(mappedBy = "sale",fetch = FetchType.LAZY)
+    private List<Transactions> transactions = new ArrayList<>();
+
 }

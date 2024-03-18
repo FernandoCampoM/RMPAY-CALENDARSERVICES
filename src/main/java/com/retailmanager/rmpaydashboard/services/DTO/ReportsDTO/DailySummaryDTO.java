@@ -22,5 +22,7 @@ public class DailySummaryDTO {
     private List<HashMap<String,String>> salesByCategory= new ArrayList<>();
     //retorna una lista de objetos name, quantity, totalAmount, benefit
     private List<HashMap<String,String>> bestSellingProducts= new ArrayList<>();
+    private List<HashMap<String,String>> bestSellingPayMethods= new ArrayList<>();
+    private List<HashMap<String,String>> refundsSummay= new ArrayList<>();
     
 }

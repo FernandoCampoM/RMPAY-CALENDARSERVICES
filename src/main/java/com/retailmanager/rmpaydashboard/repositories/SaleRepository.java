@@ -61,20 +61,20 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      */
     @Query(value=" SELECT \r\n" + 
                 "  (SELECT sum(saleTotalAmount) \r\n" + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId and saleEndDate=CONVERT(DATE, SYSDATETIME())) as totalSales,\r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as totalSales,\r\n" + 
                 "  \r\n" + 
                 "  (SELECT sum(saleToRefund) \r\n" + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId and saleEndDate=CONVERT(DATE, SYSDATETIME()))as totalRefund,\r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType IN ('REFUND','PARTIAL_REFUND') AND saleStatus IN ('REFUNDED','PARTIAL_REFUNDED') and businessId=:businessId )as totalRefund,\r\n" + 
                 "\r\n" + 
                 "  (SELECT sum(saleStateTaxAmount)\r\n" + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId and saleEndDate=CONVERT(DATE, SYSDATETIME())) as stateTax,\r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as stateTax,\r\n" + 
                 "\r\n" + 
                 "  (SELECT sum(saleCityTaxAmount) \r\n" + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId and saleEndDate=CONVERT(DATE, SYSDATETIME()))  as cityTax,\r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId )  as cityTax,\r\n" + 
                 "\r\n" + 
                 "  (SELECT sum(saleReduceTax) \r\n" + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId and saleEndDate=CONVERT(DATE, SYSDATETIME()) ) as redTax", nativeQuery = true)
-    public Object[] dailySummary(Long businessId);
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as redTax", nativeQuery = true)
+    public Object[] dailySummary(Long businessId,LocalDate startDate, LocalDate endDate);
 
     /**
      * Generate daily summary for a specific category.
@@ -106,9 +106,15 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @param  saleTransactionType	tipo de transacción
      * @param  saleStatus			estado de la transacción
      * @param  business	negocio que realiza la venta
-     * @param  date			fecha de la venta
      * @return         	
      */
     //
-    public List<Sale> findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDate(String saleTransactionType, String saleStatus, Business business, LocalDate date);
+    public List<Sale> findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween(String saleTransactionType, String saleStatus, Business business, LocalDate starDate,LocalDate endDate);
+
+    @Query(value = "  SELECT t.paymentType, sum(t.amount) as totalAmount\r\n" + //
+                "  FROM [RMPAY].[dbo].[Sale] S INNER JOIN [RMPAY].[dbo].[Transactions] t ON s.saleID=t.saleId  \r\n" + //
+                "  WHERE saleEndDate BETWEEN :startDate AND :endDate AND s.businessId=:businessId and s.saleTransactionType in ('REFUND','PARTIAL_REFUND') AND s.saleStatus IN ('REFUNDED','PARTIAL_REFUNDED')\r\n" + //
+                "  group by paymentType\r\n" + //
+                "  ORDER BY totalAmount DESC", nativeQuery = true)
+    public Object[] refundSumaryByRange(Long businessId,LocalDate startDate, LocalDate endDate);
 }
