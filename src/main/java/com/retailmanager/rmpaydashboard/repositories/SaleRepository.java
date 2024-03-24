@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Sale;
 
 public interface SaleRepository extends CrudRepository<Sale, Long>  {
@@ -117,4 +118,36 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
                 "  group by paymentType\r\n" + //
                 "  ORDER BY totalAmount DESC", nativeQuery = true)
     public Object[] refundSumaryByRange(Long businessId,LocalDate startDate, LocalDate endDate);
+
+   
+    /**
+     * Retrieves a list of ItemForSale objects based on the provided businessId.
+     * TODO: Cambair el orderby de acuerdo a la respuesta de Carlos Omar
+     * @param  businessId  the ID of the business
+     * @return             a list of ItemForSale objects associated with the business
+     */
+    @Query(value = "select i from ItemForSale i where i.sale.business.businessId=:businessId and i.sale.saleEndDate between :startDate and :endDate order by i.quantity desc")
+    public List<ItemForSale> getBestSellingItems(Long businessId, LocalDate startDate, LocalDate endDate);
+    /**
+     * Retrieves the best selling items by category within a specified date range for a given business.
+     * TODO: Cambair el orderby de acuerdo a la respuesta de Carlos Omar
+     * @param  businessId  the ID of the business
+     * @param  startDate   the start date of the date range
+     * @param  endDate     the end date of the date range
+     * @param  category    the category of items to retrieve
+     * @return             a list of ItemForSale objects representing the best selling items by category
+     */
+    @Query(value = "select i from ItemForSale i where i.sale.business.businessId=:businessId and i.sale.saleEndDate between :startDate and :endDate  and i.category=:category order by i.quantity desc")
+    public List<ItemForSale> getBestSellingItemsByCategory(Long businessId, LocalDate startDate, LocalDate endDate, String category);
+    
+    @Query(value = "select Category, count(productId) as totalQuantity, sum(s.saleTotalAmount) as totalAmount, sum(ifs.cost) as cost, sum(ifs.grossProfit) as grossProfit\r\n" + //
+                "  from [RMPAY].[dbo].[ItemForSale] ifs inner join [RMPAY].[dbo].[Sale] s on ifs.saleID=s.saleID  \r\n" + //
+                "  where s.businessId=:businessId and s.saleEndDate between :startDate and :endDate " + 
+                "  group by category\r\n" + //
+                "  order by totalQuantity desc ", nativeQuery = true)
+    public Object[] getBestSellingItemsXCategory(Long businessId, LocalDate startDate, LocalDate endDate);
+
+    @Query(value = "select s from Sale s where s.business.businessId=:businessId and s.saleEndDate between :startDate and :endDate and s.saleStatus='SUCCEED'")
+    public List<Sale> getSalesByDateRange(Long businessId, LocalDate startDate, LocalDate endDate);
 }
+

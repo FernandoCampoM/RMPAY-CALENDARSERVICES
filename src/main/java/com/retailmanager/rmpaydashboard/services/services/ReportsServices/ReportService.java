@@ -1,9 +1,12 @@
 package com.retailmanager.rmpaydashboard.services.services.ReportsServices;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -17,11 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.ItemForSale;
+import com.retailmanager.rmpaydashboard.models.Product;
 import com.retailmanager.rmpaydashboard.models.Sale;
 import com.retailmanager.rmpaydashboard.models.Transactions;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
-
+import com.retailmanager.rmpaydashboard.repositories.TransactionsRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.TransactionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.DailySummaryDTO;
 
 @Service
@@ -32,7 +40,11 @@ public class ReportService implements IReportService {
     @Autowired
     private BusinessRepository serviceDBBusiness;
     @Autowired
+    private ProductRepository serviceDBProduct;
+    @Autowired
     private SaleRepository serviceDBSale;
+    @Autowired
+    private TransactionsRepository serviceDBTransactions;
 
     /**
      * Retrieves the daily summary for a given business ID.
@@ -180,7 +192,6 @@ public class ReportService implements IReportService {
             payMethosSalesV.put("totalAmount", entry.getValue().toString());
             dailySummaryDTO.getBestSellingPayMethods().add(payMethosSalesV);
         }
-        //TODO: FALTA EL RPORTE DE LAS DEVOLUCIONES
         Object [] refundSummary=this.serviceDBSale.refundSumaryByRange(businessId, startDate, endDate);
        
         for(int i=0;i<refundSummary.length;i++){
@@ -201,24 +212,82 @@ public class ReportService implements IReportService {
         return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
     }
 
+    /**
+     * getLowInventory method retrieves low inventory products for a given business ID.
+     *
+     * @param  businessId  the ID of the business
+     * @return             ResponseEntity with a list of low inventory products and HTTP status OK
+     */
     @Override
     public ResponseEntity<?> getLowInventory(Long businessId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getLowInventory'");
+        List<Product> products = this.serviceDBProduct.getLowInventory(businessId);
+       
+        List<ProductDTO> productsDTO =new ArrayList<>();
+        if(products!=null && products.size()>0){
+            productsDTO = products.stream().map(product -> ProductDTO.tOProduct(product)).collect(Collectors.toList());
+        }
+        productsDTO.sort(Comparator.comparing(ProductDTO::getSuggestedPurchase).reversed());
+        return new ResponseEntity<>(productsDTO,HttpStatus.OK);
+        
     }
 
     @Override
     public ResponseEntity<?> getBestSellingItems(Long businessId, LocalDate startDate, LocalDate endDate,
             String categoria) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getBestSellingItems'");
+        List<ItemForSale> productDTOs= new ArrayList<>();
+        Business business=serviceDBBusiness.findById(businessId).orElse(null);
+        if(business!=null){
+            if(categoria.compareTo("TODAS")!=0){
+                productDTOs = this.serviceDBSale.getBestSellingItemsByCategory(businessId, startDate, endDate, categoria);
+            }else{
+                productDTOs = this.serviceDBSale.getBestSellingItems(businessId, startDate, endDate);
+            }
+        }else{
+            throw new  EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        productDTOs.forEach(productDTO -> productDTO.setSale(null));
+        return new ResponseEntity<>(productDTOs,HttpStatus.OK);
+
     }
 
+    /**
+     * Generate a sales report category within a specified time frame.
+     *
+     * @param  businessId    the ID of the business
+     * @param  startDate     the start date of the time frame
+     * @param  endDate       the end date of the time frame
+     * @param  categoria     the category to filter the sales by
+     * @return               a ResponseEntity containing a list of sales grouped by category
+     */
     @Override
-    public ResponseEntity<?> getSalesByCategory(Long businessId, LocalDate startDate, LocalDate endDate,
-            String categoria) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getSalesByCategory'");
+    public ResponseEntity<?> getSalesByCategory(Long businessId, LocalDate startDate, LocalDate endDate) {
+        if(!this.serviceDBBusiness.existsById(businessId)){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        List<HashMap<String,String>> salesByCategoryDTOs= new ArrayList<>();
+        Object [] salesByCategory=this.serviceDBSale.getBestSellingItemsXCategory(businessId, startDate, endDate);
+        for(int i=0;i<salesByCategory.length;i++){
+            HashMap<String,String> data=new HashMap<>();
+            Object [] salesByCategoryV=(Object[]) salesByCategory[i];
+            if(salesByCategoryV[0]!=null){
+                data.put("category", objectToString(salesByCategoryV[0]));
+            }
+            if(salesByCategoryV[1]!=null){
+                data.put("totalItems", objectToString(salesByCategoryV[1]));
+            }
+            if(salesByCategoryV[2]!=null){
+                data.put("totalAmount", objectToString(salesByCategoryV[2]));
+            }
+            if(salesByCategoryV[3]!=null){
+                data.put("totalCost", objectToString(salesByCategoryV[3]));
+            }
+            if(salesByCategoryV[4]!=null){  
+                data.put("totalGrossProfit", objectToString(salesByCategoryV[4]));
+            }
+            salesByCategoryDTOs.add(data);
+        }
+
+        return new ResponseEntity<>(salesByCategoryDTOs,HttpStatus.OK);
     }
 
     @Override
@@ -233,12 +302,81 @@ public class ReportService implements IReportService {
         throw new UnsupportedOperationException("Unimplemented method 'getTips'");
     }
 
+    /**
+     * Retrieves the report taxes for a given business within a specified date range.
+     *
+     * @param  businessId  the ID of the business
+     * @param  startDate   the start date of the date range
+     * @param  endDate     the end date of the date range
+     * @return             a ResponseEntity containing the taxes data
+     */
     @Override
     public ResponseEntity<?> getTaxes(Long businessId, LocalDate startDate, LocalDate endDate) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getTaxes'");
+        if(!this.serviceDBBusiness.existsById(businessId)){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        List<Sale> sales = this.serviceDBSale.getSalesByDateRange(businessId, startDate, endDate);
+        HashMap<String,String> data=new HashMap<>();
+        data.put("totalTax", String.valueOf(0));
+            data.put("totalSales", String.valueOf(0));
+            data.put("totalStatalTax", String.valueOf(0));
+            data.put("totalCityTax", String.valueOf(0));
+            data.put("totalReduceTax", String.valueOf(0));
+            data.put("totalTaxableSales", String.valueOf(0));
+        if(sales!=null && sales.size()>0){
+            double totalTax=0;
+            double totalSales=0;
+            double totalStatalTax=0;
+            double totalCityTax=0;
+            double totalReduceTax=0;
+            for(Sale sale:sales){
+                totalSales+=sale.getSaleTotalAmount();
+                totalStatalTax+=sale.getSaleStateTaxAmount();
+                totalCityTax+=sale.getSaleCityTaxAmount();
+                totalReduceTax+=sale.getSaleReduceTax();
+                totalTax+=sale.getSaleCityTaxAmount()+sale.getSaleStateTaxAmount()+sale.getSaleReduceTax();
+            }
+            data.put("totalTax", String.valueOf(totalTax));
+            data.put("totalSales", String.valueOf(totalSales));
+            data.put("totalStatalTax", String.valueOf(totalStatalTax));
+            data.put("totalCityTax", String.valueOf(totalCityTax));
+            data.put("totalReduceTax", String.valueOf(totalReduceTax));
+            data.put("totalTaxableSales", String.valueOf(totalSales-totalStatalTax-totalCityTax-totalReduceTax));
+        }
+        return new ResponseEntity<>(data,HttpStatus.OK);
     }
     private String objectToString(Object obj){
         return obj != null ? obj.toString() : "";
+    }
+
+    /**
+     * Retrieves a list of receipts for a given business within a specified date range.
+     *
+     * @param  businessId  the ID of the business
+     * @param  startDate   the start date of the date range
+     * @param  endDate     the end date of the date range
+     * @return             a ResponseEntity containing a list of TransactionDTO objects representing the receipts
+     *                     for the specified business within the date range
+     * @throws EntidadNoExisteException if the business with the given ID does not exist in the database
+     */
+    @Override
+    public ResponseEntity<?> getReceipts(Long businessId, LocalDate startDate, LocalDate endDate) {
+        if(!this.serviceDBBusiness.existsById(businessId)){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        List<Transactions> transactions = this.serviceDBTransactions.getTransactionsByRange(businessId, startDate, endDate);
+
+        List<TransactionDTO> transactionsDTOs = new ArrayList<>();
+
+        if(transactions!=null && transactions.size()>0){
+            for(Transactions transaction:transactions){
+                TransactionDTO transactionDTO = this.mapper.map(transaction, TransactionDTO.class);
+                transactionDTO.setInfoSale(this.mapper.map(transaction.getSale(), SaleDTO.class));
+
+                transactionsDTOs.add(transactionDTO);
+            }
+        }
+
+        return new ResponseEntity<>(transactionsDTOs,HttpStatus.OK);
     }
 }

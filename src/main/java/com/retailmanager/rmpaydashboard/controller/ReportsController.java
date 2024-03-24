@@ -39,16 +39,15 @@ public class ReportsController {
     public ResponseEntity<?> getBestSellingItems(@RequestParam(name = "businessId") Long businessId,
                                                   @RequestParam(name = "startDate") @Valid LocalDate startDate,
                                                   @RequestParam(name = "endDate") @Valid LocalDate endDate,
-                                                  @RequestParam(name = "categoria") String categoria) {
+                                                  @RequestParam(name = "category") String categoria) {
         return reportService.getBestSellingItems(businessId, startDate, endDate, categoria);
     }
 
     @GetMapping("/reports/sales-by-category")
     public ResponseEntity<?> getSalesByCategory(@RequestParam(name = "businessId") Long businessId,
                                                  @RequestParam(name = "startDate") @Valid LocalDate startDate,
-                                                 @RequestParam(name = "endDate") @Valid LocalDate endDate,
-                                                 @RequestParam(name = "categoria") String categoria) {
-        return reportService.getSalesByCategory(businessId, startDate, endDate, categoria);
+                                                 @RequestParam(name = "endDate") @Valid LocalDate endDate) {
+        return reportService.getSalesByCategory(businessId, startDate, endDate);
     }
 
     @GetMapping("/reports/earnings-report")
@@ -70,5 +69,11 @@ public class ReportsController {
                                        @RequestParam(name = "startDate") @Valid LocalDate startDate,
                                        @RequestParam(name = "endDate") @Valid LocalDate endDate) {
         return reportService.getTaxes(businessId, startDate, endDate);
+    }
+    @GetMapping("/reports/receipts")
+    public ResponseEntity<?> getReceipts(@RequestParam(name = "businessId") Long businessId,
+                                       @RequestParam(name = "startDate") @Valid LocalDate startDate,
+                                       @RequestParam(name = "endDate") @Valid LocalDate endDate) {
+        return reportService.getReceipts(businessId, startDate, endDate);
     }
 }

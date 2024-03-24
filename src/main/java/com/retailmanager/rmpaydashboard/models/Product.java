@@ -41,8 +41,7 @@ public class Product {
     private boolean municipal;
     @Column(nullable = false, unique = false,columnDefinition = "bit DEFAULT 0") 
     private boolean reducedTax;
-    @Column(nullable = false, unique = false)
-    private int inventoryLevel; 
+    
     @Column(nullable = false, unique = false)
     private int minimumLevel;
     @Column(nullable = false, unique = false) 

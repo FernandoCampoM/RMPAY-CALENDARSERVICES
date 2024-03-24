@@ -9,7 +9,7 @@ public interface IReportService {
     public ResponseEntity<?> getSummaryByDateRangee(Long businessId, LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> getLowInventory(Long businessId);
     public ResponseEntity<?> getBestSellingItems(Long businessId,LocalDate startDate, LocalDate endDate, String categoria);
-    public ResponseEntity<?> getSalesByCategory(Long businessId,LocalDate startDate, LocalDate endDate, String categoria);
+    public ResponseEntity<?> getSalesByCategory(Long businessId,LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> getEarningsReport(Long businessId,LocalDate startDate, LocalDate endDate);
     /**
      * Get tips(PROPINAS) by business and date range
@@ -20,4 +20,6 @@ public interface IReportService {
      */
     public ResponseEntity<?> getTips(Long businessId,LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> getTaxes(Long businessId,LocalDate startDate, LocalDate endDate);
+
+    public ResponseEntity<?> getReceipts(Long businessId,LocalDate startDate, LocalDate endDate);
 }

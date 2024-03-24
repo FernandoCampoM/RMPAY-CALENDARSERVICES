@@ -68,5 +68,8 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
     public Page<Product> findProductsByBusinessId(Long businessId,Pageable pageable);
     @Query(value = "select p from Product p where p.category.business.businessId=:businessId order by p.name")
     public List<Product> findProductsByBusinessId(Long businessId);
+
+    @Query(value = "select p from Product p where p.category.business.businessId=:businessId and p.quantity < p.minimumLevel")  
+    public List<Product> getLowInventory(Long businessId);
     
 }

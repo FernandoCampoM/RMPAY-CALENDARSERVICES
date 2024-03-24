@@ -53,9 +53,6 @@ public class ProductDTO {
     @NotNull(message = "{product.quantity.null}")
     private int quantity;
 
-    @NotNull(message = "{product.inventoryLevel.null}")
-    @Min(value = 0, message = "{product.inventoryLevel.min}")
-    private int inventoryLevel;
 
     @NotNull(message = "{product.minimumLevel.null}")
     @Min(value = 0, message = "{product.minimumLevel.min}")
@@ -66,6 +63,8 @@ public class ProductDTO {
     private int maximumLevel;
     @NotNull(message = "{product.enable.null}")
     private Boolean enable;
+
+    private int suggestedPurchase;
 
     public static ProductDTO tOProduct(Product product) {
         ProductDTO objProduct = new ProductDTO();
@@ -79,10 +78,11 @@ public class ProductDTO {
         objProduct.setCode( product.getCode());
         objProduct.setEstatal(product.isEstatal());
         objProduct.setMunicipal(product.isMunicipal());
-        objProduct.setInventoryLevel(product.getInventoryLevel());
+        objProduct.setQuantity(product.getQuantity());
         objProduct.setMinimumLevel(product.getMinimumLevel());
         objProduct.setMaximumLevel(product.getMaximumLevel());
         objProduct.setEnable(product.isEnable());
+        objProduct.setSuggestedPurchase(product.getMaximumLevel() - product.getQuantity());
         return objProduct;
     }
 }

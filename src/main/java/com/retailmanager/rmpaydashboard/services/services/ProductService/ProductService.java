@@ -152,7 +152,7 @@ public class ProductService implements IProductService {
         objProduct.setEstatal(prmProduct.isEstatal());
         objProduct.setMunicipal(prmProduct.isMunicipal());
         objProduct.setEnable(prmProduct.getEnable());
-        objProduct.setInventoryLevel(prmProduct.getInventoryLevel());
+        objProduct.setQuantity(prmProduct.getQuantity());
         objProduct.setMinimumLevel(prmProduct.getMinimumLevel());
         objProduct.setMaximumLevel(prmProduct.getMaximumLevel());
         objProduct.setName(prmProduct.getName());
@@ -426,7 +426,7 @@ public class ProductService implements IProductService {
                     "Category," +
                     "Estatal Tax," +
                     "Municipal Tax," +
-                    "Inventory Level," +
+                    "Quantity," +
                     "Minimum Level," +
                     "Maximum Level," +
                     "Enable\n";
@@ -465,7 +465,7 @@ public class ProductService implements IProductService {
                 nullToZero(objProduct.getCategory().getName()) + "," +
                 nullToZero(objProduct.isEstatal()) + "," +
                 nullToZero(objProduct.isMunicipal()) + "," +
-                nullToZero(objProduct.getInventoryLevel()) + "," +
+                nullToZero(objProduct.getQuantity()) + "," +
                 nullToZero(objProduct.getMinimumLevel()) + "," +
                 nullToZero(objProduct.getMaximumLevel()) + "," +
                 nullToZero(objProduct.isEnable()) + "\n";

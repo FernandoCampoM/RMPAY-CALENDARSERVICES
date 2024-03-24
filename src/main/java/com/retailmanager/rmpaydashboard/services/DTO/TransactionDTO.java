@@ -3,7 +3,12 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter @Setter @AllArgsConstructor @NoArgsConstructor
 public class TransactionDTO {
 
     @NotBlank(message = "{transaction.date.notBlank}")
@@ -17,8 +22,8 @@ public class TransactionDTO {
 
     private String state;
 
-    @NotNull(message = "{transaction.saleId.notNull}")
-    private Long saleId;
+    //@NotNull(message = "{transaction.saleId.notNull}")
+    //private Long saleId;
 
     private Double changeChash;
 
@@ -43,6 +48,7 @@ public class TransactionDTO {
     @Size(max = 255, message = "{transaction.globalUid.size}")
     private String globalUid = "";
 
+    private SaleDTO infoSale;
     
 
     // Constructor, getters y setters
