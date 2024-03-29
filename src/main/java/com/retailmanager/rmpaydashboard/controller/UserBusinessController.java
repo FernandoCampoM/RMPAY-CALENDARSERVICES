@@ -63,6 +63,10 @@ public class UserBusinessController {
     public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
         return usersBusinessService.findById(userBusinessId);
     }
+    @GetMapping("/userBusiness/business/{businessId}")
+    public ResponseEntity<?> findByBusinessId(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long businessId) {
+        return usersBusinessService.findByBusiness(businessId);
+    }
 
     /**
      * A description of the entire Java function.

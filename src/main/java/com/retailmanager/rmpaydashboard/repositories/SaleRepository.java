@@ -140,7 +140,7 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
     @Query(value = "select i from ItemForSale i where i.sale.business.businessId=:businessId and i.sale.saleEndDate between :startDate and :endDate  and i.category=:category order by i.quantity desc")
     public List<ItemForSale> getBestSellingItemsByCategory(Long businessId, LocalDate startDate, LocalDate endDate, String category);
     
-    @Query(value = "select Category, count(productId) as totalQuantity, sum(s.saleTotalAmount) as totalAmount, sum(ifs.cost) as cost, sum(ifs.grossProfit) as grossProfit\r\n" + //
+    @Query(value = "select Category, count(productId) as totalQuantity, sum(s.saleSubtotal) as totalAmount, sum(ifs.cost) as cost, sum(ifs.grossProfit) as grossProfit\r\n" + //
                 "  from [RMPAY].[dbo].[ItemForSale] ifs inner join [RMPAY].[dbo].[Sale] s on ifs.saleID=s.saleID  \r\n" + //
                 "  where s.businessId=:businessId and s.saleEndDate between :startDate and :endDate " + 
                 "  group by category\r\n" + //
