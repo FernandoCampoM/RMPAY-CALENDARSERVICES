@@ -14,4 +14,5 @@ public interface ITerminalService {
     public ResponseEntity<?> findById(Long terminalId);
     public ResponseEntity<?> findBySerial(String  serial);
     public ResponseEntity<?> updateEnable(Long terminalId, boolean enable);
+    public ResponseEntity<?> getExpiredTerminals(Long businessId); 
 }

@@ -8,6 +8,8 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Terminal;
+
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -18,4 +20,13 @@ public interface TerminalRepository extends CrudRepository<Terminal, Long> {
     @Modifying
     @Query("UPDATE Terminal u SET u.enable = :enable WHERE u.terminalId = :terminalId")
     void updateEnable(Long terminalId, boolean enable);
+    /**
+     * Obtiene los terminles expirados de un negocio
+     *
+     * @param  business     negocio
+     * @param  date         fecha para comparar con la fecha de expiración
+     * @return              description of return value
+     */
+    //
+    public List<Terminal> findByBusinessAndExpirationDateLessThan(Business business, LocalDate date);
 }

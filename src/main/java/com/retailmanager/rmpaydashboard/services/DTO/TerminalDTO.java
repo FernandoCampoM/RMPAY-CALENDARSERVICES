@@ -24,5 +24,12 @@ public class TerminalDTO {
     private Boolean enable;
     private Long idService;
     private Long businesId;
+    private LocalDate expirationDate;
+
     private LocalDate lastTransmision;
+
+    private boolean automaticPayments;
+    private boolean isPayment;
+    private boolean isPrincipal;
+
 }

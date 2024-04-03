@@ -18,6 +18,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.ProductService.IProductService;
+import com.retailmanager.rmpaydashboard.services.services.TerminalService.ITerminalService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +30,8 @@ import jakarta.validation.constraints.Positive;
 public class BusinessController {
     @Autowired
     private IBusinessService businessService;
+    @Autowired
+    private ITerminalService terminalService;
     @Autowired
     private IProductService productService;
     /**
@@ -96,6 +99,7 @@ public class BusinessController {
     public ResponseEntity<?> getTerminals(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
         return this.businessService.getTerminals(businessId);
     }
+    
     /**
      * Get categories for a specific business.
      *

@@ -3,12 +3,14 @@ package com.retailmanager.rmpaydashboard.services.services.TerminalService;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -146,12 +148,15 @@ public class TerminalService implements ITerminalService {
                 throw objExeption;
             }
             objTerminal=exist.get();
-            if(objTerminal.getSerial().compareTo(prmTerminal.getSerial())!=0){
-                Optional<Terminal> existBySerial = this.serviceDBTerminal.findOneBySerial(prmTerminal.getSerial());
-                if(existBySerial.isPresent()){
-                    EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos");
-                    throw objExeption;
+            if(prmTerminal.getSerial()!=null && objTerminal.getSerial()!=null && objTerminal.getSerial().compareTo(prmTerminal.getSerial())!=0){
+                if(prmTerminal.getSerial()!=null){
+                    Optional<Terminal> existBySerial = this.serviceDBTerminal.findOneBySerial(prmTerminal.getSerial());
+                    if(existBySerial.isPresent()){
+                        EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos");
+                        throw objExeption;
+                    }
                 }
+                
             }
              objTerminal.setSerial(prmTerminal.getSerial());
              objTerminal.setEnable(prmTerminal.getEnable());
@@ -533,6 +538,26 @@ public class TerminalService implements ITerminalService {
             
         }
         return prmRegistry;
+    }
+
+    /**
+     * Retrieves a list of expired terminals for a given business ID.
+     *
+     * @param  businessId  the ID of the business
+     * @return             a ResponseEntity containing the list of expired terminals
+     */
+    @Override
+    public ResponseEntity<?> getExpiredTerminals(Long businessId) {
+        List<TerminalDTO> listTerminalDTO=new ArrayList<>();
+        if(businessId!=null){
+            Optional<Business> optional= this.serviceDBBusiness.findById(businessId);
+            if(optional.isPresent()){
+                listTerminalDTO=this.mapper.map(this.serviceDBTerminal.findByBusinessAndExpirationDateLessThan(optional.get(), LocalDate.now()), new TypeToken<List<TerminalDTO>>(){}.getType());
+                return new ResponseEntity<List<TerminalDTO>>(listTerminalDTO,HttpStatus.OK);
+            }
+        }
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+                throw objExeption;
     }
     
 }

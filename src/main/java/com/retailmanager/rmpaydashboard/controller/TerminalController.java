@@ -94,4 +94,8 @@ public class TerminalController {
     public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")Long terminalId, @Valid @PathVariable boolean enable){
         return this.terminalService.updateEnable(terminalId,enable);
     }
+    @GetMapping("/terminals/expiredByBusiness/{businessId}")
+    public ResponseEntity<?> getExpiredTerminals(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
+        return this.terminalService.getExpiredTerminals(businessId);
+    }
 }
