@@ -408,7 +408,7 @@ public class UserService implements IUserService{
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName(null);
+                                        objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
@@ -442,7 +442,7 @@ public class UserService implements IUserService{
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName(null);
+                                        objTerminal.setName("Terminal "+(i+2));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
@@ -476,7 +476,7 @@ public class UserService implements IUserService{
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName(null);
+                                        objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);

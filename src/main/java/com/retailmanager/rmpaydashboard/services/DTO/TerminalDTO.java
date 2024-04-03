@@ -15,7 +15,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class TerminalDTO {
     private Long terminalId;
-    @NotBlank(message = "{terminal.serial.empty}")
+    
     private String serial;
     @NotBlank(message = "{terminal.name.empty}")
     @Size(max = 255, message = "{terminal.name.max}")

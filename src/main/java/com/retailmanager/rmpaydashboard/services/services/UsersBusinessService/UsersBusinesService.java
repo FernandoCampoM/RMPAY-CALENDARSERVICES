@@ -86,7 +86,8 @@ public class UsersBusinesService implements IUsersBusinessService{
                 usersBusiness.setUsername(prmUsersBusiness.getUsername());
                 usersBusiness.setPassword(prmUsersBusiness.getPassword());
                 usersBusiness.setEnable(prmUsersBusiness.getEnable());
-                /* for(Long idPermission:prmUsersBusiness.getActivesPermissions()){
+                usersBusiness.getUserPermissions().clear();
+                for(Long idPermission:prmUsersBusiness.getActivesPermissions()){
                     
                     Permission permission = this.serviceDBUPermission.findById(idPermission).orElse(null);
                     if(permission==null){
@@ -96,9 +97,14 @@ public class UsersBusinesService implements IUsersBusinessService{
                     userPermission.setPermission(permission);
                     userPermission.setUserBusiness(usersBusiness);
                     usersBusiness.getUserPermissions().add(userPermission);
-                } */
+                } 
                 usersBusiness=this.usersAppDBService.save(usersBusiness);
-                return new ResponseEntity<UsersBusinessDTO>(this.mapper.map(usersBusiness, UsersBusinessDTO.class), HttpStatus.OK);
+                prmUsersBusiness=this.mapper.map(usersBusiness, UsersBusinessDTO.class);
+                prmUsersBusiness.setActivesPermissions(new ArrayList<>());
+                for (UserPermission iterable_element : usersBusiness.getUserPermissions()) {
+                    prmUsersBusiness.getActivesPermissions().add(iterable_element.getPermission().getPermissionId());
+                }
+                return new ResponseEntity<UsersBusinessDTO>(prmUsersBusiness, HttpStatus.OK);
             }else{
                 EntidadNoExisteException objExeption = new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
                 throw objExeption;

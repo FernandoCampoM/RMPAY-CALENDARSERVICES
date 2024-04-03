@@ -240,9 +240,7 @@ public class BusinessService implements IBusinessService {
                 prmBusiness.setServiceId(null);
                 objEmailBodyData.setServiceDescription("");
             }
-            
-            
-                if(objUserDTO!=null){
+            if(objUserDTO!=null){
                     BusinessDTO objBusinessDTO=new BusinessDTO();
                     objBusinessDTO.setUserId(objUserDTO.getUserID());
                     objBusinessDTO.setName(prmBusiness.getName());
@@ -271,7 +269,7 @@ public class BusinessService implements IBusinessService {
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName(null);
+                                        objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         objTerminal.setPayment(true);
                                         if(i==0){
@@ -304,7 +302,7 @@ public class BusinessService implements IBusinessService {
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName(null);
+                                        objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
@@ -337,7 +335,7 @@ public class BusinessService implements IBusinessService {
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName(null);
+                                        objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);

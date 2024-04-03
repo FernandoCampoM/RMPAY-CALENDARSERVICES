@@ -188,7 +188,6 @@ public class TerminalService implements ITerminalService {
             if(optional.isPresent()){
                 Terminal objTerminal=optional.get();
                 if(objTerminal!=null){
-                    objTerminal.setName(null);
                     objTerminal.setSerial(null);
                     this.serviceDBTerminal.save(objTerminal);
                     bandera=true;
@@ -257,7 +256,7 @@ public class TerminalService implements ITerminalService {
         if(terminalId!=null){
             Optional<Terminal> optional= this.serviceDBTerminal.findById(terminalId);
             if(optional.isPresent()){
-                if(enable && optional.get().getExpirationDate().isBefore(LocalDate.now())==false){
+                if(optional.get().getExpirationDate()==null || (enable  && optional.get().getExpirationDate().isBefore(LocalDate.now())==true )){
                     return new ResponseEntity<Boolean>(false,HttpStatus.PAYMENT_REQUIRED);
                 } 
                 this.serviceDBTerminal.updateEnable(terminalId, enable);
@@ -360,7 +359,7 @@ public class TerminalService implements ITerminalService {
         objTerminal.setEnable(true);
         objTerminal.setExpirationDate(null);
         objTerminal.setSerial(null);
-        objTerminal.setName(null);
+        objTerminal.setName("Terminal "+LocalDate.now().toString());
         Invoice objInvoice=new Invoice();
         switch (prmTerminal.getPaymethod()){
             case "CREDIT-CARD":
