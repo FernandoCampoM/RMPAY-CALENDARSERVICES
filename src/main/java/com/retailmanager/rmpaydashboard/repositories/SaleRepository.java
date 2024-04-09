@@ -74,7 +74,9 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
                 "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId )  as cityTax,\r\n" + 
                 "\r\n" + 
                 "  (SELECT sum(saleReduceTax) \r\n" + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as redTax", nativeQuery = true)
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as redTax, "+
+                " (SELECT sum(saleSubtotal) " + 
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as subTotalSales ", nativeQuery = true)
     public Object[] dailySummary(Long businessId,LocalDate startDate, LocalDate endDate);
 
     /**
@@ -96,10 +98,10 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      */
     @Query(value="SELECT productId, sum(it.quantity) as quantity,sum(it.quantity*it.price) as totalAmount, sum(it.grossProfit) as profit, (select top(1) name from [RMPAY].[dbo].[ItemForSale] ift where ift.productId=it.productId) as name\r\n" + //
                 "  FROM [RMPAY].[dbo].[ItemForSale] it join [RMPAY].[dbo].[Sale] s on it.saleID=s.saleID  \r\n" + //
-                "  where s.saleEndDate=CONVERT(DATE, SYSDATETIME()) and s.businessId=1 \r\n" + //
+                "  where s.saleEndDate BETWEEN :startDate AND :endDate and s.businessId=:businessId \r\n" + //
                 "  group by productId \r\n" + //
                 "  order by sum(it.quantity) desc ", nativeQuery = true)
-    public Object[] dailySummaryBestSellingItems(Long businessId);
+    public Object[] dailySummaryBestSellingItems(Long businessId,LocalDate startDate,LocalDate endDate);
     
     /**
      * Obtiene una lista de ventas por tipo de transacción, estado, fecha y negocio al que pertenece
@@ -110,7 +112,7 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @return         	
      */
     //
-    public List<Sale> findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween(String saleTransactionType, String saleStatus, Business business, LocalDate starDate,LocalDate endDate);
+    public List<Sale> findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween(String saleTransactionType, String saleStatus, Business business, LocalDate startDate,LocalDate endDate);
 
     @Query(value = "  SELECT t.paymentType, sum(t.amount) as totalAmount\r\n" + //
                 "  FROM [RMPAY].[dbo].[Sale] S INNER JOIN [RMPAY].[dbo].[Transactions] t ON s.saleID=t.saleId  \r\n" + //
@@ -149,5 +151,15 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
 
     @Query(value = "select s from Sale s where s.business.businessId=:businessId and s.saleEndDate between :startDate and :endDate and s.saleStatus='SUCCEED'")
     public List<Sale> getSalesByDateRange(Long businessId, LocalDate startDate, LocalDate endDate);
+
+    @Query(value = "SELECT s.userId, ub.username, sum(s.saleTotalAmount) as totalSales, \r\n" + //
+                "sum(s.saleSubtotal) as subTotalSales, sum(s.tipAmount) as tipAmount, \r\n" + //
+                "(SELECT sum(grossProfit)\r\n" + //
+                "  FROM [RMPAY].[dbo].[ItemForSale]  as ifs where ifs.saleID in (select ss.saleID from [RMPAY].[dbo].[Sale] as ss where ss.userId=s.userId )) as totalProfits\r\n" + //
+                "  FROM [RMPAY].[dbo].[Sale] as s left outer join [RMPAY].[dbo].[UsersBusiness] ub on s.userId=ub.userBusinessId \r\n" + //
+                "  where s.saleEndDate between :startDate and :endDate and s.businessId= :businessId " + //
+                "  group by s.userId, ub.username", nativeQuery = true)
+    public Object[] getUserTipsReport(Long businessId, LocalDate startDate, LocalDate endDate);
+
 }
 

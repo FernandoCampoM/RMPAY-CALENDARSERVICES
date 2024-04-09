@@ -31,6 +31,8 @@ import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TransactionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.DailySummaryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.EarningsReportDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.TipsReportDTO;
 
 @Service
 public class ReportService implements IReportService {
@@ -110,7 +112,7 @@ public class ReportService implements IReportService {
             }
             
         }
-        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId);
+        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, LocalDate.now(), LocalDate.now());
         if(dailySummaryBestSellingItems!=null){
             for(int i=0;i<dailySummaryBestSellingItems.length;i++){
                 Object [] dailySummaryBestSellingItemsV=(Object[]) dailySummaryBestSellingItems[i];
@@ -290,16 +292,150 @@ public class ReportService implements IReportService {
         return new ResponseEntity<>(salesByCategoryDTOs,HttpStatus.OK);
     }
 
+    /**
+     * A method to retrieve the earnings report for a specific business within a given time frame.
+     *
+     * @param  businessId  the ID of the business
+     * @param  startDate   the start date of the time frame
+     * @param  endDate     the end date of the time frame
+     * @return             a ResponseEntity containing the earnings report DTO and the HTTP status
+     */
     @Override
     public ResponseEntity<?> getEarningsReport(Long businessId, LocalDate startDate, LocalDate endDate) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getEarningsReport'");
+        EarningsReportDTO dailySummaryDTO=new EarningsReportDTO();
+        
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId, startDate, endDate);
+        Object [] dailySummaryV=null;
+        if(dailySummary!=null && dailySummary[0]!=null){
+            dailySummaryV=(Object[]) dailySummary[0];
+        }else{
+            return new ResponseEntity<String>("{\"message\":\"No existen ventas para el Business con businessId "+businessId+"\"}",HttpStatus.NOT_FOUND);
+        }
+        Business business=serviceDBBusiness.findById(businessId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+
+        if(dailySummaryV[0]!=null){
+            dailySummaryDTO.setTotalSales(Double.parseDouble(dailySummaryV[0].toString()));
+        }
+        
+        if(dailySummaryV[2]!=null){
+            dailySummaryDTO.setStateTax(Double.parseDouble(dailySummaryV[2].toString()));
+        }
+        if(dailySummaryV[3]!=null){
+            dailySummaryDTO.setMunicipalTax(Double.parseDouble(dailySummaryV[3].toString()));
+        }
+        if(dailySummaryV[4]!=null){
+            dailySummaryDTO.setEstimatedRedTax(Double.parseDouble(dailySummaryV[4].toString()));
+        }
+        if(dailySummaryV[5]!=null){
+            dailySummaryDTO.setSubTotalSales(Double.parseDouble(dailySummaryV[5].toString()));
+        }
+        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween("SALE", "SUCCEED", business, startDate, endDate);
+        
+        Double benefit=0.0;
+        Double propinas=0.0;
+        if(sales!=null && sales.size()>0){
+            for(Sale sale:sales){
+                for(ItemForSale item:sale.getItemsList()){
+                    benefit+=item.getGrossProfit();
+                }
+                propinas+=sale.getTipAmount();
+            }
+        }
+        dailySummaryDTO.setBenefit(benefit);
+        List<HashMap<String,String>> earningsByCategoryDTOs= new ArrayList<>();
+        Object [] salesByCategory=this.serviceDBSale.getBestSellingItemsXCategory(businessId, startDate, endDate);
+        for(int i=0;i<salesByCategory.length;i++){
+            HashMap<String,String> data=new HashMap<>();
+            Object [] salesByCategoryV=(Object[]) salesByCategory[i];
+            if(salesByCategoryV[0]!=null){
+                data.put("category", objectToString(salesByCategoryV[0]));
+            }
+            
+            if(salesByCategoryV[4]!=null){  
+                data.put("totalGrossProfit", objectToString(salesByCategoryV[4]));
+            }
+            earningsByCategoryDTOs.add(data);
+        }
+        dailySummaryDTO.setEarningsByCategory(earningsByCategoryDTOs);
+        
+        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, startDate, endDate);
+        if(dailySummaryBestSellingItems!=null){
+            for(int i=0;i<dailySummaryBestSellingItems.length;i++){
+                Object [] dailySummaryBestSellingItemsV=(Object[]) dailySummaryBestSellingItems[i];
+                HashMap<String,String> bestSellingProducts=new HashMap<>();
+                bestSellingProducts.put("name", objectToString(dailySummaryBestSellingItemsV[4]));
+                bestSellingProducts.put("quantity", objectToString(dailySummaryBestSellingItemsV[1]));
+                bestSellingProducts.put("totalAmount", objectToString(dailySummaryBestSellingItemsV[2]));
+                bestSellingProducts.put("benefit", objectToString(dailySummaryBestSellingItemsV[3]));
+                dailySummaryDTO.getBestSellingProducts().add(bestSellingProducts);
+            }
+            
+        }
+        
+        return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
     }
 
+    /**
+     * Get tips report for a specified business within a date range.
+     *
+     * @param  businessId   the ID of the business
+     * @param  startDate    the start date of the report
+     * @param  endDate      the end date of the report
+     * @return              ResponseEntity containing the tips report
+     */
     @Override
     public ResponseEntity<?> getTips(Long businessId, LocalDate startDate, LocalDate endDate) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getTips'");
+        TipsReportDTO dailySummaryDTO=new TipsReportDTO();
+        
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId, startDate, endDate);
+        Object [] dailySummaryV=null;
+        if(dailySummary!=null && dailySummary[0]!=null){
+            dailySummaryV=(Object[]) dailySummary[0];
+        }else{
+            return new ResponseEntity<String>("{\"message\":\"No existen ventas para el Business con businessId "+businessId+"\"}",HttpStatus.NOT_FOUND);
+        }
+        Business business=serviceDBBusiness.findById(businessId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+
+        if(dailySummaryV[0]!=null){
+            dailySummaryDTO.setTotalSales(Double.parseDouble(dailySummaryV[0].toString()));
+        }
+        if(dailySummaryV[5]!=null){
+            dailySummaryDTO.setSubTotalSales(Double.parseDouble(dailySummaryV[5].toString()));
+        }
+        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween("SALE", "SUCCEED", business, startDate, endDate);
+        
+        Double benefit=0.0;
+        Double propinas=0.0;
+        if(sales!=null && sales.size()>0){
+            for(Sale sale:sales){
+                for(ItemForSale item:sale.getItemsList()){
+                    benefit+=item.getGrossProfit();
+                }
+                propinas+=sale.getTipAmount();
+            }
+        }
+        dailySummaryDTO.setTotalTips(propinas);
+        dailySummaryDTO.setUserTips(new ArrayList<>());
+        Object [] tipsByUsers=this.serviceDBSale.getUserTipsReport(businessId, startDate, endDate);
+        if(tipsByUsers!=null){
+            for(int i=0;i<tipsByUsers.length;i++){
+                Object [] dailySummaryBestSellingItemsV=(Object[]) tipsByUsers[i];
+                HashMap<String,String> bestSellingProducts=new HashMap<>();
+                bestSellingProducts.put("username", objectToString(dailySummaryBestSellingItemsV[1]));
+                bestSellingProducts.put("totalSales", objectToString(dailySummaryBestSellingItemsV[2]));
+                bestSellingProducts.put("subTotalSales", objectToString(dailySummaryBestSellingItemsV[3]));
+                bestSellingProducts.put("totalTips", objectToString(dailySummaryBestSellingItemsV[4]));
+                bestSellingProducts.put("benefit", objectToString(dailySummaryBestSellingItemsV[5]));
+                dailySummaryDTO.getUserTips().add(bestSellingProducts);
+            }
+        }
+        return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
     }
 
     /**
