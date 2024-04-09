@@ -10,5 +10,6 @@ public interface IServiceService {
     public boolean delete(Long serviceId);
     public ResponseEntity<?> findById(Long serviceId);
     public ResponseEntity<?> getAll();
+    public ResponseEntity<?> getActivesServices();
     public ResponseEntity<?> updateEnable(Long serviceId, boolean enable);
 }

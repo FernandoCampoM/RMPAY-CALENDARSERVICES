@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.services.UserService;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
@@ -22,6 +23,7 @@ public interface IUserService {
     public ResponseEntity<?> updateEnable(Long userId, boolean enable);
     public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry);
     public ResponseEntity<?> findAll();
+    public ResponseEntity<?> findAll(Pageable pageable,String filter);
     public ResponseEntity<?> getActivesClients();
     public ResponseEntity<?> getUnregisteredClients();
     

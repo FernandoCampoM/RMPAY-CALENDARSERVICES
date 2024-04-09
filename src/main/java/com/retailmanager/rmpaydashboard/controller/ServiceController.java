@@ -85,6 +85,16 @@ public class ServiceController {
     public ResponseEntity<?> getAll() {
         return serviceService.getAll();
     }
+    /**
+     * Get the active services
+     *
+     * @return         the ResponseEntity containing the active services
+     */
+    @GetMapping("/services/actives")
+    public ResponseEntity<?> getActivesServices() {
+        return serviceService.getActivesServices();
+    }
+
 
     /**
      * Update the enable status of a service.

@@ -155,8 +155,7 @@ public class TerminalService implements ITerminalService {
                         EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos");
                         throw objExeption;
                     }
-                }
-                
+                }  
             }
              objTerminal.setSerial(prmTerminal.getSerial());
              objTerminal.setEnable(prmTerminal.getEnable());

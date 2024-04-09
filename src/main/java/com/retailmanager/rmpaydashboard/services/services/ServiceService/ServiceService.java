@@ -35,6 +35,7 @@ public class ServiceService implements IServiceService {
      * @return             a ResponseEntity containing the saved ServiceDTO or an error message
      */
     @Override
+    @Transactional
     public ResponseEntity<?> save(ServiceDTO prmService) {
         Long serviceId = prmService.getServiceId();
         if(serviceId!=null){
@@ -71,6 +72,7 @@ public class ServiceService implements IServiceService {
      * @return              a ResponseEntity with the updated ServiceDTO or an error message
      */
     @Override
+    @Transactional
     public ResponseEntity<?> update(Long serviceId, ServiceDTO prmService) {
         ResponseEntity<?> rta=null;
         
@@ -119,6 +121,7 @@ public class ServiceService implements IServiceService {
      * @return         	true if the service was successfully deleted, false otherwise
      */
     @Override
+    @Transactional
     public boolean delete(Long serviceId) {
         boolean bandera=false;
         
@@ -194,6 +197,22 @@ public class ServiceService implements IServiceService {
         }
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Servicio con serviceId "+serviceId+" no existe en la Base de datos");
                 throw objExeption;
+    }
+
+    /**
+     * Get all active services.
+     *
+     * @return         	Response entity with a list of active service DTOs and HTTP status OK
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> getActivesServices() {
+        List<ServiceDTO> listServiceDTO=new ArrayList<>();
+        Iterable<Service> listService=this.serviceDBService.findByEnable(true);
+        if(listService!=null){
+            listServiceDTO=this.mapper.map(listService,new TypeToken<List<ServiceDTO>>(){}.getType());
+        }
+        return new ResponseEntity<List<ServiceDTO>>(listServiceDTO,HttpStatus.OK);
     }
     
 }

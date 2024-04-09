@@ -242,6 +242,7 @@ public class BusinessService implements IBusinessService {
             }
             if(objUserDTO!=null){
                     BusinessDTO objBusinessDTO=new BusinessDTO();
+                    objBusinessDTO.setTerminals(new ArrayList<TerminalDTO>());
                     objBusinessDTO.setUserId(objUserDTO.getUserID());
                     objBusinessDTO.setName(prmBusiness.getName());
                     objBusinessDTO.setAddress(prmBusiness.getAddress());
@@ -279,6 +280,7 @@ public class BusinessService implements IBusinessService {
                                         }
                                         objTerminal.setAutomaticPayments(prmBusiness.isAutomaticPayments());
                                         objTerminal=serviceDBTerminal.save(objTerminal);
+                                        objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
                                     
@@ -312,6 +314,7 @@ public class BusinessService implements IBusinessService {
                                         objTerminal.setPayment(true);
                                         objTerminal.setAutomaticPayments(prmBusiness.isAutomaticPayments());
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                        objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
                                     objInvoice.setDate(LocalDate.now());
@@ -345,6 +348,7 @@ public class BusinessService implements IBusinessService {
                                         objTerminal.setPayment(false);
                                         objTerminal.setAutomaticPayments(prmBusiness.isAutomaticPayments());
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                        objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
                                     objInvoice.setDate(LocalDate.now());

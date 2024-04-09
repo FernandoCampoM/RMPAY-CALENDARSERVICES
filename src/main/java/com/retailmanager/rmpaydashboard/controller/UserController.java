@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -54,13 +56,24 @@ public class UserController {
         return this.userService.findByUsername(username);
     }
     /**
-     * A description of the entire Java function.
+     * Find all users.
      *
      * @return         description of return value
      */
     @GetMapping("/users/all")
     public ResponseEntity<?> findAll(){
         return this.userService.findAll();
+    }
+    /**
+     * Find all users with pagination and filtering.
+     *
+     * @param  pageable pagination information
+     * @param  filter   filter criteria
+     * @return          response entity with user data
+     */
+    @GetMapping("/users/all/pageable")
+    public ResponseEntity<?> findAll(@PageableDefault(size = 200,page = 0) Pageable pageable,@RequestParam(required=true) String filter){
+        return this.userService.findAll(pageable,filter);
     }
     /**
      * Find all unregistered users.

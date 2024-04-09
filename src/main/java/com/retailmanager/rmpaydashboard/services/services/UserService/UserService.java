@@ -13,6 +13,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -665,7 +666,7 @@ public class UserService implements IUserService{
         });
         return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
     }
-
+    
     /**
      * Retrieves active clients from the database and maps them to DTOs.
      *
@@ -694,6 +695,25 @@ public class UserService implements IUserService{
             user.setBusiness(null);
         });
         List<UserDTO> listUserDTO=this.mapper.map(listUser, new TypeToken<List<UserDTO>>() {}.getType());
+        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+    }
+
+    /**
+     * Find all users with pagination and filter.
+     *
+     * @param  pageable   pagination information
+     * @param  filter     filter string
+     * @return           ResponseEntity with list of UserDTO and HTTP status
+     */
+    @Override
+    public ResponseEntity<?> findAll(Pageable pageable, String filter) {
+        List<UserDTO> listUserDTO=new ArrayList<>();
+        Iterable<User> listUser=this.serviceDBUser.findyAllClientsByFilter(pageable,filter);
+        listUser.forEach(objUser->{
+            if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
+                listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
+            }
+        });
         return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
     }
 

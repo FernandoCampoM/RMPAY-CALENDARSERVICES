@@ -20,7 +20,7 @@ public class ServiceDTO {
     private String serviceDescription;
 
     @NotNull(message = "{service.serviceValue.null}")
-    @Positive(message = "{service.serviceValue.positive}")
+    @PositiveOrZero(message = "{service.serviceValue.positive}")
     private Double serviceValue;
 
     @NotNull(message = "{service.enable.null}")
@@ -29,29 +29,29 @@ public class ServiceDTO {
     private Double referralPayment;
 
     @NotNull(message = "{service.duration.null}")
-    @Positive(message = "{service.duration.positive}")
+    @PositiveOrZero(message = "{service.duration.positive}")
     private Integer duration;
     @NotNull(message = "{service.terminals2to5.null}")
-    @Positive(message = "{service.terminals2to5.positive}")
+    @PositiveOrZero(message = "{service.terminals2to5.positive}")
     private Double terminals2to5;
 
     @NotNull(message = "{service.referralPayment2to5.null}")
-    @Positive(message = "{service.referralPayment2to5.positive}")
+    @PositiveOrZero(message = "{service.referralPayment2to5.positive}")
     private Double referralPayment2to5;
 
     @NotNull(message = "{service.terminals6to9.null}")
-    @Positive(message = "{service.terminals6to9.positive}")
+    @PositiveOrZero(message = "{service.terminals6to9.positive}")
     private Double terminals6to9;
 
     @NotNull(message = "{service.referralPayment6to9.null}")
-    @Positive(message = "{service.referralPayment6to9.positive}")
+    @PositiveOrZero(message = "{service.referralPayment6to9.positive}")
     private Double referralPayment6to9;
 
     @NotNull(message = "{service.terminals10.null}")
-    @Positive(message = "{service.terminals10.positive}")
+    @PositiveOrZero(message = "{service.terminals10.positive}")
     private Double terminals10;
 
     @NotNull(message = "{service.referralPayment10.null}")
-    @Positive(message = "{service.referralPayment10.positive}")
+    @PositiveOrZero(message = "{service.referralPayment10.positive}")
     private Double referralPayment10;
 }

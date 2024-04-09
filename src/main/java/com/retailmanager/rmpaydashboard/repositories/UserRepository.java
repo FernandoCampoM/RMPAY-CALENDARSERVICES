@@ -3,6 +3,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -45,6 +47,9 @@ public interface UserRepository extends  CrudRepository<User,Long>{
      */
     //
     public List<User> findByLastLoginIsNullOrLastLoginLessThan(LocalDate date);
+
+    @Query("SELECT u FROM User u WHERE  u.name like :filter or u.username like :filter or u.email like :filter or u.phone like :filter or ELEMENT(u.business).name like :filter or ELEMENT(u.business).merchantId like :filter  or ELEMENT(u.business).address.address1 like :filter or ELEMENT(u.business).address.address2 like :filter or ELEMENT(u.business).address.city like :filter or ELEMENT(u.business).address.country like :filter")
+    public Page<User> findyAllClientsByFilter(Pageable pageable, String filter);
 
     
 
