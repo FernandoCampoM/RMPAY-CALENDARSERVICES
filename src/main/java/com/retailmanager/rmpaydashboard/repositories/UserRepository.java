@@ -51,6 +51,11 @@ public interface UserRepository extends  CrudRepository<User,Long>{
     @Query("SELECT u FROM User u WHERE  u.name like :filter or u.username like :filter or u.email like :filter or u.phone like :filter or ELEMENT(u.business).name like :filter or ELEMENT(u.business).merchantId like :filter  or ELEMENT(u.business).address.address1 like :filter or ELEMENT(u.business).address.address2 like :filter or ELEMENT(u.business).address.city like :filter or ELEMENT(u.business).address.country like :filter")
     public Page<User> findyAllClientsByFilter(Pageable pageable, String filter);
 
+    /*
+     * Obtiene todos los usuarios con paginación
+     */
+    @Query("SELECT u FROM User u" )
+    public Page<User> findyAllClientsPageable(Pageable pageable);
     
 
 }

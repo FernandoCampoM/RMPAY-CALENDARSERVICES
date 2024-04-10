@@ -24,6 +24,7 @@ public interface IUserService {
     public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry);
     public ResponseEntity<?> findAll();
     public ResponseEntity<?> findAll(Pageable pageable,String filter);
+    public ResponseEntity<?> findAll(Pageable pageable);
     public ResponseEntity<?> getActivesClients();
     public ResponseEntity<?> getUnregisteredClients();
     

@@ -91,7 +91,7 @@ public class PaymentMethosService implements IPaymentMethosService {
             
             PaymentMethods objPaymentMethod=exist.get();
             objPaymentMethod.setName(prmPaymentMethod.getName());
-            objPaymentMethod.setEnable(code);
+            objPaymentMethod.setEnable(prmPaymentMethod.getEnable());
             objPaymentMethod.setNotes(prmPaymentMethod.getNotes());
             objPaymentMethod=this.serviceDBPaymentMethod.save(objPaymentMethod);
              PaymentMethodDTO categoryDTO=this.mapper.map(objPaymentMethod, PaymentMethodDTO.class);

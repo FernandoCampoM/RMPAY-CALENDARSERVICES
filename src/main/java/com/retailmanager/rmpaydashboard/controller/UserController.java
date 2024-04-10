@@ -72,8 +72,11 @@ public class UserController {
      * @return          response entity with user data
      */
     @GetMapping("/users/all/pageable")
-    public ResponseEntity<?> findAll(@PageableDefault(size = 200,page = 0) Pageable pageable,@RequestParam(required=true) String filter){
-        return this.userService.findAll(pageable,filter);
+    public ResponseEntity<?> findAll(@PageableDefault(size = 200,page = 0) Pageable pageable,@RequestParam(required=false) String filter){
+        if(filter!=null){
+            return this.userService.findAll(pageable,filter);
+        }   
+        return this.userService.findAll(pageable);
     }
     /**
      * Find all unregistered users.

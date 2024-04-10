@@ -706,9 +706,22 @@ public class UserService implements IUserService{
      * @return           ResponseEntity with list of UserDTO and HTTP status
      */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> findAll(Pageable pageable, String filter) {
+        filter="%"+filter+"%";
         List<UserDTO> listUserDTO=new ArrayList<>();
         Iterable<User> listUser=this.serviceDBUser.findyAllClientsByFilter(pageable,filter);
+        listUser.forEach(objUser->{
+            if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
+                listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
+            }
+        });
+        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+    }
+    @Override
+    public ResponseEntity<?> findAll(Pageable pageable) {
+        List<UserDTO> listUserDTO=new ArrayList<>();
+        Iterable<User> listUser=this.serviceDBUser.findyAllClientsPageable(pageable);
         listUser.forEach(objUser->{
             if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
                 listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
