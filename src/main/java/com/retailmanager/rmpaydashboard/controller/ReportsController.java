@@ -19,8 +19,8 @@ public class ReportsController {
     private IReportService reportService;
 
     @GetMapping("/reports/daily-summary")
-    public ResponseEntity<?> getDailySummary(@RequestParam(name = "businessId") Long businessId) {
-        return reportService.getDailySummary(businessId);
+    public ResponseEntity<?> getDailySummary(@RequestParam(name = "businessId") Long businessId, @RequestParam(name = "date") LocalDate date) {
+        return reportService.getDailySummary(businessId, date);
     }
 
     @GetMapping("/reports/summary-by-date-range")

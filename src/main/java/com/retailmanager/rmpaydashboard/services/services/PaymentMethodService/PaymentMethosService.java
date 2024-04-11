@@ -79,12 +79,12 @@ public class PaymentMethosService implements IPaymentMethosService {
             Optional<PaymentMethods> exist = this.serviceDBPaymentMethod.findById(code);
             if(exist!=null){
                 if(!exist.isPresent()){
-                    EntidadNoExisteException objExeption = new EntidadNoExisteException(" El PaymentMehtod con code "+prmPaymentMethod.getCode()+" no ya existe en la Base de datos");
+                    EntidadNoExisteException objExeption = new EntidadNoExisteException(" El PaymentMehtod con code "+prmPaymentMethod.getCode()+" no  existe en la Base de datos");
                     throw objExeption;
                 }
             }
             Optional<PaymentMethods> exist2 = this.serviceDBPaymentMethod.findOneByName(prmPaymentMethod.getName());
-            if(exist2.isPresent()){
+            if(exist2.isPresent() && exist2.get().getCode().compareTo(code)!=0){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El PaymentMehtod con name "+prmPaymentMethod.getName()+" ya existe en la Base de datos");
                 throw objExeption;
             }
@@ -172,7 +172,7 @@ public class PaymentMethosService implements IPaymentMethosService {
         Optional<PaymentMethods> exist=this.serviceDBPaymentMethod.findOneByName(name);
         if(exist!=null){
             if(!exist.isPresent()){
-                EntidadNoExisteException objExeption = new EntidadNoExisteException(" El PaymentMehtod con name "+name+" no ya existe en la Base de datos");
+                EntidadNoExisteException objExeption = new EntidadNoExisteException(" El PaymentMehtod con name "+name+" no  existe en la Base de datos");
                 throw objExeption;
             }
             PaymentMethods objPaymentMethod=exist.get();
@@ -194,10 +194,12 @@ public class PaymentMethosService implements IPaymentMethosService {
      * @return        response entity with true if the update was successful
      */
     @Override
+    @Transactional
     public ResponseEntity<?> updateEnable(String code, boolean enable) {
         if(code!=null){
             Optional<PaymentMethods> optional= this.serviceDBPaymentMethod.findById(code);
             if(optional.isPresent()){
+                System.out.println("Entra a updateEnable");
                 this.serviceDBPaymentMethod.updateEnable(code, enable);
                 return new ResponseEntity<Boolean>(true,HttpStatus.OK);
             }

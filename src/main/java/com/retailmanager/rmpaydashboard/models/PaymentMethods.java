@@ -16,7 +16,7 @@ public class PaymentMethods {
     @Column(nullable = false)
     private String name;
     @Column(nullable = false)
-    private String enable;
+    private Boolean enable;
     @Column(nullable = true)
     private String notes;
 }

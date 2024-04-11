@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.models.User;
 
 public interface UserRepository extends  CrudRepository<User,Long>{
@@ -48,14 +49,14 @@ public interface UserRepository extends  CrudRepository<User,Long>{
     //
     public List<User> findByLastLoginIsNullOrLastLoginLessThan(LocalDate date);
 
-    @Query("SELECT u FROM User u WHERE  u.name like :filter or u.username like :filter or u.email like :filter or u.phone like :filter or ELEMENT(u.business).name like :filter or ELEMENT(u.business).merchantId like :filter  or ELEMENT(u.business).address.address1 like :filter or ELEMENT(u.business).address.address2 like :filter or ELEMENT(u.business).address.city like :filter or ELEMENT(u.business).address.country like :filter")
-    public Page<User> findyAllClientsByFilter(Pageable pageable, String filter);
+    @Query("SELECT DISTINCT u FROM User u WHERE u.rol=:rol and  u.name like :filter or u.username like :filter or u.email like :filter or u.phone like :filter or ELEMENT(u.business).name like :filter or ELEMENT(u.business).merchantId like :filter  or ELEMENT(u.business).address.address1 like :filter or ELEMENT(u.business).address.address2 like :filter or ELEMENT(u.business).address.city like :filter or ELEMENT(u.business).address.country like :filter")
+    public Page<User> findyAllClientsByFilter(Pageable pageable, String filter, Rol rol);
 
     /*
      * Obtiene todos los usuarios con paginación
      */
-    @Query("SELECT u FROM User u" )
-    public Page<User> findyAllClientsPageable(Pageable pageable);
+    @Query("SELECT DISTINCT u FROM User u  WHERE u.rol=:rol" )
+    public Page<User> findyAllClientsPageable(Pageable pageable, Rol rol);
     
 
 }

@@ -142,7 +142,7 @@ public class EmailService implements IEmailService{
     public void notifyPaymentATHMovil(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
         List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
-        String subject = "RECIBO DE PAGO VIA ATH MOVIL";
+        String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA ATH MOVIL";
         String htmlBody = createBodyEmailATHMovil(emailData);
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
     }
@@ -158,7 +158,7 @@ public class EmailService implements IEmailService{
         try {
             List<String> toList = Arrays.asList(emailData.getEmail());
             List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
-            String subject = "RECIBO DE PAGO VIA CUENTA BANCARIA";
+            String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA CUENTA BANCARIA";
             String htmlBody = createBodyEmailBankAccount(emailData);
             Optional<FileModel> fileModel=this.fileRepository.findById(emailData.getChequeVoidId());
             byte[] file=null;
@@ -260,7 +260,7 @@ public class EmailService implements IEmailService{
     public void notifyPaymentCreditCard(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
         List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
-        String subject = "RECIBO DE PAGO VIA TARJETA";
+        String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA TARJETA";
         if(emailData.getInvoiceNumber()!=0){
             subject = "RECIBO #"+emailData.getInvoiceNumber()+" DE PAGO CON TARJETA ";
         }
@@ -381,7 +381,7 @@ public class EmailService implements IEmailService{
                 + "                                                                        margin: 0 auto;\">"
                 + "                                                                </div>"
                 + "                                                            </div><br>"
-                + "                                                            <u>RECIBO DE PAGO VIA TARJETA DE CREDITO</u>"
+                + "                                                            <u>RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA TARJETA DE CREDITO</u>"
                 + "                                                            <br>"
                 + "                                                             <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
                 + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\"> "
@@ -622,7 +622,7 @@ public class EmailService implements IEmailService{
                 + "                                                                        margin: 0 auto; \">"
                 + "                                                                </div>"
                 + "                                                            </div><br>"
-                + "                                                            <u>RECIBO DE PAGO VIA CUENTA BANCARIA</u>"
+                + "                                                            <u>RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA CUENTA BANCARIA</u>"
                 + "                                                            <br><br>"
                 + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">"
                 + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">"
@@ -860,7 +860,7 @@ public class EmailService implements IEmailService{
                 + "                                                                        margin: 0 auto; \">"
                 + "                                                                </div>"
                 + "                                                            </div><br>"
-                + "                                                            <u>RECIBO DE PAGO VIA <img src='https://www.ivucontrolpr.com/static/media/ath-movile-logo.png'"
+                + "                                                            <u>RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA <img src='https://www.ivucontrolpr.com/static/media/ath-movile-logo.png'"
                 + "                                                                alt='Logo' class='logo' style=\"max-width: 100px;"
                 + "                                                                height: auto;"
                 + "                                                                margin: 0 auto; \"></u>"

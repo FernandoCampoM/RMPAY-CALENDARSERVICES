@@ -5,7 +5,8 @@ import java.time.LocalDate;
 import org.springframework.http.ResponseEntity;
 
 public interface IReportService {
-    public ResponseEntity<?> getDailySummary(Long businessId);
+
+    public ResponseEntity<?> getDailySummary(Long businessId, LocalDate date);
     public ResponseEntity<?> getSummaryByDateRangee(Long businessId, LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> getLowInventory(Long businessId);
     public ResponseEntity<?> getBestSellingItems(Long businessId,LocalDate startDate, LocalDate endDate, String categoria);

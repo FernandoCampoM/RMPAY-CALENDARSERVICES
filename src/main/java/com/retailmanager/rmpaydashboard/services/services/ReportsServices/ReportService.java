@@ -56,10 +56,9 @@ public class ReportService implements IReportService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getDailySummary(Long businessId) {
+    public ResponseEntity<?> getDailySummary(Long businessId,LocalDate date) {
         DailySummaryDTO dailySummaryDTO=new DailySummaryDTO();
-        LocalDate currentDate= LocalDate.now();
-        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,currentDate,currentDate);
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,date,date);
         Object [] dailySummaryV=null;
         if(dailySummary!=null && dailySummary[0]!=null){
             dailySummaryV=(Object[]) dailySummary[0];
@@ -87,7 +86,7 @@ public class ReportService implements IReportService {
         if(dailySummaryV[4]!=null){
             dailySummaryDTO.setEstimatedRedTax(Double.parseDouble(dailySummaryV[4].toString()));
         }
-        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween("SALE", "SUCCEED", business, LocalDate.now(), LocalDate.now());
+        List<Sale> sales =this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusinessAndSaleEndDateBetween("SALE", "SUCCEED", business, date, date);
         Double benefit=0.0;
         Double propinas=0.0;
         if(sales!=null && sales.size()>0){
@@ -101,7 +100,7 @@ public class ReportService implements IReportService {
         dailySummaryDTO.setBenefit(benefit);
         dailySummaryDTO.setTotalTips(propinas);
         
-        Object [] dailySummaryByCategory=this.serviceDBSale.dailySummaryForCategory(businessId);
+        Object [] dailySummaryByCategory=this.serviceDBSale.dailySummaryForCategory(businessId,date);
         if(dailySummaryByCategory!=null){
             for(int i=0;i<dailySummaryByCategory.length;i++){
                 Object [] dailySummaryByCategoryV=(Object[]) dailySummaryByCategory[i];
@@ -112,7 +111,7 @@ public class ReportService implements IReportService {
             }
             
         }
-        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, LocalDate.now(), LocalDate.now());
+        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, date, date);
         if(dailySummaryBestSellingItems!=null){
             for(int i=0;i<dailySummaryBestSellingItems.length;i++){
                 Object [] dailySummaryBestSellingItemsV=(Object[]) dailySummaryBestSellingItems[i];

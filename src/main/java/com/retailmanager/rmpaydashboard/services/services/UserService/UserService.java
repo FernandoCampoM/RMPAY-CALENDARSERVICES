@@ -13,6 +13,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -709,25 +710,39 @@ public class UserService implements IUserService{
     @Transactional(readOnly = true)
     public ResponseEntity<?> findAll(Pageable pageable, String filter) {
         filter="%"+filter+"%";
-        List<UserDTO> listUserDTO=new ArrayList<>();
-        Iterable<User> listUser=this.serviceDBUser.findyAllClientsByFilter(pageable,filter);
-        listUser.forEach(objUser->{
-            if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
-                listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
-            }
+        Page<User> listUser=this.serviceDBUser.findyAllClientsByFilter(pageable,filter, Rol.ROLE_USER);
+        listUser.forEach(objUserDTO->{
+            objUserDTO.getBusiness().forEach(objBusinessDTO->{
+                objBusinessDTO.setUser(null);
+                objBusinessDTO.setCategories(null);
+                objBusinessDTO.getTerminals().forEach(objTerminalDTO->{
+                    objTerminalDTO.setBusiness(null);
+                });
+            });
         });
-        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+        return new ResponseEntity<Page<User>>(listUser,HttpStatus.OK);
     }
+    /**
+     * Find all users with pagination.
+     *
+     * @param  pageable  the pagination information
+     * @return           a ResponseEntity containing the paginated list of users
+     */
     @Override
     public ResponseEntity<?> findAll(Pageable pageable) {
-        List<UserDTO> listUserDTO=new ArrayList<>();
-        Iterable<User> listUser=this.serviceDBUser.findyAllClientsPageable(pageable);
-        listUser.forEach(objUser->{
-            if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
-                listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
-            }
+       
+        Page<User> listUser=this.serviceDBUser.findyAllClientsPageable(pageable, Rol.ROLE_USER);
+        
+        listUser.forEach(objUserDTO->{
+            objUserDTO.getBusiness().forEach(objBusinessDTO->{
+                objBusinessDTO.setUser(null);
+                objBusinessDTO.setCategories(null);
+                objBusinessDTO.getTerminals().forEach(objTerminalDTO->{
+                    objTerminalDTO.setBusiness(null);
+                });
+            });
         });
-        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+        return new ResponseEntity<Page<User>>(listUser,HttpStatus.OK);
     }
 
    

@@ -21,8 +21,7 @@ public class PaymentMethodDTO {
     private String name;
 
     @NotBlank(message = "{payment.method.enable.notBlank}")
-    @Size(max = 255, message = "{payment.method.enable.size}")
-    private String enable;
+    private Boolean enable;
 
     @Size(max = 1000, message = "{payment.method.notes.size}")
     private String notes;
