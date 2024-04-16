@@ -1,7 +1,11 @@
 package com.retailmanager.rmpaydashboard.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -96,5 +100,13 @@ public class UserBusinessController {
     @GetMapping("/userBusiness/permissions")
     public ResponseEntity<?> getAllPermissions() {
         return usersBusinessService.getAllPermissions();
+    }
+    @GetMapping("/userBusiness/products/{userBusinessId}")
+    public ResponseEntity<?> getProducts(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
+        return usersBusinessService.getProducts(userBusinessId);
+    }
+    @PutMapping("/userBusiness/products/{userBusinessId}")
+    public ResponseEntity<?> updateDownloadProducts(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId, @Valid @RequestBody @NotEmpty(message = "product_ids.notempty") List<Long> product_ids) {
+        return usersBusinessService.updateDownloadProducts(userBusinessId, product_ids);
     }
 }

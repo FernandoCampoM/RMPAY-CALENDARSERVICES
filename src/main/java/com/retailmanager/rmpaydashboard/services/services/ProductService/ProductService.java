@@ -29,9 +29,12 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadY
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Category;
 import com.retailmanager.rmpaydashboard.models.Product;
+import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
+import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 
 
@@ -48,6 +51,8 @@ public class ProductService implements IProductService {
     private CategoryRepository serviceDBCategory;
     @Autowired
     private BusinessRepository serviceDBBusiness;
+    @Autowired
+    private UserBusiness_ProductRepository ubpServices;
     
     /**
      * Save a product and handle exceptions.
@@ -96,6 +101,13 @@ public class ProductService implements IProductService {
             objProduct.setCategory(optionalCategory.get());
             if(objProduct!=null){
                 objProduct = this.serviceDBProducts.save(objProduct);
+                for(UsersBusiness usersBusiness:objProduct.getCategory().getBusiness().getUsersBusiness()){
+                    UserBusiness_Product ubp = new UserBusiness_Product();
+                    ubp.setObjProduct(objProduct);
+                    ubp.setDownload(false);
+                    ubp.setObjUser(usersBusiness);
+                    ubpServices.save(ubp);
+                }
             }
             
             if (objProduct != null) {
@@ -171,7 +183,9 @@ public class ProductService implements IProductService {
         objProduct = this.serviceDBProducts.save(objProduct);
         ResponseEntity<?> rta = null;
         if (objProduct != null) {
-            
+            for(UsersBusiness usersBusiness:objProduct.getCategory().getBusiness().getUsersBusiness()){
+                ubpServices.updateDownload(productId,usersBusiness.getUserBusinessId(),false);
+            }
             ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
             objProductRta.setIdCategory(categoryId);
             rta = new ResponseEntity<ProductDTO>(objProductRta, HttpStatus.OK);

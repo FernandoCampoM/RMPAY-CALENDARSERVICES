@@ -57,6 +57,9 @@ public class Business {
     
     @OneToMany(mappedBy = "business",fetch =FetchType.LAZY)
     private List<Terminal> terminals;
+
+    @OneToMany(mappedBy = "business",fetch =FetchType.LAZY)
+    private List<UsersBusiness> usersBusiness;
     
 
 }

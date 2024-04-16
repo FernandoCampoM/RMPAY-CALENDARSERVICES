@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.UsersBusinessService;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
@@ -13,5 +15,8 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> findByBusiness(Long idBusiness);
     public ResponseEntity<?> updatePermission(Long idUser, Long idPermission, boolean enable);
     public ResponseEntity<?> getAllPermissions();
+    public ResponseEntity<?> getProducts(Long userBusinessId);
+    public ResponseEntity<?> updateDownloadProducts(Long userBusinessId,List<Long> product_ids);
+
 
 }

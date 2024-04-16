@@ -15,13 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Permission;
+import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UserPermission;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.PermissionDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 
 @Service
@@ -31,6 +34,8 @@ public class UsersBusinesService implements IUsersBusinessService{
     private ModelMapper mapper;
     @Autowired
     private UsersAppRepository usersAppDBService;
+    @Autowired
+    private UserBusiness_ProductRepository ubpServices;
     @Autowired
     private BusinessRepository serviceDBBusiness;
     @Autowired
@@ -261,6 +266,50 @@ public class UsersBusinesService implements IUsersBusinessService{
         Iterable<Permission> permissions = this.serviceDBUPermission.findAll();
         List<PermissionDTO> permissionsDTO = this.mapper.map(permissions,  new TypeToken<List<PermissionDTO>>(){}.getType());
         return new ResponseEntity<List<PermissionDTO>>(permissionsDTO, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> getProducts(Long userBusinessId) {
+        List<ProductDTO> productDTOs=new ArrayList<>();
+        
+            UsersBusiness objUser=this.usersAppDBService.findById(userBusinessId).orElse(null);
+            if(objUser==null){
+                throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
+            }
+            try {    
+            List<UserBusiness_Product> ubpList=this.ubpServices.findByObjUserAndDownload(objUser,false);
+            for(UserBusiness_Product ubp:ubpList){
+                productDTOs.add(this.mapper.map(ubp.getObjProduct(), ProductDTO.class));
+                //ubp.setDownload(true);
+                //this.ubpServices.save(ubp);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+
+        return new ResponseEntity<>(productDTOs,HttpStatus.OK);
+    }
+
+        /**
+     * Actualiza el estado de descarga de productos para un usuario de negocio.
+     * 
+     * @param userBusinessId El ID del usuario de negocio.
+     * @param product_ids    La lista de IDs de productos que se van a marcar como descargados.
+     * @return               ResponseEntity con el estado de la operación.
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> updateDownloadProducts(Long userBusinessId,List<Long> product_ids) {
+        try{
+            for(Long product_id:product_ids){
+                this.ubpServices.updateDownload(product_id, userBusinessId, true);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+        return new ResponseEntity<>(true,HttpStatus.OK);
     }
     
 }
