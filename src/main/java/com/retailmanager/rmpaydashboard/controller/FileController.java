@@ -3,6 +3,8 @@ package com.retailmanager.rmpaydashboard.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,5 +28,26 @@ public class FileController {
     @PostMapping("/file")
     public ResponseEntity<?> guardarArchivo(@RequestParam("file") MultipartFile file) {
         return fileService.save(file);
+    }
+    /**
+     * Saves an image file to the system.
+     *
+     * @param  file  the image file to be saved
+     * @return       the response entity representing the status of the save operation
+     */
+    @PostMapping("/file/image")
+    public ResponseEntity<?> guardarImagen(@RequestParam("file") MultipartFile file) {
+        return fileService.saveImage(file);
+    }
+    /**
+     * Downloads an image file with the given fileName.
+     *
+     * @param  fileName  the name of the image file to be downloaded
+     * @return           the response entity representing the downloaded image file
+     */
+    @GetMapping("/file/image/{fileName}")
+    public ResponseEntity<?> downloadImage(@PathVariable String fileName) {
+        System.out.println("fileName: " + fileName);
+        return fileService.downloadImage(fileName);
     }
 }

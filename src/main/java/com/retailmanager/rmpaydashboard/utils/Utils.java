@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.utils;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,26 @@ public class Utils {
         System.out.println(new BCryptPasswordEncoder().matches("ejemploUsuario", "$2a$10$MrqOwjIdvn4JMjYMbGEt/exnNlQEf7ytzMU6Jr1Jv01YR.uhrK7BO"));
         
         
+        String originalFileName = "archivo con caracteres : no permitidos.txt";
+        String safeFileName = generateSafeFileName(originalFileName);
+        System.out.println("Nombre seguro para el archivo: " + safeFileName);
     
     }
+    public static String generateSafeFileName(String originalFileName) {
+        // Normalizar el nombre de archivo para eliminar caracteres especiales o no ASCII
+        String normalizedFileName = Normalizer.normalize(originalFileName, Normalizer.Form.NFD)
+                .replaceAll("[^\\p{ASCII}]", "");
+        
+        // Eliminar caracteres no permitidos en nombres de archivos
+        normalizedFileName = normalizedFileName.replaceAll("[/\\\\:*?\"<>| ]", "_");
+        
+        // Limitar la longitud del nombre de archivo si es necesario
+        int maxLength = 255; // Longitud máxima permitida por la mayoría de los sistemas de archivos
+        if (normalizedFileName.length() > maxLength) {
+            normalizedFileName = normalizedFileName.substring(0, maxLength);
+        }
+        
+        return normalizedFileName;
+    }
+
 }
