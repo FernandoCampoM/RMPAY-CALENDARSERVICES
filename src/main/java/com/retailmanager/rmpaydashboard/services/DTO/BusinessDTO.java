@@ -37,6 +37,7 @@ public class BusinessDTO {
     private LocalDate lastPayment;
     @Valid
     private AddressDTO address;
+    private UserDTO user;
 
     @NotNull(message = "{business.userId.null}")
     private Long userId;

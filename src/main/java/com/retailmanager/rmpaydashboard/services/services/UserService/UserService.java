@@ -14,6 +14,7 @@ import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,7 @@ public class UserService implements IUserService{
 
     @Autowired
     private UserRepository serviceDBUser;
+
     @Autowired
     private ServiceRepository serviceDBService;
     @Autowired 
@@ -710,17 +712,19 @@ public class UserService implements IUserService{
     @Transactional(readOnly = true)
     public ResponseEntity<?> findAll(Pageable pageable, String filter) {
         filter="%"+filter+"%";
-        Page<User> listUser=this.serviceDBUser.findyAllClientsByFilter(pageable,filter, Rol.ROLE_USER);
-        listUser.forEach(objUserDTO->{
-            objUserDTO.getBusiness().forEach(objBusinessDTO->{
-                objBusinessDTO.setUser(null);
-                objBusinessDTO.setCategories(null);
-                objBusinessDTO.getTerminals().forEach(objTerminalDTO->{
-                    objTerminalDTO.setBusiness(null);
-                });
+        Page<Business> listBusiness=this.serviceDBBusiness.findyAllClientsByFilter(pageable,filter);
+
+        listBusiness.forEach(objBusinessDTO->{
+            objBusinessDTO.setUsersBusiness(null);
+
+            objBusinessDTO.setCategories(null);
+            objBusinessDTO.getTerminals().forEach(objTerminalDTO->{
+                objTerminalDTO.setBusiness(null);
             });
+            objBusinessDTO.getUser().setBusiness(null);
         });
-        return new ResponseEntity<Page<User>>(listUser,HttpStatus.OK);
+
+        return new ResponseEntity<Page<Business>>(listBusiness,HttpStatus.OK);
     }
     /**
      * Find all users with pagination.
@@ -731,18 +735,18 @@ public class UserService implements IUserService{
     @Override
     public ResponseEntity<?> findAll(Pageable pageable) {
        
-        Page<User> listUser=this.serviceDBUser.findyAllClientsPageable(pageable, Rol.ROLE_USER);
+        Page<Business> listBusiness=this.serviceDBBusiness.findyAllClientsPageable(pageable);
         
-        listUser.forEach(objUserDTO->{
-            objUserDTO.getBusiness().forEach(objBusinessDTO->{
-                objBusinessDTO.setUser(null);
-                objBusinessDTO.setCategories(null);
-                objBusinessDTO.getTerminals().forEach(objTerminalDTO->{
-                    objTerminalDTO.setBusiness(null);
-                });
+        listBusiness.forEach(objBusinessDTO->{
+            objBusinessDTO.setUsersBusiness(null);
+
+            objBusinessDTO.setCategories(null);
+            objBusinessDTO.getTerminals().forEach(objTerminalDTO->{
+                objTerminalDTO.setBusiness(null);
             });
+            objBusinessDTO.getUser().setBusiness(null);
         });
-        return new ResponseEntity<Page<User>>(listUser,HttpStatus.OK);
+        return new ResponseEntity<Page<Business>>(listBusiness,HttpStatus.OK);
     }
 
    
