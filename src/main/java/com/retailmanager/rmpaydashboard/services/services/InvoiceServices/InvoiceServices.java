@@ -179,12 +179,14 @@ public class InvoiceServices implements IInvoiceServices {
                 objEmailBodyData.setReferenceNumber(
                         "DESCUENTO APLICADO:$" + String.valueOf(formato.format(objBusiness.getDiscount())));
                 objEmailBodyData.setDiscount(objBusiness.getDiscount());
+                objEmailBodyData.setSubTotal(totalAmount);
                 if (objBusiness.getDiscount() < totalAmount) {
                     totalAmount = totalAmount - objBusiness.getDiscount();
+                    objBusiness.setDiscount(0.0);
                 } else {
-                    totalAmount = 0.0;
                     prmPaymentInfo.setPaymethod("PAID-WITH-DISCOUNT");
                     objBusiness.setDiscount(objBusiness.getDiscount() - totalAmount);
+                    totalAmount = 0.0;
                 }
             }
             objEmailBodyData.setAmount(totalAmount);
@@ -206,9 +208,9 @@ public class InvoiceServices implements IInvoiceServices {
                         objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
                         return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
                     }
-                    serviceReferenceNumber = respPayment.getServiceReferenceNumber();
+                    serviceReferenceNumber = respPayment.getServiceReferenceNumber()+" - "+objEmailBodyData.getReferenceNumber();
                     objEmailBodyData
-                            .setReferenceNumber(serviceReferenceNumber + " - " + objEmailBodyData.getReferenceNumber());
+                            .setReferenceNumber(serviceReferenceNumber );
                     break;
             }
             Invoice objInvoice = new Invoice();
@@ -352,7 +354,7 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
                     objInvoice.setTotalAmount(totalAmount);
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
-                    objInvoice.setReferenceNumber(serviceReferenceNumber);
+                    objInvoice.setReferenceNumber("SUB TOTAL: $"+objEmailBodyData.getSubTotal() + " DESCUENTO APLICADO: $"+objEmailBodyData.getDiscount());
                     objInvoice.setServiceId(objBusiness.getServiceId());
                     objInvoice.setInProcess(false);
                     objInvoice.setTerminalIds(
@@ -365,7 +367,6 @@ public class InvoiceServices implements IInvoiceServices {
             }
             this.serviceDBBusiness.save(objBusiness);
             InvoiceDTO objInvoiceDTO = this.mapper.map(objInvoice, InvoiceDTO.class);
-            
             return new ResponseEntity<InvoiceDTO>(objInvoiceDTO, HttpStatus.OK);
         } catch (ConsumeAPIException ex) {
             System.err.println("Error en el consumo de BlackStone: CodigoHttp " + ex.getHttpStatusCode()

@@ -460,6 +460,8 @@ public class EmailService implements IEmailService{
             }
             if(emailData.getDiscount()!=0.0) {
                 message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
                 message=message+"<p><strong><u>__________________________________</u></strong></p>";
@@ -703,6 +705,8 @@ public class EmailService implements IEmailService{
             }
             if(emailData.getDiscount()!=0.0) {
                 message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
                 message=message+"<p><strong><u>__________________________________</u></strong></p>";
@@ -925,6 +929,8 @@ public class EmailService implements IEmailService{
                 
             }
             if(emailData.getDiscount()!=0.0) {
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
                 message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
@@ -1169,6 +1175,8 @@ public class EmailService implements IEmailService{
                 
             }
             if(emailData.getDiscount()!=0.0) {
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
                 message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }

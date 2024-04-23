@@ -32,6 +32,7 @@ public class EmailBodyData {
     private String expDateYear;
 
     private double amount;
+    private double subTotal;
     private boolean automaticPayments;
     
     private List<RejectedPaymentsDTO> rejectedPayments= new ArrayList<>();

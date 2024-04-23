@@ -119,6 +119,7 @@ public class UserService implements IUserService{
          User objUserRTA=null;
          if(objUser!=null){
             objUserRTA=this.serviceDBUser.save(objUser);
+            objUserRTA.setBusiness(null);
          }
         UserDTO userDTO=this.mapper.map(objUserRTA, UserDTO.class);
         if(userDTO!=null){
@@ -156,6 +157,7 @@ public class UserService implements IUserService{
                 objUser.setEmail(prmUser.getEmail());
                 objUser.setPhone(prmUser.getPhone());
                 User objUserRTA=this.serviceDBUser.save(objUser);
+                objUserRTA.setBusiness(null);
                 UserDTO userDTO=this.mapper.map(objUserRTA, UserDTO.class);
                 
                 if(userDTO!=null){
@@ -252,7 +254,7 @@ public class UserService implements IUserService{
         if(userId!=null){
             Optional<User> optional= this.serviceDBUser.findById(userId);
             if(optional.isPresent()){
-                optional.get().getBusiness();
+                optional.get().getBusiness().forEach(business -> business.setUser(null));
                 List<BusinessDTO> listBusiness=this.mapper.map(optional.get().getBusiness(),new TypeToken<List<BusinessDTO>>(){}.getType());
                 
                 return new ResponseEntity<List<BusinessDTO>>(listBusiness,HttpStatus.OK);
@@ -710,6 +712,7 @@ public class UserService implements IUserService{
         Iterable<User> listUser=this.serviceDBUser.findAll();
         listUser.forEach(objUser->{
             if(objUser.getRol().compareTo(Rol.ROLE_USER)==0){
+                objUser.getBusiness().forEach(businessObj->{businessObj.setUser(null);});
                 listUserDTO.add(this.mapper.map(objUser, UserDTO.class));
             }
         });
@@ -725,6 +728,9 @@ public class UserService implements IUserService{
     @Transactional(readOnly = true)
     public ResponseEntity<?> getActivesClients() {
         List<User> listUser=this.serviceDBUser.findActives();
+        listUser.forEach(user->{
+            user.getBusiness().forEach(businessObj->{businessObj.setUser(null);});
+        });
         List<UserDTO> listUserDTO=this.mapper.map(listUser, new TypeToken<List<UserDTO>>() {}.getType());
         return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
     }
