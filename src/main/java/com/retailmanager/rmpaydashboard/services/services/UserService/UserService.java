@@ -500,7 +500,7 @@ public class UserService implements IUserService{
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
-                                    objInvoice.setInProcess(false);
+                                    objInvoice.setInProcess(true);
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());

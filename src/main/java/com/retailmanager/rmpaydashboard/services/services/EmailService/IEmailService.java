@@ -6,6 +6,7 @@ public interface IEmailService {
     public void sendHtmlEmail(List<String> toList, String subject, String htmlBody);
     public void sendHtmlEmailWithAttachmentAndCCO(List<String> toList, String subject, String htmlBody, List<String> cc, byte[] attachmentData, String attachmentFileName);
     public void notifyPaymentCreditCard(EmailBodyData emailData);
+    public void notifyPaymentDiscount(EmailBodyData emailData);
     public void notifyPaymentATHMovil(EmailBodyData emailData);
     public void notifyPaymentBankAccount(EmailBodyData emailData);
     public void notifyNewRegister(EmailBodyData emailData);

@@ -124,7 +124,6 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
    
     /**
      * Retrieves a list of ItemForSale objects based on the provided businessId.
-     * TODO: Cambair el orderby de acuerdo a la respuesta de Carlos Omar
      * @param  businessId  the ID of the business
      * @return             a list of ItemForSale objects associated with the business
      */

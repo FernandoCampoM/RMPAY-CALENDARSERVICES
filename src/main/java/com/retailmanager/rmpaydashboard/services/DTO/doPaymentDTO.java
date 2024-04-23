@@ -12,12 +12,13 @@ import lombok.Setter;
 
 @Getter @Setter @NoArgsConstructor  @AllArgsConstructor
 public class doPaymentDTO {
+    private boolean terms;
     /**
      * NUMERO DE TERMINALES que se van a pagar
      */
     @NotNull(message = "{doPayment.terminalNumber.null}")
     @Positive(message = "{doPayment.terminalNumber.positive}") 
-    private Integer terminalNumber;
+    private Integer terminalsNumber;
     private Long businessId;
     @Size(min = 1, message = "{doPayment.terminalsDoPayment.size}")
     private List<TerminalsDoPaymentDTO> terminalsDoPayment;

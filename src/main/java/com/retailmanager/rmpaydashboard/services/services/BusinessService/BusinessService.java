@@ -34,6 +34,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
@@ -154,6 +155,7 @@ public class BusinessService implements IBusinessService {
         Long serviceId = prmBusiness.getServiceId();
         Optional<Service> existService=null;
         Service objService=null;
+        
         if(serviceId!=null){
             if(serviceId!=0){
                 existService= this.serviceDBService.findById(serviceId);
@@ -187,6 +189,9 @@ public class BusinessService implements IBusinessService {
         ResponsePayment respPayment;
         String serviceReferenceNumber=null;
         EmailBodyData objEmailBodyData=mapper.map(prmBusiness, EmailBodyData.class);
+        objEmailBodyData.setDiscount(0.0);
+        objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
+        Double aditionalTerminalsValue=0.0;
         try {
             objEmailBodyData.setEmail(objUserDTO.getEmail());
             if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0){
@@ -265,10 +270,11 @@ public class BusinessService implements IBusinessService {
                             switch (prmBusiness.getPaymethod()){
                                 case "CREDIT-CARD":
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
+                                        TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
@@ -280,6 +286,17 @@ public class BusinessService implements IBusinessService {
                                         }
                                         objTerminal.setAutomaticPayments(prmBusiness.isAutomaticPayments());
                                         objTerminal=serviceDBTerminal.save(objTerminal);
+                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
+                                         if(i==0){
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                        }else{
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objEmailBodyData.getAdditionalTerminalsValue())));
+                                        }
+                                        objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
+                                        objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
+                                        objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                        objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
+                                        objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
@@ -292,6 +309,7 @@ public class BusinessService implements IBusinessService {
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmBusiness.getServiceId());
+                                    objInvoice.setInProcess(false);
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
@@ -299,10 +317,11 @@ public class BusinessService implements IBusinessService {
                                 break;
                                 case "ATHMOVIL":
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
+                                        TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
@@ -311,9 +330,20 @@ public class BusinessService implements IBusinessService {
                                         }else{
                                             objTerminal.setPrincipal(false);
                                         }
-                                        objTerminal.setPayment(true);
+                                        objTerminal.setPayment(false);
                                         objTerminal.setAutomaticPayments(prmBusiness.isAutomaticPayments());
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
+                                         if(i==0){
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                        }else{
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        }
+                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
+                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
+                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
+                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
@@ -325,7 +355,7 @@ public class BusinessService implements IBusinessService {
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmBusiness.getServiceId());
-                                    objInvoice.setInProcess(false);
+                                    objInvoice.setInProcess(true);
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
@@ -333,10 +363,11 @@ public class BusinessService implements IBusinessService {
                                     break;
                                 case "BANK-ACCOUNT":
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
+                                        TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
@@ -350,6 +381,17 @@ public class BusinessService implements IBusinessService {
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
+                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
+                                         if(i==0){
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                        }else{
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        }
+                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
+                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
+                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
+                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                     }
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -142,7 +143,9 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyPaymentATHMovil(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
         String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA ATH MOVIL";
         String htmlBody = createBodyEmailATHMovil(emailData);
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
@@ -158,7 +161,9 @@ public class EmailService implements IEmailService{
     public void notifyPaymentBankAccount(EmailBodyData emailData) {
         try {
             List<String> toList = Arrays.asList(emailData.getEmail());
-            List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+            List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+            cc.add(emailConfigData.getEmailTo());
             String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA CUENTA BANCARIA";
             String htmlBody = createBodyEmailBankAccount(emailData);
             Optional<FileModel> fileModel=this.fileRepository.findById(emailData.getChequeVoidId());
@@ -182,7 +187,9 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyNewRegister(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
         String subject = "NUEVO CLIENTE REGISTRADO EN RMPAY";
         
         String htmlBody = createBodyNewRegistry(emailData);
@@ -193,7 +200,9 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyNewBusiness(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
         String subject = "NUEVO NEGOCIO REGISTRADO EN RMPAY";
         
         String htmlBody = createBodyNewRegistry(emailData);
@@ -205,7 +214,9 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyNewTerminal(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
         String subject = "NUEVO TERMINAL REGISTRADO EN RMPAY PARA EL NEGOCIO "+emailData.getBusinessName();
         
         String htmlBody = createBodyNewRegistry(emailData);
@@ -224,7 +235,9 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyRejectedPayment(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
         String subject = "EL PAGO HA SIDO RECHAZADO";
         
         String htmlBody = createBodyPaymentRejected(emailData);
@@ -240,7 +253,8 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyErrorRegister(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailConfigData.getEmailTo());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
         String subject = "CLIENTE SE HA INTENTADO REGISTRAR EN RMPAY PERO FALLÓ";
         if(emailData.isBuyTerminal()){
             subject = "CLIENTE "+emailData.getBusinessName().toUpperCase()+" HA INTENTADO COMPRAR UNA TERMINAL EN RMPAY PERO FALLÓ";
@@ -260,12 +274,33 @@ public class EmailService implements IEmailService{
     @Override
     public void notifyPaymentCreditCard(EmailBodyData emailData) {
         List<String> toList = Arrays.asList(emailData.getEmail());
-        List<String> cc = Arrays.asList(emailConfigData.getEmailCCO());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
         String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA TARJETA";
         if(emailData.getInvoiceNumber()!=0){
             subject = "RECIBO #"+emailData.getInvoiceNumber()+" DE PAGO CON TARJETA ";
         }
         String htmlBody = createBodyEmailCreditCard(emailData);
+        sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
+    }
+    /**
+     * Notifies the user about a payment with a discount available.
+     *
+     * @param  emailData  the email body data containing the email and invoice number
+     * @return            void
+     */
+    @Override
+    public void notifyPaymentDiscount(EmailBodyData emailData) {
+        List<String> toList = Arrays.asList(emailData.getEmail());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        cc.add(emailConfigData.getEmailTo());
+        String subject = "RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO CON DESCUENTO DISPONIBLE";
+        if(emailData.getInvoiceNumber()!=0){
+            subject = "RECIBO #"+emailData.getInvoiceNumber()+" DE PAGO CON DESCUENTO DISPONIBLE";
+        }
+        String htmlBody = createBodyEmailDiscount(emailData);
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
     }
     /**
@@ -553,6 +588,228 @@ public class EmailService implements IEmailService{
                 + "</html>";
         return message;
     }
+    
+    private String createBodyEmailDiscount(EmailBodyData emailData) {
+        LocalDate fechaActual = LocalDate.now();
+       
+        
+        DecimalFormat formato = new DecimalFormat("#.00");
+
+        String mensageServicio = "Pago por saldo actual($" + emailData.getAmount() + ")";
+        if (emailData.isAutomaticPayments()) {
+            mensageServicio = "Pago por saldo actual($" + emailData.getAmount() + ") y pagos siguientes automatizados";
+        }
+        String message = "<!DOCTYPE html>"
+                + "<html>"
+                + "<head>"
+                + "    <style>"
+                + "        .row{"
+                + "            margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;"
+                + "        }"
+                + "        .col1{"
+                + "            flex: 0 0 41.66667%;max-width: 41.66667%; text-align:right; margin:0px;"
+                + "        }"
+                + "        .col2{"
+                + "            flex: 0 0 41.66667%;max-width: 41.66667%;text-align:left;margin:0 0 0 10px"
+                + "        }"
+                + "    </style>"
+                + "</head>"
+                + "<body style=\"font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;\">"
+                + "    <div>"
+                + "        <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" style=\"width: 100.0%; background: whitesmoke\">"
+                + "            <tbody>"
+                + "                <tr>"
+                + "                    <td style=\"padding: 0in 0in 0in 0in\">"
+                + "                        <div align=\"center\">"
+                + "                            <table border=\"0\" cellpadding=\"0\" style=\"background: whitesmoke\">"
+                + "                                <tbody>"
+                + "                                    <tr>"
+                + "                                        <td width=\"640\" style=\"width: 480.0pt; padding: .75pt .75pt .75pt .75pt\">"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: gainsboro\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <td style=\"padding: 3.75pt 3.75pt 3.75pt 3.75pt\">"
+                + "                                                            <p class=\"v1MsoNormal\"><span style=\"font-size: 4.0pt\">"
+                + "                                                                    <u></u><u></u></span></p>"
+                + "                                                        </td>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><u></u> <u></u></p>"
+                + "                                            <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                style=\"width: 100.0%; background: white\">"
+                + "                                                <tbody>"
+                + "                                                    <tr>"
+                + "                                                        <div class=\"container\" style=\"max-width: 600px;margin: 0 auto;padding: 40px;background-color: white;"
+                + "                                                        border: 3px solid black;\">"
+                + "                                                            <div class=\"header\" style=\" display: flex;"
+                + "                                                            justify-content: space-between;"
+                + "                                                            align-items: center;\">"
+                + "                                                                <div class=\"info-column\" style=\" flex: 2;"
+                + "                                                                text-align: right;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"\" style=\"flex: 2;"
+                + "                                                                text-align: center; text-align: right;"
+                + "                                                                margin-left: 10%;\">"
+                + "                                                                    <img src='" + this.emailConfigData.getRMPAYLogo() +"'" 
+                + "                                                                        alt='Logo' class='logo' style=\"max-width: 300px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto;\">"
+                + "                                                                </div>"
+                + "                                                            </div><br>"
+                + "                                                            <u>RECIBO #" + emailData.getInvoiceNumber() + " DE PAGO VIA DESCUENTO DISPONIBLE</u>"
+                + "                                                            <br>"
+                + "                                                             <div style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\"> "
+                + "                                                                    <p>Fecha de solicitud: " + fechaActual.toString() + "</p>"
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                               "
+                + "                                                           "
+                + "                                                            <u>Información de Cliente:</u>"
+                + "                                                            <br><br>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                               "
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right; margin:0px;\"><strong>NOMBRE: </strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px;\">" + emailData.getName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%; text-align:right;margin:0px\"><strong>NEGOCIO: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                max-width: 41.66667%;text-align:left;margin:0 0 0 10px; \">" + emailData.getBusinessName() + ",</p>"
+                + "                                                            </div>"
+                + "                                                            <div  style=\"display: flex;flex-wrap: wrap;width:100%; margin-right: 0px;margin-left: -15px; \">"
+                + "                                                                <p class=\"col1\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%; text-align:right;margin:0px\"><strong># MERCHANT: </strong></p>"
+                + "                                                                <p class=\"col2\" style=\"flex: 0 0 41.66667%;width:41.66667%;"
+                + "                                                                    max-width: 41.66667%;text-align:left ;margin:0 0 0 10px;\">" + emailData.getMerchantId() + ",</p>"
+                + "                                                                </div> <br>"
+                + "                                                            <div style=\" margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">"
+                + "                                                                <u>Servicios solicitados:</u><p style=\"margin:0 0 0 10px;\"><strong>" + mensageServicio + "</strong> </p>"
+                + "                                                            </div>"
+                + "                                                           "
+                + "                                                            <div style=\"margin-right: 0px;width: 100%;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
+                + "                                                                <div  style=\"flex: 0 0 100%; max-width: 100%;width: 100%; text-align:right; margin:0px;\">";
+        if (emailData.getRejectedPayments().isEmpty()) {
+            for(TerminalsDoPaymentDTO terminal : emailData.getTerminalsDoPayment()) {
+                message=message+"<p><strong>" + terminal.getServiceDescription() + "</strong></p>";
+                
+            }
+            if(emailData.getDiscount()!=0.0) {
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
+            }
+                message=message+"<p><strong><u>__________________________________</u></strong></p>";
+            message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
+        } else {
+            for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
+                message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"
+                        + "                                                                <p><strong>PAGO RECHAZADO: $" + formato.format(25.00) + "<br><u>__________________________________</u></strong></p>"
+                        + "                                                                <p><strong>TOTAL DE FACTURA: $" + (emailData.getRejectedPayments().get(i).getTotalAmount() + 25.00) + "</strong></p><br>";
+            }
+            message = message + "                                                    <p><strong>TOTAL DE PAGO: $" + (emailData.getAmount()) + "</strong></p><br>";
+        }
+        message = message + "                                                   </div>"
+                + "                                                            </div>"                                                         
+                + "                                                            <br><br>"
+                + "                                                            <u>Información de Pago:</u>"
+                + "                                                            <div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Método de Pago</strong></p>"
+                + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">DESCUENTO</p>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"content\" style=\"margin-top: 20px;"
+                + "                                                            text-align: justify;\">"
+                + "                                                                <p>"
+                + "                                                                    Quedamos a su disposición para cualquier consulta que pueda hacernos. No dude en ponerse en contacto con nuestro"
+                + "                                                                    equipo de soporte al cliente en <a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a> o al 1-787-466-2091 en cualquier momento."
+                + "                                                                    <br><br>"
+                + "                                                                    Atentamente,"
+                + "                                                                </p>"
+                + "                                                            </div>"
+                + "                                                            <div style=\"display: flex;"
+                + "                                                            align-items: center;"
+                + "                                                            margin-top: 0px;\">"
+                + "                                                                <div class=\"logo-column\" style=\"flex: 1;"
+                + "                                                                text-align: center;"
+                + "                                                                margin-left: 40%;\">"
+                + "                                                                    <img src=\"" + this.emailConfigData.getRMLogo() +"\"" 
+                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\"max-width: 170px;"
+                + "                                                                        height: auto;"
+                + "                                                                        margin: 0 auto;\">"
+                + "                                                                </div>"
+                + "                                                                <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                    <strong>"
+                + "                                                                        <p>787-466-2091 <br>"
+                + "                                                                            601 Ave. Andalucia<br>"
+                + "                                                                            San Juan PR 00920</p>"
+                + "                                                                    </strong>"
+                + "                                                                </div>"
+                + "                                                            </div>"
+                + "                                                            <div class=\"info-column\" style=\" flex: 1;"
+                + "                                                                text-align: center; margin-left: 0;\">"
+                + "                                                                    <p>Copyright © IvuControlPR Todos los derechos reservados.</p>"
+                + "                                                            </div>"
+                + "                                                        </div>"
+                + "                                                    </tr>"
+                + "                                                </tbody>"
+                + "                                            </table>"
+                + "                                            <p class=\"v1MsoNormal\"><span style=\"display: none\"><u></u> <u></u></span>"
+                + "                                            </p>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%; background: #666c74\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td width=\"100%\" valign=\"top\""
+                + "                                                                style=\"width: 100.0%; padding: 7.5pt 22.5pt 7.5pt 22.5pt\">"
+                + "                                                                <p class=\"v1MsoNormal\"> <u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <div align=\"center\">"
+                + "                                                <table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\""
+                + "                                                    style=\"width: 100.0%\">"
+                + "                                                    <tbody>"
+                + "                                                        <tr>"
+                + "                                                            <td style=\"padding: 5.25pt 0in 0in 0in\">"
+                + "                                                                <p class=\"v1MsoNormal\"><span"
+                + "                                                                        style=\"font-size: 7.5pt; font-family: &quot;Helvetica&quot;,&quot;sans-serif&quot;; color: #999999\">Por"
+                + "                                                                        favor no responder a este email. Los correos"
+                + "                                                                        electrónicos enviados a esta dirección no serán"
+                + "                                                                        respondidos. <br /><br />Copyright ©"
+                + "                                                                        IvuControlPR Todos los derechos"
+                + "                                                                        reservados.</span><u></u><u></u></p>"
+                + "                                                            </td>"
+                + "                                                        </tr>"
+                + "                                                    </tbody>"
+                + "                                                </table>"
+                + "                                            </div>"
+                + "                                            <p class=\"v1MsoNormal\" align=\"center\" style=\"text-align: center\">"
+                + "                                                <u></u><u></u>"
+                + "                                            </p>"
+                + "                                        </td>"
+                + "                                    </tr>"
+                + "                                </tbody>"
+                + "                            </table>"
+                + "                        </div>"
+                + "                    </td>"
+                + "                </tr>"
+                + "            </tbody>"
+                + "        </table>"
+                + "    </div>"
+                + "</body>"
+                + "</html>";
+        return message;
+    }
     /**
      * Creates an email body for a bank account with the provided data.
      *
@@ -663,12 +920,16 @@ public class EmailService implements IEmailService{
                 + "                                                            <div style=\"width:100%;margin-right: 0px; display: flex;flex-wrap: wrap; \">"
                 + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:right; margin:0px;\">";
         if (emailData.getRejectedPayments().isEmpty()) {
-            message = message + "                                               <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong>"
-                    + "                                                                    </p>"
-                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong>"
-                    + "                                                                    </p>"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + formato.format(emailData.getAmount()) + " </strong>"
-                    + "                                                                    </p>";
+            for(TerminalsDoPaymentDTO terminal : emailData.getTerminalsDoPayment()) {
+                message=message+"<p><strong>" + terminal.getServiceDescription() + "</strong></p>";
+                
+            }
+            if(emailData.getDiscount()!=0.0) {
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
+            }
+                message=message+"<p><strong><u>__________________________________</u></strong></p>";
+            message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
                 message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"
@@ -903,11 +1164,16 @@ public class EmailService implements IEmailService{
                 + "                                                                <div  style=\"flex: 0 0 100%; width:100%; max-width: 100%; text-align:center; margin:0px;\">";
 //Valida si el pago corresponde a un pago rechazado
         if (emailData.getRejectedPayments().isEmpty()) {
-            message = message + "                                                   <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong>"
-                    + "                                                                    </p>"
-                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong>"
-                    + "                                                                    </p>"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong> </p>";
+            for(TerminalsDoPaymentDTO terminal : emailData.getTerminalsDoPayment()) {
+                message=message+"<p><strong>" + terminal.getServiceDescription() + "</strong></p>";
+                
+            }
+            if(emailData.getDiscount()!=0.0) {
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
+            }
+                message=message+"<p><strong><u>__________________________________</u></strong></p>";
+            message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
                 message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"
