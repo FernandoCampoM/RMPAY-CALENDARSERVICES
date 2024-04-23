@@ -18,6 +18,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Configur
 import com.retailmanager.rmpaydashboard.models.FileModel;
 import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 import com.retailmanager.rmpaydashboard.repositories.Sys_general_configRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.sendgrid.Method;
 import com.sendgrid.Request;
 import com.sendgrid.Response;
@@ -418,12 +419,16 @@ public class EmailService implements IEmailService{
                 + "                                                            <div style=\"margin-right: 0px;width: 100%;margin-left: -15px; display: flex;flex-wrap: wrap; \">"
                 + "                                                                <div  style=\"flex: 0 0 100%; max-width: 100%;width: 100%; text-align:right; margin:0px;\">";
         if (emailData.getRejectedPayments().isEmpty()) {
-            message = message + "                                               <p><strong>" + emailData.getServiceDescription() + ": " + emailData.getServiceValue() + "</strong>"
-                    + "                                                                    </p>"
-                    + "                                                                    <p><strong><u>+ TERMINALES ADICIONALES: " + (emailData.getAdditionalTerminals() - 1) + " X $" + emailData.getAdditionalTerminalsValue() + "</u> </strong>"
-                    + "                                                                    </p>"
-                    + "                                                                    <p><strong>TOTAL DE PAGO: $" + emailData.getAmount() + " </strong>"
-                    + "                                                                    </p>";
+            for(TerminalsDoPaymentDTO terminal : emailData.getTerminalsDoPayment()) {
+                message=message+"<p><strong>" + terminal.getServiceDescription() + "</strong></p>";
+                
+            }
+            if(emailData.getDiscount()!=0.0) {
+                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
+            }
+                message=message+"<p><strong><u>__________________________________</u></strong></p>";
+            message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
                 message = message + "                                               <p><strong>VALOR FACTURA ANTERIOR #" + emailData.getRejectedPayments().get(i).getInvoiceNumber() + ": $" + emailData.getRejectedPayments().get(i).getTotalAmount() + "</strong></p>"

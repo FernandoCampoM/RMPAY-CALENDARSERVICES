@@ -32,7 +32,7 @@ public class UserDTO {
     @NotEmpty(message = "{user.password.empty}")
     private String password;
     private Rol rol;
-    private boolean enabled;
+    private boolean enable;
     @NotEmpty(message = "{user.phone.empty}")
     private String phone;
     

@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.retailmanager.rmpaydashboard.services.DTO.RejectedPaymentsDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
 public class EmailBodyData {
+    //atributo para saber si se aplicó algún descuento
+    private double discount=0.0;
     private String name;
     private String merchantId;
     private String businessName;
@@ -35,7 +38,7 @@ public class EmailBodyData {
 
     private String serviceDescription;
     private String serviceValue;
-    private String referenceNumber;
+    private String referenceNumber="";
     private String cardType;
     private String email;
     private Long invoiceNumber;
@@ -45,4 +48,5 @@ public class EmailBodyData {
     private String routeNumberBank;
     private Long chequeVoidId;
 
+    private List<TerminalsDoPaymentDTO> terminalsDoPayment;
 }

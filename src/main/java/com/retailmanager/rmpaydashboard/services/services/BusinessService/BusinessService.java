@@ -593,9 +593,10 @@ public class BusinessService implements IBusinessService {
     @Transactional(readOnly = true)
     public ResponseEntity<?> findById(Long businessId) {
         if(businessId!=null){
-            Optional<Business> optional= this.serviceDBBusiness.findById(businessId);
-            if(optional.isPresent()){
-                BusinessDTO objBusinessDTO=this.mapper.map(optional.get(),BusinessDTO.class);
+            Business optional= this.serviceDBBusiness.findById(businessId).orElse(null);
+            if(optional!=null){
+                optional.getUser().setBusiness(null);
+                BusinessDTO objBusinessDTO=this.mapper.map(optional,BusinessDTO.class);
                 
                 return new ResponseEntity<BusinessDTO>(objBusinessDTO,HttpStatus.OK);
             }

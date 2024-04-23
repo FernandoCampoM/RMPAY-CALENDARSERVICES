@@ -39,7 +39,7 @@ public class User {
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
-    private boolean enable=false;
+    private boolean enable=true;
     @Column(nullable = true)
     private LocalDate registerDate;
     @Column(nullable = true)

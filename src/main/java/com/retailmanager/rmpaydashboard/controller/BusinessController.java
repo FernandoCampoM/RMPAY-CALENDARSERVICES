@@ -18,7 +18,6 @@ import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.ProductService.IProductService;
-import com.retailmanager.rmpaydashboard.services.services.TerminalService.ITerminalService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -30,8 +29,6 @@ import jakarta.validation.constraints.Positive;
 public class BusinessController {
     @Autowired
     private IBusinessService businessService;
-    @Autowired
-    private ITerminalService terminalService;
     @Autowired
     private IProductService productService;
     /**

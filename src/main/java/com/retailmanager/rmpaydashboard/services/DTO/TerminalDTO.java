@@ -28,8 +28,11 @@ public class TerminalDTO {
 
     private LocalDate lastTransmision;
 
+    //INDICA SI EL TERMINAL TIENE HABILITADOS LOS PAGOS AUTOMATICOS
     private boolean automaticPayments;
+    //INDICA SI EL PAGO DEL TERMINAL SE HA REALIZADO
     private boolean isPayment;
+    //INDICA SI EL TERMINAL ES EL QUE SE REALIZA EL COBRO PRINCIPAL DEL SERVICIO
     private boolean isPrincipal;
 
 }

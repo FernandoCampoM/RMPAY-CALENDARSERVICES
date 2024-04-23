@@ -39,6 +39,7 @@ import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
@@ -107,8 +108,9 @@ public class UserService implements IUserService{
                 throw objExeption;
             }
         prmUser.setLastLogin(LocalDate.now());
+        System.out.println("password: "+prmUser.getPassword());
         prmUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
-        
+        System.out.println("password encode: "+prmUser.getPassword());
         ResponseEntity<?> rta;
          User objUser= this.mapper.map(prmUser, User.class);
          if(objUser.getRol()==null){
@@ -206,7 +208,7 @@ public class UserService implements IUserService{
         if(userId!=null){
             Optional<User> optional= this.serviceDBUser.findById(userId);
             if(optional.isPresent()){
-                
+                optional.get().getBusiness().forEach(business -> business.setUser(null));
                 UserDTO objUserDTO=this.mapper.map(optional.get(),UserDTO.class);
                 
                 return new ResponseEntity<UserDTO>(objUserDTO,HttpStatus.OK);
@@ -225,9 +227,11 @@ public class UserService implements IUserService{
     @Override
     public ResponseEntity<?> findByUsername(String username) {
         if(username!=null){
-            Optional<User> optional= this.serviceDBUser.findOneByUsername(username);
-            if(optional.isPresent()){
-                UserDTO objUserDTO=this.mapper.map(optional.get(),UserDTO.class);
+            User optional= this.serviceDBUser.findOneByUsername(username).orElse(null);
+            if(optional!=null){
+                optional.getBusiness().forEach(business -> business.setUser(null));
+                UserDTO objUserDTO=this.mapper.map(optional,UserDTO.class);
+
                 objUserDTO.setPassword(null);
                 return new ResponseEntity<UserDTO>(objUserDTO,HttpStatus.OK);
             }
@@ -290,9 +294,11 @@ public class UserService implements IUserService{
         String msg="No se pudo registrar el usuario";
         Double amount=0.0;
         ResponsePayment respPayment;
+        Double aditionalTerminalsValue=0.0;
         String serviceReferenceNumber=null;
         EmailBodyData objEmailBodyData=mapper.map(prmRegistry, EmailBodyData.class);
-        
+        objEmailBodyData.setDiscount(0.0);
+        objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
         Optional<User> exist = this.serviceDBUser.findOneByUsername(prmRegistry.getUsername());
             if(exist.isPresent()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmRegistry.getUsername()+" ya existe en la Base de datos");
@@ -326,13 +332,16 @@ public class UserService implements IUserService{
                 amount=objService.getServiceValue();
                 //Calculo del valor de los terminales
                 if(prmRegistry.getAdditionalTerminals()<=5){
+                    aditionalTerminalsValue=objService.getTerminals2to5();
                     descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals2to5()))+"\n";
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals2to5();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
                 }else if(prmRegistry.getAdditionalTerminals()>5 && prmRegistry.getAdditionalTerminals()<10){
+                    aditionalTerminalsValue=objService.getTerminals6to9();
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals6to9();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
                 }else{
+                    aditionalTerminalsValue=objService.getTerminals10();
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals10();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
                 }
@@ -373,7 +382,7 @@ public class UserService implements IUserService{
             objUserDTO.setPassword(prmRegistry.getPassword());
             objUserDTO.setEmail(prmRegistry.getEmail());
             objUserDTO.setUsername(prmRegistry.getUsername());
-            objUserDTO.setEnabled(true);
+            objUserDTO.setEnable(true);
             objUserDTO.setRol(Rol.ROLE_USER);
             objUserDTO.setPhone(prmRegistry.getPhone());
             objUserDTO.setRegisterDate(LocalDate.now());
@@ -407,21 +416,33 @@ public class UserService implements IUserService{
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
+                                        TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
-                                        }else{
+                                            }else{
                                             objTerminal.setPrincipal(false);
-                                        }
+                                            }
                                         objTerminal.setPayment(true);
                                         objTerminal.setAutomaticPayments(prmRegistry.isAutomaticPayments());
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
+                                        //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
+                                        if(i==0){
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                        }else{
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        }
+                                        objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
+                                        objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
+                                        objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                        objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
+                                        objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
                                     
@@ -441,22 +462,35 @@ public class UserService implements IUserService{
                                 break;
                                 case "ATHMOVIL":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
+                                        TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName("Terminal "+(i+2));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
-                                        }else{
+                                            }else{
                                             objTerminal.setPrincipal(false);
-                                        }
-                                        objTerminal.setPayment(true);
+                                            }
+                                        objTerminal.setPayment(false);
                                         objTerminal.setAutomaticPayments(prmRegistry.isAutomaticPayments());
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
                                         listTerminalIds.add(objTerminal.getTerminalId());
+                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
+                                         if(i==0){
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                        }else{
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        }
+                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
+                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
+                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
+                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
+                                        
                                     }
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
@@ -475,22 +509,34 @@ public class UserService implements IUserService{
                                     break;
                                 case "BANK-ACCOUNT":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
+                                        TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName("Terminal "+(i+1));
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
-                                        }else{
+                                            }else{
                                             objTerminal.setPrincipal(false);
-                                        }
+                                            }
                                         objTerminal.setPayment(false);
                                         objTerminal.setAutomaticPayments(prmRegistry.isAutomaticPayments());
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
                                         listTerminalIds.add(objTerminal.getTerminalId());
+                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
+                                         if(i==0){
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                        }else{
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        }
+                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
+                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
+                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
+                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                     }
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());

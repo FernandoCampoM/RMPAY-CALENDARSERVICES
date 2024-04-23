@@ -12,7 +12,7 @@ public class Utils {
 
         String textoCodificado=new BCryptPasswordEncoder().encode(texto);
         System.out.println(textoCodificado);
-        System.out.println(new BCryptPasswordEncoder().matches("ejemploUsuario", "$2a$10$MrqOwjIdvn4JMjYMbGEt/exnNlQEf7ytzMU6Jr1Jv01YR.uhrK7BO"));
+        System.out.println(new BCryptPasswordEncoder().matches("ejemploUsuario", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));
         
         
         String originalFileName = "archivo con caracteres : no permitidos.txt";
