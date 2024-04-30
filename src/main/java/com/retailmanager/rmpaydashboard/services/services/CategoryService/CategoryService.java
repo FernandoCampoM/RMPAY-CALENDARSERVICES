@@ -14,8 +14,11 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Category;
+import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
+import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.CategoryRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 @Service
 public class CategoryService implements ICategoryService {
@@ -27,6 +30,8 @@ public class CategoryService implements ICategoryService {
     private CategoryRepository serviceDBCategory;
     @Autowired
     private BusinessRepository serviceDBBusiness;
+    @Autowired
+    private UserBusiness_CategoryRepository ubcServices;
 	/**
 	 * Save CategoryDTO entity in the database
 	 *
@@ -66,9 +71,20 @@ public class CategoryService implements ICategoryService {
                 }
             }
             objCategory=this.serviceDBCategory.save(objCategory);
+            if(objCategory!=null){
+                for(UsersBusiness usersBusiness:objCategory.getBusiness().getUsersBusiness()){
+                    UserBusiness_Category ubp = new UserBusiness_Category();
+                    ubp.setObjCategory(objCategory);
+                    ubp.setDownload(false);
+                    ubp.setObjUser(usersBusiness);
+                    this.ubcServices.save(ubp);
+                }
+            }
+
          }
         CategoryDTO categoryDTO=this.mapper.map(objCategory, CategoryDTO.class);
         if(categoryDTO!=null){
+            
             rta=new ResponseEntity<CategoryDTO>(categoryDTO, HttpStatus.CREATED);
         }else{
             rta= new ResponseEntity<String>("Error al crear la category",HttpStatus.INTERNAL_SERVER_ERROR);
@@ -106,9 +122,14 @@ public class CategoryService implements ICategoryService {
              objCategory.setName(prmCategory.getName());
              objCategory.setColor(prmCategory.getColor());
              objCategory.setPosition(prmCategory.getPosition());
+             
              if(objCategory!=null){
                 objCategory=this.serviceDBCategory.save(objCategory);
+                for(UsersBusiness usersBusiness:objCategory.getBusiness().getUsersBusiness()){
+                    ubcServices.updateDownload(objCategory.getCategoryId(),usersBusiness.getUserBusinessId(),false);
+                }
              }
+
             CategoryDTO categoryDTO=this.mapper.map(objCategory, CategoryDTO.class);
             if(categoryDTO!=null){
                 rta=new ResponseEntity<CategoryDTO>(categoryDTO, HttpStatus.OK);
@@ -134,6 +155,7 @@ public class CategoryService implements ICategoryService {
             if(optional.isPresent()){
                 Category objCategory=optional.get();
                 if(objCategory!=null){
+                    this.ubcServices.deleteByCategoryId(objCategory.getCategoryId());
                     this.serviceDBCategory.delete(objCategory);
                     bandera=true;
                 }
@@ -178,6 +200,12 @@ public class CategoryService implements ICategoryService {
             Optional<Category> optional= this.serviceDBCategory.findById(categoryId);
             if(optional.isPresent()){
                 this.serviceDBCategory.updateEnable(categoryId, enable);
+                if(enable){
+                    for(UsersBusiness usersBusiness:optional.get().getBusiness().getUsersBusiness()){
+                        ubcServices.updateDownload(optional.get().getCategoryId(),usersBusiness.getUserBusinessId(),false);
+                    }
+                }
+                
                 return new ResponseEntity<Boolean>(true,HttpStatus.OK);
             }
         }

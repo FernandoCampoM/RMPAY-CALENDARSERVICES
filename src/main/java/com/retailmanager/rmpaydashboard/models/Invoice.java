@@ -29,6 +29,12 @@ public class Invoice {
     private Integer terminals;
     @Column(nullable = false)
     private Double totalAmount;
+    /*Valor antes de impuesto */
+
+    @Column(nullable = true)
+    private Double subTotal;
+    @Column(nullable = true)
+    private Double stateTax;
     @Column(nullable = false)
     private Long businessId;
     
@@ -39,4 +45,5 @@ public class Invoice {
     private boolean inProcess=false; //Para indicar si el pago se encuentra en proceso
     private String terminalIds;
     private Long serviceId;
+
 }

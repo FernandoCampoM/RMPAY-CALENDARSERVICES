@@ -103,6 +103,7 @@ public class InvoiceServices implements IInvoiceServices {
         String serviceReferenceNumber = null;
         String userTransactionNumber = uniqueString();
         Long serviceIdPrincipal = -1L;
+        Double stateTax=0.0;
         EmailBodyData objEmailBodyData = mapper.map(prmPaymentInfo, EmailBodyData.class);
 
         Business objBusiness = this.serviceDBBusiness.findById(prmPaymentInfo.getBusinessId()).orElse(null);
@@ -147,7 +148,7 @@ public class InvoiceServices implements IInvoiceServices {
                 if (objTerminalDB.isPrincipal()) {
                     descripcion = "Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(objService.getServiceValue())) + "\n";
+                            + String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))) + "\n";
                     amount = objService.getServiceValue();
                     objTerminal.setPrincipal(true);
                     serviceIdPrincipal = objService.getServiceId();
@@ -156,17 +157,17 @@ public class InvoiceServices implements IInvoiceServices {
                     if (prmPaymentInfo.getTerminalsNumber() <= 5) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + " $"
-                                + String.valueOf(formato.format(objService.getTerminals2to5())) + "\n";
+                                + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals2to5()))) + "\n";
                         amount = objService.getTerminals2to5();
                     } else if (prmPaymentInfo.getTerminalsNumber() > 5 && prmPaymentInfo.getTerminalsNumber() < 10) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + " $"
-                                + String.valueOf(formato.format(objService.getTerminals6to9())) + "\n";
+                                + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals6to9()))) + "\n";
                         amount = objService.getTerminals6to9();
                     } else {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + " $"
-                                + String.valueOf(formato.format(objService.getTerminals10())) + "\n";
+                                + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals10()))) + "\n";
                         amount = objService.getTerminals10();
                     }
                 }
@@ -179,7 +180,7 @@ public class InvoiceServices implements IInvoiceServices {
                 objEmailBodyData.setReferenceNumber(
                         "DESCUENTO APLICADO:$" + String.valueOf(formato.format(objBusiness.getDiscount())));
                 objEmailBodyData.setDiscount(objBusiness.getDiscount());
-                objEmailBodyData.setSubTotal(totalAmount);
+                
                 if (objBusiness.getDiscount() < totalAmount) {
                     totalAmount = totalAmount - objBusiness.getDiscount();
                     objBusiness.setDiscount(0.0);
@@ -189,6 +190,9 @@ public class InvoiceServices implements IInvoiceServices {
                     totalAmount = 0.0;
                 }
             }
+            stateTax=totalAmount*0.04;
+            objEmailBodyData.setSubTotal(totalAmount-stateTax);
+            objEmailBodyData.setStateTax(stateTax);
             objEmailBodyData.setAmount(totalAmount);
             objBusiness.setAdditionalTerminals((Integer) prmPaymentInfo.getTerminalsNumber());
             if (serviceIdPrincipal != -1L) {
@@ -214,6 +218,9 @@ public class InvoiceServices implements IInvoiceServices {
                     break;
             }
             Invoice objInvoice = new Invoice();
+            objInvoice.setTotalAmount(totalAmount);
+            objInvoice.setSubTotal(totalAmount-stateTax);
+            objInvoice.setStateTax(stateTax);
             List<Long> listTerminalIds = new ArrayList<Long>();
             switch (prmPaymentInfo.getPaymethod()) {
                 case "CREDIT-CARD":
@@ -241,7 +248,6 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setTime(LocalTime.now());
                     objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
-                    objInvoice.setTotalAmount(totalAmount);
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                     objInvoice.setServiceId(objBusiness.getServiceId());
@@ -265,10 +271,8 @@ public class InvoiceServices implements IInvoiceServices {
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }
-
                         //objTer.setPayment(false);
                         objTer.setService(service);
-
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
                         objTer = this.serviceDBTerminal.save(objTer);
                         listTerminalIds.add(objTerminal.getTerminalId());
@@ -278,7 +282,6 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setTime(LocalTime.now());
                     objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
-                    objInvoice.setTotalAmount(totalAmount);
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                     objInvoice.setServiceId(objBusiness.getServiceId());
@@ -315,7 +318,6 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setTime(LocalTime.now());
                     objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
-                    objInvoice.setTotalAmount(totalAmount);
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                     objInvoice.setServiceId(objBusiness.getServiceId());
@@ -352,9 +354,8 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setTime(LocalTime.now());
                     objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
-                    objInvoice.setTotalAmount(totalAmount);
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
-                    objInvoice.setReferenceNumber("SUB TOTAL: $"+objEmailBodyData.getSubTotal() + " DESCUENTO APLICADO: $"+objEmailBodyData.getDiscount());
+                    objInvoice.setReferenceNumber(" DESCUENTO APLICADO: $"+objEmailBodyData.getDiscount());
                     objInvoice.setServiceId(objBusiness.getServiceId());
                     objInvoice.setInProcess(false);
                     objInvoice.setTerminalIds(
@@ -380,6 +381,9 @@ public class InvoiceServices implements IInvoiceServices {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+public double getValueWithOutStateTax(double prmValue) {
+    return prmValue - prmValue * 0.04;
+}
 
     /**
      * Generates a unique string using UUID.

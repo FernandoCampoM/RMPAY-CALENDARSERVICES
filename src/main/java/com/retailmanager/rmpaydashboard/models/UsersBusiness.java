@@ -39,6 +39,8 @@ public class UsersBusiness {
     @JoinColumn( name="businessId",nullable = false)
     private Business business;
 
+    private Boolean download=false;
+
     
 
 }

@@ -213,9 +213,11 @@ public class BusinessService implements IBusinessService {
                     amount+=(prmBusiness.getAdditionalTerminals()-1)*objService.getTerminals10();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
                 }
+                objEmailBodyData.setStateTax(amount*0.04);
+                objEmailBodyData.setSubTotal(getValueWithOutStateTax(amount));
                 objEmailBodyData.setAmount(amount);
                 objEmailBodyData.setServiceDescription(objService.getServiceDescription());
-                objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
+                objEmailBodyData.setServiceValue(formato.format(getValueWithOutStateTax(objService.getServiceValue())));
                 
                 
                 switch (prmBusiness.getPaymethod()){
@@ -267,6 +269,9 @@ public class BusinessService implements IBusinessService {
                         if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0 && objBusinessDTO!=null && prmBusiness.getPaymethod()!=null){
                             List<Long> listTerminalIds=new ArrayList<Long>();
                             Invoice objInvoice=new Invoice();
+                            objInvoice.setSubTotal(getValueWithOutStateTax(amount));
+                            objInvoice.setTotalAmount(amount);
+                            objInvoice.setStateTax(amount*0.04);
                             switch (prmBusiness.getPaymethod()){
                                 case "CREDIT-CARD":
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
@@ -288,13 +293,13 @@ public class BusinessService implements IBusinessService {
                                         objTerminal=serviceDBTerminal.save(objTerminal);
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))));
                                         }else{
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objEmailBodyData.getAdditionalTerminalsValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objEmailBodyData.getAdditionalTerminalsValue()))));
                                         }
                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
-                                        objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                        objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
                                         objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
@@ -305,7 +310,6 @@ public class BusinessService implements IBusinessService {
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
                                     objInvoice.setTerminals(prmBusiness.getAdditionalTerminals());
-                                    objInvoice.setTotalAmount(amount);
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmBusiness.getServiceId());
@@ -335,13 +339,13 @@ public class BusinessService implements IBusinessService {
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))));
                                         }else{
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(aditionalTerminalsValue))));
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
-                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
                                          objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
@@ -351,7 +355,6 @@ public class BusinessService implements IBusinessService {
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
                                     objInvoice.setTerminals(prmBusiness.getAdditionalTerminals());
-                                    objInvoice.setTotalAmount(amount);
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmBusiness.getServiceId());
@@ -383,13 +386,13 @@ public class BusinessService implements IBusinessService {
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))));
                                         }else{
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(aditionalTerminalsValue))));
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
-                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
                                          objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                     }
@@ -397,7 +400,6 @@ public class BusinessService implements IBusinessService {
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
                                     objInvoice.setTerminals(prmBusiness.getAdditionalTerminals());
-                                    objInvoice.setTotalAmount(amount);
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmBusiness.getServiceId());
@@ -424,6 +426,9 @@ public class BusinessService implements IBusinessService {
             return new ResponseEntity<String>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return new ResponseEntity<String>("Error al registrar el negocio",HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    public double getValueWithOutStateTax(double prmValue) {
+        return prmValue - prmValue * 0.04;
     }
     /**
      * Generates a unique string using UUID.

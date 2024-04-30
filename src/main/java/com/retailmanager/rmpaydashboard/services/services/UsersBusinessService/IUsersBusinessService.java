@@ -16,7 +16,11 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> updatePermission(Long idUser, Long idPermission, boolean enable);
     public ResponseEntity<?> getAllPermissions();
     public ResponseEntity<?> getProducts(Long userBusinessId);
+    public ResponseEntity<?> getCategory(Long userBusinessId);
+    public ResponseEntity<?> getUsersBusiness(Long userBusinessId);
     public ResponseEntity<?> updateDownloadProducts(Long userBusinessId,List<Long> product_ids);
+    public ResponseEntity<?> updateDownloadCategory(Long userBusinessId,List<Long> category_ids);
+    public ResponseEntity<?> updateDownloadUserBusiness(Long userBusinessId);
 
 
 }

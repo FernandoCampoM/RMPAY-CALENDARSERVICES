@@ -21,7 +21,6 @@ import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
-import com.google.gson.Gson;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

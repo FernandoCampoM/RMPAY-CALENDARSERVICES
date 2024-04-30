@@ -350,7 +350,7 @@ public class EmailService implements IEmailService{
                 mes = "Diciembre";
                 break;
         }
-        DecimalFormat formato = new DecimalFormat("#.00");
+        DecimalFormat formato = new DecimalFormat("0.00");
 
         String mensageServicio = "Pago por saldo actual($" + emailData.getAmount() + ")";
         if (emailData.isAutomaticPayments()) {
@@ -459,12 +459,12 @@ public class EmailService implements IEmailService{
                 
             }
             if(emailData.getDiscount()!=0.0) {
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
-                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
-                message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
+                message=message+"<p><strong>DESCUENTO: -$" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
-                message=message+"<p><strong><u>__________________________________</u></strong></p>";
+            message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+            message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
+            message=message+"<p><strong>STATE TAX 4%: $" + String.valueOf(formato.format(emailData.getStateTax())) + "</strong></p>";
+            message=message+"<p><strong><u>__________________________________</u></strong></p>";
             message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {
             for (int i = 0; i < emailData.getRejectedPayments().size(); i++) {
@@ -704,11 +704,11 @@ public class EmailService implements IEmailService{
                 
             }
             if(emailData.getDiscount()!=0.0) {
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
-                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
+            message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+            message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
+            message=message+"<p><strong>STATE TAX 4%: $" + String.valueOf(formato.format(emailData.getStateTax())) + "</strong></p>";
                 message=message+"<p><strong><u>__________________________________</u></strong></p>";
             message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {
@@ -929,11 +929,12 @@ public class EmailService implements IEmailService{
                 
             }
             if(emailData.getDiscount()!=0.0) {
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
-                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+                
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
+            message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+            message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
+            message=message+"<p><strong>STATE TAX 4%: $" + String.valueOf(formato.format(emailData.getStateTax())) + "</strong></p>";
                 message=message+"<p><strong><u>__________________________________</u></strong></p>";
             message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {
@@ -1175,11 +1176,11 @@ public class EmailService implements IEmailService{
                 
             }
             if(emailData.getDiscount()!=0.0) {
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
-                message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
-                message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
                 message=message+"<p><strong>DESCUENTO: $" + String.valueOf(formato.format(emailData.getDiscount())) + "</strong></p>";
             }
+            message=message+"<p><strong>- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</strong></p>";
+            message=message+"<p><strong>SUBTOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getSubTotal())) + "</strong></p>";
+            message=message+"<p><strong>STATE TAX 4%: $" + String.valueOf(formato.format(emailData.getStateTax())) + "</strong></p>";
                 message=message+"<p><strong><u>__________________________________</u></strong></p>";
             message=message+"<p><strong>TOTAL DE PAGO: $" + String.valueOf(formato.format(emailData.getAmount())) + "</strong></p>";
         } else {

@@ -18,4 +18,8 @@ public interface UserBusiness_ProductRepository extends CrudRepository<UserBusin
     @Modifying
     @Query("UPDATE UserBusiness_Product u SET u.download = :download WHERE u.objProduct.productId = :product_id and u.objUser.userBusinessId = :user_id")
     public void updateDownload(Long product_id, Long user_id,boolean download);
+
+    @Modifying
+    @Query("DELETE FROM UserBusiness_Product u WHERE u.objProduct.productId = :product_id")
+    public void deleteByProductId(Long product_id);
 }

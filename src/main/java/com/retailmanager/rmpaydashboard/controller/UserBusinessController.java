@@ -109,4 +109,20 @@ public class UserBusinessController {
     public ResponseEntity<?> updateDownloadProducts(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId, @Valid @RequestBody @NotEmpty(message = "product_ids.notempty") List<Long> product_ids) {
         return usersBusinessService.updateDownloadProducts(userBusinessId, product_ids);
     }
+    @GetMapping("/userBusiness/category/{userBusinessId}")
+    public ResponseEntity<?> getCategory(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
+        return usersBusinessService.getCategory(userBusinessId);
+    }
+    @PutMapping("/userBusiness/category/{userBusinessId}")
+    public ResponseEntity<?> updateDownloadCategory(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId, @Valid @RequestBody @NotEmpty(message = "category_ids.notempty") List<Long> category_ids) {
+        return usersBusinessService.updateDownloadCategory(userBusinessId, category_ids);
+    }
+    @GetMapping("/userBusiness/userBusiness/{userBusinessId}")
+    public ResponseEntity<?> getUsersBusiness(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
+        return usersBusinessService.getUsersBusiness(userBusinessId);
+    }
+    @PutMapping("/userBusiness/download/{userBusinessId}")
+    public ResponseEntity<?> updateDownloadCategory(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
+        return usersBusinessService.updateDownloadUserBusiness(userBusinessId);
+    }
 }

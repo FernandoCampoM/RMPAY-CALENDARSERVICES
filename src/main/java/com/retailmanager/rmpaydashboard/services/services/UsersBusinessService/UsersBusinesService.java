@@ -15,14 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Permission;
+import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UserPermission;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PermissionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
@@ -36,6 +39,8 @@ public class UsersBusinesService implements IUsersBusinessService{
     private UsersAppRepository usersAppDBService;
     @Autowired
     private UserBusiness_ProductRepository ubpServices;
+    @Autowired
+    private UserBusiness_CategoryRepository ubcServices;
     @Autowired
     private BusinessRepository serviceDBBusiness;
     @Autowired
@@ -219,6 +224,17 @@ public class UsersBusinesService implements IUsersBusinessService{
         return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Updates the permission of a user.
+     *
+     * @param  idUser           the ID of the user
+     * @param  idPermission     the ID of the permission
+     * @param  enable           the enable status of the permission
+     * @return                  a ResponseEntity with a Boolean value and HttpStatus
+     *                          HttpStatus.OK if the permission is updated successfully
+     *                          HttpStatus.BAD_REQUEST if the user or permission does not exist
+     * @throws EntidadNoExisteException if the permission does not exist in the database
+     */
     @Override
     @Transactional
     public ResponseEntity<?> updatePermission(Long idUser, Long idPermission, boolean enable) {
@@ -261,14 +277,29 @@ public class UsersBusinesService implements IUsersBusinessService{
         return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Retrieves all permissions from the database and returns them as a list of PermissionDTO objects.
+     *
+     * @return         	A ResponseEntity object containing a list of PermissionDTO objects and an HTTP status code.
+     */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getAllPermissions() {
         Iterable<Permission> permissions = this.serviceDBUPermission.findAll();
         List<PermissionDTO> permissionsDTO = this.mapper.map(permissions,  new TypeToken<List<PermissionDTO>>(){}.getType());
         return new ResponseEntity<List<PermissionDTO>>(permissionsDTO, HttpStatus.OK);
     }
 
+    /**
+     * Retrieves the list of products associated with the given user business ID.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @return                 the ResponseEntity containing the list of ProductDTO objects
+     *                         or an INTERNAL_SERVER_ERROR status if an exception occurs
+     * @throws EntidadNoExisteException if the UsersBusiness with the given ID does not exist in the database
+     */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getProducts(Long userBusinessId) {
         List<ProductDTO> productDTOs=new ArrayList<>();
         
@@ -311,5 +342,113 @@ public class UsersBusinesService implements IUsersBusinessService{
         
         return new ResponseEntity<>(true,HttpStatus.OK);
     }
+
+    /**
+     * Retrieves the list of categories associated with the given user business ID.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @return                 the ResponseEntity containing the list of CategoryDTO objects
+     *                         or an INTERNAL_SERVER_ERROR status if an exception occurs
+     * @throws EntidadNoExisteException if the UsersBusiness with the given ID does not exist in the database
+     */
+        @Override
+        @Transactional
+        public ResponseEntity<?> getCategory(Long userBusinessId) {
+            List<CategoryDTO> categoryDTO=new ArrayList<>();
+        
+            UsersBusiness objUser=this.usersAppDBService.findById(userBusinessId).orElse(null);
+            if(objUser==null){
+                throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
+            }
+            try {    
+            List<UserBusiness_Category> ubpList=this.ubcServices.findByObjUserAndDownload(objUser,false);
+            for(UserBusiness_Category ubp:ubpList){
+                categoryDTO.add(this.mapper.map(ubp.getObjCategory(), CategoryDTO.class));
+                //ubp.setDownload(true);
+                //this.ubpServices.save(ubp);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+
+        return new ResponseEntity<>(categoryDTO,HttpStatus.OK);
+        }
+
+    /**
+     * Retrieves the list of UsersBusinessDTO objects associated with the given userBusinessId.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @return                 the ResponseEntity containing the list of UsersBusinessDTO objects
+     */
+        @Override
+        @Transactional
+        public ResponseEntity<?> getUsersBusiness(Long userBusinessId) {
+            List<UsersBusinessDTO> ubpListDTO=new ArrayList<>();
+            UsersBusiness objUser=this.usersAppDBService.findById(userBusinessId).orElse(null);
+            if(objUser==null){
+                throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
+            }
+            try { 
+                if(!objUser.getDownload()){
+                    List<UsersBusiness> ubpList=objUser.getBusiness().getUsersBusiness();
+                    ubpListDTO= this.mapper.map(ubpList, new TypeToken<List<UsersBusinessDTO>>(){}.getType());
+                }   
+            
+            
+        } catch (Exception e) {
+            return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+
+        return new ResponseEntity<>(ubpListDTO,HttpStatus.OK);
+        }
+
+    /**
+     * Updates the download status of a category for a given user business.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @param  category_ids    the list of category IDs to update
+     * @return                 a ResponseEntity indicating the success or failure of the operation
+     */
+        @Override
+        @Transactional
+        public ResponseEntity<?> updateDownloadCategory(Long userBusinessId, List<Long> category_ids) {
+            try{
+                for(Long category_id:category_ids){
+                    this.ubcServices.updateDownload(category_id, userBusinessId, true);
+                }
+            }catch(Exception e){
+                return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            
+            return new ResponseEntity<>(true,HttpStatus.OK);
+        }
+
+    /**
+     * Updates the download status of a user business.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @return                 a ResponseEntity indicating the success or failure of the operation
+     * @throws EntidadNoExisteException  if the user business with the given ID does not exist in the database
+     */
+        @Override
+        @Transactional
+        public ResponseEntity<?> updateDownloadUserBusiness(Long userBusinessId) {
+            UsersBusiness objUser=this.usersAppDBService.findById(userBusinessId).orElse(null);
+            if(objUser==null){
+                throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
+            }
+            try {    
+                objUser.setDownload(true);
+                this.usersAppDBService.save(objUser);
+            
+            } catch (Exception e) {
+                return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        
+
+        return new ResponseEntity<>(true,HttpStatus.OK);
+        }
     
 }

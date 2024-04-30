@@ -14,7 +14,6 @@ import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -284,7 +283,9 @@ public class UserService implements IUserService{
         EntidadNoExisteException objExeption = new EntidadNoExisteException("El Usuario con userId "+userId+" no existe en la Base de datos");
                 throw objExeption;
     }
-
+    public double getValueWithOutStateTax(double prmValue) {
+        return prmValue - prmValue * 0.04;
+    }
     /**
      * Registry a user with the business and process payment.
      *
@@ -347,6 +348,8 @@ public class UserService implements IUserService{
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals10();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
                 }
+                objEmailBodyData.setSubTotal(getValueWithOutStateTax(amount));
+                objEmailBodyData.setStateTax(amount*0.04);
                 objEmailBodyData.setAmount(amount);
                 objEmailBodyData.setServiceDescription(objService.getServiceDescription());
                 objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
@@ -414,6 +417,9 @@ public class UserService implements IUserService{
                             Business objBusiness=serviceDBBusiness.findById(objBusinessDTO.getBusinessId()).get();
                             Service objService=serviceDBService.findById(prmRegistry.getServiceId()).get();
                             Invoice objInvoice=new Invoice();
+                            objInvoice.setSubTotal(getValueWithOutStateTax(amount));
+                            objInvoice.setStateTax(amount*0.04);
+                            objInvoice.setTotalAmount(amount);
                             List<Long> listTerminalIds=new ArrayList<Long>();
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
@@ -436,13 +442,13 @@ public class UserService implements IUserService{
                                         objTerminal=this.serviceDBTerminal.save(objTerminal);
                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                         if(i==0){
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))));
                                         }else{
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(aditionalTerminalsValue))));
                                         }
                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
-                                        objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                        objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
                                         objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         listTerminalIds.add(objTerminal.getTerminalId());
@@ -452,7 +458,6 @@ public class UserService implements IUserService{
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
                                     objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
-                                    objInvoice.setTotalAmount(amount);
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
@@ -483,13 +488,13 @@ public class UserService implements IUserService{
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))));
                                         }else{
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(aditionalTerminalsValue))));
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
-                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
                                          objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         
@@ -498,7 +503,6 @@ public class UserService implements IUserService{
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
                                     objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
-                                    objInvoice.setTotalAmount(amount);
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
@@ -530,13 +534,13 @@ public class UserService implements IUserService{
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))));
                                         }else{
-                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(aditionalTerminalsValue))));
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
-                                         objTerminalsDoPaymentDTO.setAmount(aditionalTerminalsValue);
+                                         objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
                                          objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                     }
@@ -544,7 +548,6 @@ public class UserService implements IUserService{
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
                                     objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
-                                    objInvoice.setTotalAmount(amount);
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());

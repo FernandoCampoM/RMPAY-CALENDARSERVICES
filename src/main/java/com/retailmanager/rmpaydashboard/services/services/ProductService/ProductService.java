@@ -29,11 +29,13 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadY
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Category;
 import com.retailmanager.rmpaydashboard.models.Product;
+import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 
@@ -53,6 +55,8 @@ public class ProductService implements IProductService {
     private BusinessRepository serviceDBBusiness;
     @Autowired
     private UserBusiness_ProductRepository ubpServices;
+    @Autowired
+    private UserBusiness_CategoryRepository ubcServices;
     
     /**
      * Save a product and handle exceptions.
@@ -213,6 +217,7 @@ public class ProductService implements IProductService {
         }
         Product objProduct = optionalProduct.get();
         if(objProduct!=null){
+            this.ubpServices.deleteByProductId(productId);
             this.serviceDBProducts.delete(objProduct);
         }
         return new ResponseEntity<Boolean>(true, HttpStatus.OK);
@@ -354,15 +359,30 @@ public class ProductService implements IProductService {
                     objCategory = this.serviceDBCategory.save(objCategory);
                     categoryId=objCategory.getCategoryId();
                     objProduct.setCategory(objCategory);
+                    for(UsersBusiness usersBusiness:business.getUsersBusiness()){
+                        UserBusiness_Category ubp = new UserBusiness_Category();
+                        ubp.setObjCategory(objCategory);
+                        ubp.setDownload(false);
+                        ubp.setObjUser(usersBusiness);
+                        this.ubcServices.save(ubp);
+                    }
                 }
             }
             if(objProduct!=null){
                 objProduct = this.serviceDBProducts.save(objProduct);
+                
             }
             if (objProduct != null) {
                 ProductDTO objProductRta = this.mapperBase.map(objProduct, ProductDTO.class);
                 objProductRta.setIdCategory(categoryId);
                 listProductsRTA.add(objProductRta);
+                for(UsersBusiness usersBusiness:objProduct.getCategory().getBusiness().getUsersBusiness()){
+                    UserBusiness_Product ubp = new UserBusiness_Product();
+                    ubp.setObjProduct(objProduct);
+                    ubp.setDownload(false);
+                    ubp.setObjUser(usersBusiness);
+                    ubpServices.save(ubp);
+                }
             }
         }
         return new ResponseEntity<>(listProductsRTA, HttpStatus.CREATED);
@@ -381,6 +401,11 @@ public class ProductService implements IProductService {
             Optional<Product> optional= this.serviceDBProducts.findById(productId);
             if(optional.isPresent()){
                 this.serviceDBProducts.updateEnable(productId, enable);
+                if(enable){
+                    for(UsersBusiness usersBusiness:optional.get().getCategory().getBusiness().getUsersBusiness()){
+                        ubpServices.updateDownload(productId,usersBusiness.getUserBusinessId(),false);
+                    }
+                }
                 return new ResponseEntity<Boolean>(true,HttpStatus.OK);
             }
         }

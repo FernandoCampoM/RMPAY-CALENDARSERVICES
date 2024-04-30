@@ -31,11 +31,11 @@ import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BuyTerminalDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
-
 
 @org.springframework.stereotype.Service
 public class TerminalService implements ITerminalService {
@@ -50,81 +50,90 @@ public class TerminalService implements ITerminalService {
     private ServiceRepository serviceDBService;
     @Autowired
     private IBlackStoneService blackStoneService;
-    @Autowired 
+    @Autowired
     private IEmailService emailService;
-    @Autowired 
+    @Autowired
     private InvoiceRepository serviceDBInvoice;
 
     DecimalFormat formato = new DecimalFormat("#.##");
     String msgError = "";
+
     /**
      * Saves a TerminalDTO object in the database and returns a response entity.
      *
-     * @param  prmTerminal   the TerminalDTO object to be saved
-     * @return               a response entity containing the saved TerminalDTO or an error message
+     * @param prmTerminal the TerminalDTO object to be saved
+     * @return a response entity containing the saved TerminalDTO or an error
+     *         message
      */
     @Override
     @Transactional
     public ResponseEntity<?> save(TerminalDTO prmTerminal) {
         Long terminalId = prmTerminal.getTerminalId();
-        if(terminalId!=null){
+        if (terminalId != null) {
             final boolean exist = this.serviceDBTerminal.existsById(terminalId);
-            if(exist){
-                EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con terminalId "+prmTerminal.getTerminalId()+" ya existe en la Base de datos");
+            if (exist) {
+                EntidadYaExisteException objExeption = new EntidadYaExisteException(
+                        "El terminal con terminalId " + prmTerminal.getTerminalId() + " ya existe en la Base de datos");
                 throw objExeption;
-            }else{
+            } else {
                 prmTerminal.setTerminalId(null);
             }
         }
         Optional<Terminal> exist = this.serviceDBTerminal.findOneBySerial(prmTerminal.getSerial());
-            if(exist.isPresent() && exist.get().getSerial()!=null && exist.get().getBusiness().getBusinessId()==prmTerminal.getBusinesId()){
-                EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos para el businessId "+prmTerminal.getBusinesId());
-                throw objExeption;
-            }
+        if (exist.isPresent() && exist.get().getSerial() != null
+                && exist.get().getBusiness().getBusinessId() == prmTerminal.getBusinesId()) {
+            EntidadYaExisteException objExeption = new EntidadYaExisteException(
+                    "El terminal con serial " + prmTerminal.getSerial()
+                            + " ya existe en la Base de datos para el businessId " + prmTerminal.getBusinesId());
+            throw objExeption;
+        }
         ResponseEntity<?> rta;
-         Terminal objTerminal= null;
-        Long businessId=prmTerminal.getBusinesId();
-            if(businessId!=null){
-                Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
-                if(!existBusiness.isPresent()){
-                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" no existe en la Base de datos");
-                    throw objExeption;
-                }else{
-                    
-                    List<Terminal> allsTerminals=this.serviceDBTerminal.findByBusiness(existBusiness.get());
-                    for (Terminal terminal : allsTerminals) {
-                        if(terminal.getExpirationDate()!=null && terminal.getExpirationDate().isBefore(LocalDate.now()) && terminal.getSerial()==null ){
-                            terminal.setSerial(prmTerminal.getSerial());
-                            terminal.setName(prmTerminal.getName());
-                            terminal.setEnable(prmTerminal.getEnable());
-                            objTerminal=this.serviceDBTerminal.save(terminal);
-                            break;
-                            
-                        }
-                        if(terminal.getExpirationDate()==null && terminal.getSerial()==null && existBusiness.get().getLastPayment()!=null){
-                            terminal.setSerial(prmTerminal.getSerial());
-                            terminal.setName(prmTerminal.getName());
-                            terminal.setEnable(prmTerminal.getEnable());
-                            terminal.setExpirationDate(LocalDate.now().plusDays(terminal.getService().getDuration()));
-                            
-                            objTerminal=this.serviceDBTerminal.save(terminal);
-                            break;
-                        }
-                        
+        Terminal objTerminal = null;
+        Long businessId = prmTerminal.getBusinesId();
+        if (businessId != null) {
+            Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
+            if (!existBusiness.isPresent()) {
+                EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                        "El business con businessId " + businessId + " no existe en la Base de datos");
+                throw objExeption;
+            } else {
+
+                List<Terminal> allsTerminals = this.serviceDBTerminal.findByBusiness(existBusiness.get());
+                for (Terminal terminal : allsTerminals) {
+                    if (terminal.getExpirationDate() != null && terminal.getExpirationDate().isBefore(LocalDate.now())
+                            && terminal.getSerial() == null) {
+                        terminal.setSerial(prmTerminal.getSerial());
+                        terminal.setName(prmTerminal.getName());
+                        terminal.setEnable(prmTerminal.getEnable());
+                        objTerminal = this.serviceDBTerminal.save(terminal);
+                        break;
+
                     }
+                    if (terminal.getExpirationDate() == null && terminal.getSerial() == null
+                            && existBusiness.get().getLastPayment() != null) {
+                        terminal.setSerial(prmTerminal.getSerial());
+                        terminal.setName(prmTerminal.getName());
+                        terminal.setEnable(prmTerminal.getEnable());
+                        terminal.setExpirationDate(LocalDate.now().plusDays(terminal.getService().getDuration()));
+
+                        objTerminal = this.serviceDBTerminal.save(terminal);
+                        break;
+                    }
+
                 }
             }
-            //objTerminal=this.serviceDBTerminal.save(objTerminal);
-        if(objTerminal==null){
+        }
+        // objTerminal=this.serviceDBTerminal.save(objTerminal);
+        if (objTerminal == null) {
             MaxTerminalsReached objExeption = new MaxTerminalsReached("Se alcanzo el maximo de terminales");
             throw objExeption;
         }
-        TerminalDTO terminalDTO=this.mapper.map(objTerminal, TerminalDTO.class);
-        if(terminalDTO!=null){
-            
-            rta=new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.CREATED);
-        }else{
-            rta= new ResponseEntity<String>("Error al crear el Terminal",HttpStatus.INTERNAL_SERVER_ERROR);
+        TerminalDTO terminalDTO = this.mapper.map(objTerminal, TerminalDTO.class);
+        if (terminalDTO != null) {
+
+            rta = new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.CREATED);
+        } else {
+            rta = new ResponseEntity<String>("Error al crear el Terminal", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return rta;
     }
@@ -132,71 +141,73 @@ public class TerminalService implements ITerminalService {
     /**
      * Updates a terminal in the database.
      *
-     * @param  terminalId     the ID of the terminal to be updated
-     * @param  prmTerminal    the updated terminal details
-     * @return                response entity with the updated terminal details
+     * @param terminalId  the ID of the terminal to be updated
+     * @param prmTerminal the updated terminal details
+     * @return response entity with the updated terminal details
      */
     @Override
     @Transactional
     public ResponseEntity<?> update(Long terminalId, TerminalDTO prmTerminal) {
-        Terminal objTerminal=null;
-        ResponseEntity<?> rta=null;
-        if(terminalId!=null){
+        Terminal objTerminal = null;
+        ResponseEntity<?> rta = null;
+        if (terminalId != null) {
             Optional<Terminal> exist = this.serviceDBTerminal.findById(terminalId);
-            if(!exist.isPresent()){
-                EntidadNoExisteException objExeption = new EntidadNoExisteException("El terminal con terminalId "+prmTerminal.getTerminalId()+" No existe en la Base de datos");
+            if (!exist.isPresent()) {
+                EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                        "El terminal con terminalId " + prmTerminal.getTerminalId() + " No existe en la Base de datos");
                 throw objExeption;
             }
-            objTerminal=exist.get();
-            if(prmTerminal.getSerial()!=null && objTerminal.getSerial()!=null && objTerminal.getSerial().compareTo(prmTerminal.getSerial())!=0){
-                if(prmTerminal.getSerial()!=null){
+            objTerminal = exist.get();
+            if (prmTerminal.getSerial() != null && objTerminal.getSerial() != null
+                    && objTerminal.getSerial().compareTo(prmTerminal.getSerial()) != 0) {
+                if (prmTerminal.getSerial() != null) {
                     Optional<Terminal> existBySerial = this.serviceDBTerminal.findOneBySerial(prmTerminal.getSerial());
-                    if(existBySerial.isPresent()){
-                        EntidadYaExisteException objExeption = new EntidadYaExisteException("El terminal con serial "+prmTerminal.getSerial()+" ya existe en la Base de datos");
+                    if (existBySerial.isPresent()) {
+                        EntidadYaExisteException objExeption = new EntidadYaExisteException(
+                                "El terminal con serial " + prmTerminal.getSerial() + " ya existe en la Base de datos");
                         throw objExeption;
                     }
-                }  
+                }
             }
-             objTerminal.setSerial(prmTerminal.getSerial());
-             objTerminal.setEnable(prmTerminal.getEnable());
-             objTerminal.setName(prmTerminal.getName());
-             if(objTerminal!=null){
-                objTerminal=this.serviceDBTerminal.save(objTerminal);
-             }
-            TerminalDTO terminalDTO=this.mapper.map(objTerminal, TerminalDTO.class);
-            if(terminalDTO!=null){
-                
-                rta=new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.OK);
-            }else{
-                rta= new ResponseEntity<String>("Error al actualizar el Terminal",HttpStatus.INTERNAL_SERVER_ERROR);
+            objTerminal.setSerial(prmTerminal.getSerial());
+            objTerminal.setEnable(prmTerminal.getEnable());
+            objTerminal.setName(prmTerminal.getName());
+            if (objTerminal != null) {
+                objTerminal = this.serviceDBTerminal.save(objTerminal);
+            }
+            TerminalDTO terminalDTO = this.mapper.map(objTerminal, TerminalDTO.class);
+            if (terminalDTO != null) {
+
+                rta = new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.OK);
+            } else {
+                rta = new ResponseEntity<String>("Error al actualizar el Terminal", HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-        
+
         return rta;
     }
 
     /**
      * Deletes a terminal by ID.
      *
-     * @param  terminalId   the ID of the terminal to delete
-     * @return              true if the terminal was deleted, false otherwise
+     * @param terminalId the ID of the terminal to delete
+     * @return true if the terminal was deleted, false otherwise
      */
     @Override
     @Transactional
     public boolean delete(Long terminalId) {
-        boolean bandera=false;
+        boolean bandera = false;
 
-        
-        if(terminalId!=null){
-            Optional<Terminal> optional= this.serviceDBTerminal.findById(terminalId);
-            if(optional.isPresent()){
-                Terminal objTerminal=optional.get();
-                if(objTerminal!=null){
+        if (terminalId != null) {
+            Optional<Terminal> optional = this.serviceDBTerminal.findById(terminalId);
+            if (optional.isPresent()) {
+                Terminal objTerminal = optional.get();
+                if (objTerminal != null) {
                     objTerminal.setSerial(null);
                     this.serviceDBTerminal.save(objTerminal);
-                    bandera=true;
+                    bandera = true;
                 }
-                
+
             }
         }
         return bandera;
@@ -205,238 +216,351 @@ public class TerminalService implements ITerminalService {
     /**
      * Find a terminal by its ID.
      *
-     * @param  terminalId    the ID of the terminal to find
-     * @return               a response entity with the terminal DTO if found, or an exception if not found
+     * @param terminalId the ID of the terminal to find
+     * @return a response entity with the terminal DTO if found, or an exception if
+     *         not found
      */
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<?> findById(Long terminalId) {
-        if(terminalId!=null){
-            Optional<Terminal> optional= this.serviceDBTerminal.findById(terminalId);
-            if(optional.isPresent()){
-                TerminalDTO objTerminalDTO=this.mapper.map(optional.get(),TerminalDTO.class);
-                
-                return new ResponseEntity<TerminalDTO>(objTerminalDTO,HttpStatus.OK);
+        if (terminalId != null) {
+            Optional<Terminal> optional = this.serviceDBTerminal.findById(terminalId);
+            if (optional.isPresent()) {
+                TerminalDTO objTerminalDTO = this.mapper.map(optional.get(), TerminalDTO.class);
+
+                return new ResponseEntity<TerminalDTO>(objTerminalDTO, HttpStatus.OK);
             }
         }
-        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Terminal con terminalId "+terminalId+" no existe en la Base de datos");
-                throw objExeption;
+        EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                "El Terminal con terminalId " + terminalId + " no existe en la Base de datos");
+        throw objExeption;
     }
 
     /**
-     * Finds a record by its serial number and returns a ResponseEntity with the 
-     * corresponding TerminalDTO if found. Throws EntidadNoExisteException if the 
+     * Finds a record by its serial number and returns a ResponseEntity with the
+     * corresponding TerminalDTO if found. Throws EntidadNoExisteException if the
      * record does not exist.
      *
-     * @param  serial  the serial number of the record to be found
-     * @return         a ResponseEntity containing the TerminalDTO if found
+     * @param serial the serial number of the record to be found
+     * @return a ResponseEntity containing the TerminalDTO if found
      */
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<?> findBySerial(String serial) {
-        if(serial!=null){
-            Optional<Terminal> optional= this.serviceDBTerminal.findOneBySerial(serial);
-            if(optional.isPresent()){
-                TerminalDTO objTerminalDTO=this.mapper.map(optional.get(),TerminalDTO.class);
-                
-                return new ResponseEntity<TerminalDTO>(objTerminalDTO,HttpStatus.OK);
+        if (serial != null) {
+            Optional<Terminal> optional = this.serviceDBTerminal.findOneBySerial(serial);
+            if (optional.isPresent()) {
+                TerminalDTO objTerminalDTO = this.mapper.map(optional.get(), TerminalDTO.class);
+
+                return new ResponseEntity<TerminalDTO>(objTerminalDTO, HttpStatus.OK);
             }
         }
-        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Terminal con serial "+serial+" no existe en la Base de datos");
-                throw objExeption;
+        EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                "El Terminal con serial " + serial + " no existe en la Base de datos");
+        throw objExeption;
     }
 
     /**
      * Update the enable status of a terminal.
      *
-     * @param  terminalId   the ID of the terminal to update
-     * @param  enable       the new enable status
-     * @return              the response entity indicating the success of the update
+     * @param terminalId the ID of the terminal to update
+     * @param enable     the new enable status
+     * @return the response entity indicating the success of the update
      */
     @Override
     @Transactional
     public ResponseEntity<?> updateEnable(Long terminalId, boolean enable) {
-        
-        if(terminalId!=null){
-            Optional<Terminal> optional= this.serviceDBTerminal.findById(terminalId);
-            if(optional.isPresent()){
-                if(optional.get().getExpirationDate()==null || (enable  && optional.get().getExpirationDate().isBefore(LocalDate.now())==true )){
-                    return new ResponseEntity<Boolean>(false,HttpStatus.PAYMENT_REQUIRED);
-                } 
+
+        if (terminalId != null) {
+            Optional<Terminal> optional = this.serviceDBTerminal.findById(terminalId);
+            if (optional.isPresent()) {
+                if (optional.get().getExpirationDate() == null
+                        || (enable && optional.get().getExpirationDate().isBefore(LocalDate.now()) == true)) {
+                    return new ResponseEntity<Boolean>(false, HttpStatus.PAYMENT_REQUIRED);
+                }
                 this.serviceDBTerminal.updateEnable(terminalId, enable);
-                return new ResponseEntity<Boolean>(true,HttpStatus.OK);
+                return new ResponseEntity<Boolean>(true, HttpStatus.OK);
             }
         }
-        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Terminal con terminalId "+terminalId+" no existe en la Base de datos");
-                throw objExeption;
+        EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                "El Terminal con terminalId " + terminalId + " no existe en la Base de datos");
+        throw objExeption;
+    }
+
+    public double getValueWithOutStateTax(double prmValue) {
+        return prmValue - prmValue * 0.04;
     }
 
     @Override
     public ResponseEntity<?> buyTerminal(BuyTerminalDTO prmTerminal) {
-       
-        Double amount=0.0;
-        ResponsePayment respPayment;
-        String serviceReferenceNumber=null;
-        prmTerminal=validateData(prmTerminal);
-        if(prmTerminal==null){
-            return new ResponseEntity<String>(msgError,HttpStatus.BAD_REQUEST);
-        }
-        ResponseEntity<?> rta;
-        Business objBusiness= null;
-        Terminal objTerminal =this.mapper.map(prmTerminal, Terminal.class);
-        objTerminal.setTerminalId(null);
-        Long businessId=prmTerminal.getBusinesId();
-        EmailBodyData objEmailBodyData=mapper.map(prmTerminal, EmailBodyData.class);
-        objEmailBodyData.setAdditionalTerminals(1);
-        if(businessId!=null){
-                Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
-                if(!existBusiness.isPresent()){
-                    EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" no existe en la Base de datos");
-                    throw objExeption;
-                }else{
-                    String userTransactionNumber = uniqueString();
-                    Service objService= this.serviceDBService.findById(prmTerminal.getIdService()).orElse(null);
-                    
-                    amount=objService.getServiceValue();
-                    objBusiness=existBusiness.get();
-                    objEmailBodyData.setBusinessName(objBusiness.getName());
-                    objEmailBodyData.setEmail(objBusiness.getUser().getEmail());
-                    objEmailBodyData.setMerchantId(objBusiness.getMerchantId());
-                    objEmailBodyData.setName(objBusiness.getUser().getName());
-                    objEmailBodyData.setPhone(objBusiness.getUser().getPhone());
 
-                     //Calculo del valor de los terminales
-                    if(objBusiness.getAdditionalTerminals()>1 && objBusiness.getAdditionalTerminals()<=5){
-                        amount=objService.getTerminals2to5();
-                        objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
-                    }else if(objBusiness.getAdditionalTerminals()>5 && objBusiness.getAdditionalTerminals()<10){
-                        amount=objService.getTerminals6to9();
-                        objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
-                    }else{
-                        amount=objService.getTerminals10();
-                        objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
-                    }
-                    
-                    if(objBusiness.getAdditionalTerminals()==0){
-                        objTerminal.setPrincipal(true);
-                    }else{
-                        objTerminal.setPrincipal(false);
-                    }
-                    objEmailBodyData.setAmount(amount);
-                    objEmailBodyData.setServiceDescription(objService.getServiceDescription());
-                    objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
-                    objEmailBodyData.setBuyTerminal(true);
-                    objTerminal.setService(objService);
-                    objTerminal.setBusiness(existBusiness.get());  
-                    switch (prmTerminal.getPaymethod()){
-                        case "CREDIT-CARD":
-                            try {
-                                respPayment=blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(amount)), 
-                                objBusiness.getAddress().getZipcode(), 
-                                prmTerminal.getCreditcarnumber().replaceAll("-", ""),
-                                prmTerminal.getExpDateMonth() + prmTerminal.getExpDateYear(), 
-                                prmTerminal.getNameoncard(), 
-                                prmTerminal.getSecuritycode(), null, userTransactionNumber);
-                            } catch (ConsumeAPIException ex) {
-                                System.err.println("Error en el consumo de BlackStone: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: "+ ex.getMessage() );
-                                HashMap<String, String> map = new HashMap<>();
-                                map.put("msg", "Por favor comuniquese con el administrador de la página.");
-                                return new ResponseEntity<HashMap<String,String>>(map,HttpStatus.BAD_REQUEST);
-                            }
-                            System.out.println("respPayment: "+respPayment.getResponseCode());
-                            if(respPayment.getResponseCode()!=200){
-                                emailService.notifyErrorRegister(objEmailBodyData);
-                                HashMap <String, String> objError=new HashMap<String, String>();
-                                objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
-                                return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
-                            }
-                            existBusiness.get().setLastPayment(LocalDate.now());
-                            this.serviceDBBusiness.save(existBusiness.get());
-                            serviceReferenceNumber=respPayment.getServiceReferenceNumber();
-                            objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
-                        break;
-                    }  
-                        
+        Double amount = 0.0;
+        Double serviceValue = 0.0;
+        ResponsePayment respPayment;
+        String serviceReferenceNumber = null;
+        prmTerminal = validateData(prmTerminal);
+        if (prmTerminal == null) {
+            return new ResponseEntity<String>(msgError, HttpStatus.BAD_REQUEST);
+        }
+        Service objService = null;
+        ResponseEntity<?> rta;
+        Business objBusiness = null;
+        Terminal objTerminal = this.mapper.map(prmTerminal, Terminal.class);
+        objTerminal.setTerminalId(null);
+        Long businessId = prmTerminal.getBusinesId();
+        EmailBodyData objEmailBodyData = mapper.map(prmTerminal, EmailBodyData.class);
+        objEmailBodyData.setAdditionalTerminals(1);
+        objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
+        if (businessId != null) {
+            Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
+            if (!existBusiness.isPresent()) {
+                EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                        "El business con businessId " + businessId + " no existe en la Base de datos");
+                throw objExeption;
+            } else {
+                String userTransactionNumber = uniqueString();
+                objService = this.serviceDBService.findById(prmTerminal.getIdService()).orElse(null);
+
+                amount = objService.getServiceValue();
+                objBusiness = existBusiness.get();
+                objEmailBodyData.setBusinessName(objBusiness.getName());
+                objEmailBodyData.setEmail(objBusiness.getUser().getEmail());
+                objEmailBodyData.setMerchantId(objBusiness.getMerchantId());
+                objEmailBodyData.setName(objBusiness.getUser().getName());
+                objEmailBodyData.setPhone(objBusiness.getUser().getPhone());
+
+                // Calculo del valor de los terminales
+                if (objBusiness.getAdditionalTerminals() > 1 && objBusiness.getAdditionalTerminals() <= 5) {
+                    amount = objService.getTerminals2to5();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
+                } else if (objBusiness.getAdditionalTerminals() > 5 && objBusiness.getAdditionalTerminals() < 10) {
+                    amount = objService.getTerminals6to9();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
+                } else {
+                    amount = objService.getTerminals10();
+                    objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
+                }
+                serviceValue = amount;
+                objEmailBodyData.setDiscount(0.0);
+                if (objBusiness.getDiscount() != 0.0) {
+                    objEmailBodyData.setReferenceNumber(
+                            "DESCUENTO APLICADO:$" + String.valueOf(formato.format(objBusiness.getDiscount())));
+                    objEmailBodyData.setDiscount(objBusiness.getDiscount());
+
+                    if (objBusiness.getDiscount() < amount) {
+                        amount = amount - objBusiness.getDiscount();
+                        objBusiness.setDiscount(0.0);
+                    } else {
+                        prmTerminal.setPaymethod("PAID-WITH-DISCOUNT");
+                        objBusiness.setDiscount(objBusiness.getDiscount() - amount);
+                        amount = 0.0;
                     }
                 }
+                if (objBusiness.getAdditionalTerminals() == 0) {
+                    objTerminal.setPrincipal(true);
+                    objBusiness.setServiceId(objService.getServiceId());
+                } else {
+                    objTerminal.setPrincipal(false);
+                }
+                objEmailBodyData.setStateTax(amount * 0.04);
+                objEmailBodyData.setSubTotal(getValueWithOutStateTax(amount));
+                objEmailBodyData.setAmount(amount);
+                objEmailBodyData.setServiceDescription(objService.getServiceDescription());
+                objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
+                objEmailBodyData.setBuyTerminal(true);
+                objTerminal.setService(objService);
+                objTerminal.setBusiness(existBusiness.get());
+                switch (prmTerminal.getPaymethod()) {
+                    case "CREDIT-CARD":
+                        try {
+                            respPayment = blackStoneService.paymentWithCreditCard(
+                                    String.valueOf(formato.format(amount)),
+                                    objBusiness.getAddress().getZipcode(),
+                                    prmTerminal.getCreditcarnumber().replaceAll("-", ""),
+                                    prmTerminal.getExpDateMonth() + prmTerminal.getExpDateYear(),
+                                    prmTerminal.getNameoncard(),
+                                    prmTerminal.getSecuritycode(), null, userTransactionNumber);
+                        } catch (ConsumeAPIException ex) {
+                            System.err.println("Error en el consumo de BlackStone: CodigoHttp " + ex.getHttpStatusCode()
+                                    + " \n Mensje: " + ex.getMessage());
+                            HashMap<String, String> map = new HashMap<>();
+                            map.put("msg", "Por favor comuniquese con el administrador de la página.");
+                            return new ResponseEntity<HashMap<String, String>>(map, HttpStatus.BAD_REQUEST);
+                        }
+                        System.out.println("respPayment: " + respPayment.getResponseCode());
+                        if (respPayment.getResponseCode() != 200) {
+                            emailService.notifyErrorRegister(objEmailBodyData);
+                            HashMap<String, String> objError = new HashMap<String, String>();
+                            objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
+                            return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
+                        }
+                        existBusiness.get().setLastPayment(LocalDate.now());
+                        this.serviceDBBusiness.save(existBusiness.get());
+                        serviceReferenceNumber = respPayment.getServiceReferenceNumber();
+                        objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
+                        break;
+                }
+
+            }
+        }
         objTerminal.setAutomaticPayments(prmTerminal.isAutomaticPayments());
         objTerminal.setEnable(true);
-        objTerminal.setExpirationDate(null);
+        objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
         objTerminal.setSerial(null);
-        objTerminal.setName("Terminal "+LocalDate.now().toString());
-        Invoice objInvoice=new Invoice();
-        switch (prmTerminal.getPaymethod()){
+        objTerminal.setName("Terminal " + LocalDate.now().toString());
+        Invoice objInvoice = new Invoice();
+        objInvoice.setTotalAmount(amount);
+        objInvoice.setSubTotal(getValueWithOutStateTax(amount));
+        objInvoice.setStateTax(amount * 0.04);
+        TerminalsDoPaymentDTO objTerDoPay = new TerminalsDoPaymentDTO();
+        switch (prmTerminal.getPaymethod()) {
             case "CREDIT-CARD":
                 objTerminal.setPayment(true);
-                objTerminal=this.serviceDBTerminal.save(objTerminal);
-                objInvoice.setDate(LocalDate.now());
-                objInvoice.setTime(LocalTime.now());
-                objInvoice.setPaymentMethod(prmTerminal.getPaymethod());
-                                    objInvoice.setTerminals(1);
-                                    objInvoice.setTotalAmount(amount);
-                                    objInvoice.setBusinessId(objBusiness.getBusinessId());
-                                    objInvoice.setReferenceNumber(serviceReferenceNumber);
-                                    objInvoice.setServiceId(prmTerminal.getIdService());
-                                    objInvoice.setInProcess(false);
-                                    objInvoice.setTerminalIds(objTerminal.getTerminalId().toString());
-                                    objInvoice=serviceDBInvoice.save(objInvoice);
-                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
-                                    emailService.notifyPaymentCreditCard(objEmailBodyData);
-                emailService.notifyNewTerminal(objEmailBodyData);
-                break;
-            case "ATHMOVIL":
-                
-                objTerminal.setPayment(false);
-                objTerminal=this.serviceDBTerminal.save(objTerminal);
-                objInvoice.setDate(LocalDate.now());
-                                    objInvoice.setTime(LocalTime.now());
-                                    objInvoice.setPaymentMethod(prmTerminal.getPaymethod());
-                                    objInvoice.setTerminals(1);
-                                    objInvoice.setTotalAmount(amount);
-                                    objInvoice.setBusinessId(objBusiness.getBusinessId());
-                                    objInvoice.setReferenceNumber(serviceReferenceNumber);
-                                    objInvoice.setServiceId(prmTerminal.getIdService());
-                                    objInvoice.setInProcess(true);
-                                    objInvoice.setTerminalIds(objTerminal.getTerminalId().toString());
-                                    objInvoice=serviceDBInvoice.save(objInvoice);
-                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
-
-                                    emailService.notifyPaymentATHMovil(objEmailBodyData);
-                                    emailService.notifyNewTerminal(objEmailBodyData);
-                break;
-            case "BANK-ACCOUNT":
-
-                objTerminal.setPayment(false);
-                objTerminal=this.serviceDBTerminal.save(objTerminal);
+                objTerminal = this.serviceDBTerminal.save(objTerminal);
                 objInvoice.setDate(LocalDate.now());
                 objInvoice.setTime(LocalTime.now());
                 objInvoice.setPaymentMethod(prmTerminal.getPaymethod());
                 objInvoice.setTerminals(1);
-                objInvoice.setTotalAmount(amount);
+                objInvoice.setBusinessId(objBusiness.getBusinessId());
+                objInvoice.setReferenceNumber(serviceReferenceNumber);
+                objInvoice.setServiceId(prmTerminal.getIdService());
+                objInvoice.setInProcess(false);
+                objInvoice.setTerminalIds(objTerminal.getTerminalId().toString());
+                objInvoice = serviceDBInvoice.save(objInvoice);
+                objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+
+                if (objTerminal.isPrincipal()) {
+                    objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                } else {
+                    objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                }
+                objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
+                objTerDoPay.setTerminalId(objTerminal.getTerminalId());
+                objTerDoPay.setPrincipal(objTerminal.isPrincipal());
+                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setIdService(objTerminal.getService().getServiceId());
+                objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
+                emailService.notifyPaymentCreditCard(objEmailBodyData);
+                emailService.notifyNewTerminal(objEmailBodyData);
+                break;
+            case "ATHMOVIL":
+
+                objTerminal.setPayment(false);
+                objTerminal = this.serviceDBTerminal.save(objTerminal);
+                objInvoice.setDate(LocalDate.now());
+                objInvoice.setTime(LocalTime.now());
+                objInvoice.setPaymentMethod(prmTerminal.getPaymethod());
+                objInvoice.setTerminals(1);
+                objInvoice.setBusinessId(objBusiness.getBusinessId());
+                objInvoice.setReferenceNumber(serviceReferenceNumber);
+                objInvoice.setServiceId(prmTerminal.getIdService());
+                objInvoice.setInProcess(true);
+                objInvoice.setTerminalIds(objTerminal.getTerminalId().toString());
+                objInvoice = serviceDBInvoice.save(objInvoice);
+                objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                if (objTerminal.isPrincipal()) {
+                    objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                } else {
+                    objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                }
+                objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
+                objTerDoPay.setTerminalId(objTerminal.getTerminalId());
+                objTerDoPay.setPrincipal(objTerminal.isPrincipal());
+                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setIdService(objTerminal.getService().getServiceId());
+                objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
+                emailService.notifyPaymentATHMovil(objEmailBodyData);
+                emailService.notifyNewTerminal(objEmailBodyData);
+                break;
+            case "BANK-ACCOUNT":
+
+                objTerminal.setPayment(false);
+                objTerminal = this.serviceDBTerminal.save(objTerminal);
+                objInvoice.setDate(LocalDate.now());
+                objInvoice.setTime(LocalTime.now());
+                objInvoice.setPaymentMethod(prmTerminal.getPaymethod());
+                objInvoice.setTerminals(1);
                 objInvoice.setBusinessId(objBusiness.getBusinessId());
                 objInvoice.setReferenceNumber(serviceReferenceNumber);
                 objInvoice.setServiceId(prmTerminal.getIdService());
                 objInvoice.setInProcess(true);
                 objInvoice.setTerminalIds(objTerminal.getTerminalId().toString());
 
-                objInvoice=serviceDBInvoice.save(objInvoice);
+                objInvoice = serviceDBInvoice.save(objInvoice);
                 objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
-                
+
+                if (objTerminal.isPrincipal()) {
+                    objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                } else {
+                    objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                }
+                objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
+                objTerDoPay.setTerminalId(objTerminal.getTerminalId());
+                objTerDoPay.setPrincipal(objTerminal.isPrincipal());
+                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setIdService(objTerminal.getService().getServiceId());
+                objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
                 emailService.notifyPaymentBankAccount(objEmailBodyData);
+                emailService.notifyNewTerminal(objEmailBodyData);
+                break;
+            case "PAID-WITH-DISCOUNT":
+                objTerminal.setPayment(true);
+                objTerminal = this.serviceDBTerminal.save(objTerminal);
+                objInvoice.setDate(LocalDate.now());
+                objInvoice.setTime(LocalTime.now());
+                objInvoice.setPaymentMethod(prmTerminal.getPaymethod());
+                objInvoice.setTerminals(1);
+                objInvoice.setBusinessId(objBusiness.getBusinessId());
+                objInvoice.setReferenceNumber(" DESCUENTO APLICADO: $" + objEmailBodyData.getDiscount());
+                objInvoice.setServiceId(prmTerminal.getIdService());
+                objInvoice.setInProcess(false);
+                objInvoice.setTerminalIds(objTerminal.getTerminalId().toString());
+                objInvoice = serviceDBInvoice.save(objInvoice);
+                objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+
+                if (objTerminal.isPrincipal()) {
+                    objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                } else {
+                    objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
+                            + objService.getServiceName() + " $"
+                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                }
+                objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
+                objTerDoPay.setTerminalId(objTerminal.getTerminalId());
+                objTerDoPay.setPrincipal(objTerminal.isPrincipal());
+                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setIdService(objTerminal.getService().getServiceId());
+                objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
+                emailService.notifyPaymentDiscount(objEmailBodyData);
                 emailService.notifyNewTerminal(objEmailBodyData);
                 break;
         }
 
-        TerminalDTO terminalDTO=this.mapper.map(objTerminal, TerminalDTO.class);
-        if(terminalDTO!=null){
-            objBusiness.setAdditionalTerminals(objBusiness.getAdditionalTerminals()+1);
+        TerminalDTO terminalDTO = this.mapper.map(objTerminal, TerminalDTO.class);
+        if (terminalDTO != null) {
+            objBusiness.setAdditionalTerminals(objBusiness.getAdditionalTerminals() + 1);
             this.serviceDBBusiness.save(objBusiness);
-            rta=new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.CREATED);
-        }else{
-            rta= new ResponseEntity<String>("Error al crear el Terminal",HttpStatus.INTERNAL_SERVER_ERROR);
+            rta = new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.CREATED);
+        } else {
+            rta = new ResponseEntity<String>("Error al crear el Terminal", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return rta;
     }
+
     public String uniqueString() {
         String random = UUID.randomUUID().toString();
         random = random.replaceAll("-", "");
@@ -446,95 +570,95 @@ public class TerminalService implements ITerminalService {
     }
 
     private BuyTerminalDTO validateData(BuyTerminalDTO prmRegistry) {
-        if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("CREDIT-CARD")==0){
-            if(prmRegistry.getCreditcarnumber()!=null){
-                if(!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+        if (prmRegistry.getPaymethod() != null && prmRegistry.getPaymethod().compareTo("CREDIT-CARD") == 0) {
+            if (prmRegistry.getCreditcarnumber() != null) {
+                if (!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
                     msgError = "Letters are not allowed in the credit card number";
-                return null;
+                    return null;
                 }
-            }else{
+            } else {
                 msgError = "The credit card number is required";
                 return null;
             }
-            if(prmRegistry.getNameoncard()!=null){
+            if (prmRegistry.getNameoncard() != null) {
                 prmRegistry.setNameoncard(prmRegistry.getNameoncard().toUpperCase().trim());
-            }else{
+            } else {
                 msgError = "The name on card is required";
                 return null;
             }
-            if(prmRegistry.getSecuritycode()!=null){
-                if(!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+            if (prmRegistry.getSecuritycode() != null) {
+                if (!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
                     msgError = "Letters are not allowed in the security code";
-                return null;
+                    return null;
                 }
-            }else{
+            } else {
                 msgError = "The security code is required";
                 return null;
             }
-            if(prmRegistry.getExpDateMonth()!=null){
-                if(!prmRegistry.getExpDateMonth().matches("[+-]?\\d*(\\.\\d+)?")){
+            if (prmRegistry.getExpDateMonth() != null) {
+                if (!prmRegistry.getExpDateMonth().matches("[+-]?\\d*(\\.\\d+)?")) {
                     msgError = "Letters are not allowed in the expiration date";
-                return null;
-                }else{
-                    if(Integer.parseInt(prmRegistry.getExpDateMonth())>12){
+                    return null;
+                } else {
+                    if (Integer.parseInt(prmRegistry.getExpDateMonth()) > 12) {
                         msgError = "The expiration date month must be less than or equal to 12";
                         return null;
                     }
                 }
-            }else{
+            } else {
                 msgError = "The expiration date month is required";
                 return null;
             }
-            if(prmRegistry.getExpDateYear()!=null){
-                if(!prmRegistry.getExpDateYear().matches("[+-]?\\d*(\\.\\d+)?")){
+            if (prmRegistry.getExpDateYear() != null) {
+                if (!prmRegistry.getExpDateYear().matches("[+-]?\\d*(\\.\\d+)?")) {
                     msgError = "Letters are not allowed in the expiration date";
-                return null;
-                }else{
+                    return null;
+                } else {
                     prmRegistry.setExpDateYear(prmRegistry.getExpDateYear().trim());
-                    if(prmRegistry.getExpDateYear().length()!=2){
+                    if (prmRegistry.getExpDateYear().length() != 2) {
                         msgError = "The expiration date year must be 2 digits";
                         return null;
                     }
                 }
-            }else{
+            } else {
                 msgError = "The expiration date year is required";
                 return null;
             }
-            
-        }else if(prmRegistry.getPaymethod()!=null && prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT")==0){
-            if(prmRegistry.getAccountNameBank()!=null){
+
+        } else if (prmRegistry.getPaymethod() != null && prmRegistry.getPaymethod().compareTo("BANK-ACCOUNT") == 0) {
+            if (prmRegistry.getAccountNameBank() != null) {
                 prmRegistry.setAccountNameBank(prmRegistry.getAccountNameBank().toUpperCase().trim());
-            }else{
+            } else {
                 msgError = "The account name is required";
                 return null;
             }
-            if(prmRegistry.getAccountNumberBank()!=null){
-                if(!prmRegistry.getAccountNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+            if (prmRegistry.getAccountNumberBank() != null) {
+                if (!prmRegistry.getAccountNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
                     msgError = "Letters are not allowed in the account number";
                     return null;
-                }else{
+                } else {
                     prmRegistry.setAccountNumberBank(prmRegistry.getAccountNumberBank().trim());
                 }
-            }else{
+            } else {
                 msgError = "The account number is required";
                 return null;
             }
-            if(prmRegistry.getRouteNumberBank()!=null){
-                if(!prmRegistry.getRouteNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
+            if (prmRegistry.getRouteNumberBank() != null) {
+                if (!prmRegistry.getRouteNumberBank().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
                     msgError = "Letters are not allowed in the route number";
                     return null;
-                }else{
+                } else {
                     prmRegistry.setRouteNumberBank(prmRegistry.getRouteNumberBank().trim());
                 }
-            }else{
+            } else {
                 msgError = "The route number is required";
                 return null;
             }
-            if(prmRegistry.getChequeVoidId()==null){
+            if (prmRegistry.getChequeVoidId() == null) {
                 msgError = "The chequeVoidId is required";
                 return null;
             }
-            
+
         }
         return prmRegistry;
     }
@@ -542,21 +666,25 @@ public class TerminalService implements ITerminalService {
     /**
      * Retrieves a list of expired terminals for a given business ID.
      *
-     * @param  businessId  the ID of the business
-     * @return             a ResponseEntity containing the list of expired terminals
+     * @param businessId the ID of the business
+     * @return a ResponseEntity containing the list of expired terminals
      */
     @Override
     public ResponseEntity<?> getExpiredTerminals(Long businessId) {
-        List<TerminalDTO> listTerminalDTO=new ArrayList<>();
-        if(businessId!=null){
-            Optional<Business> optional= this.serviceDBBusiness.findById(businessId);
-            if(optional.isPresent()){
-                listTerminalDTO=this.mapper.map(this.serviceDBTerminal.findByBusinessAndExpirationDateLessThan(optional.get(), LocalDate.now()), new TypeToken<List<TerminalDTO>>(){}.getType());
-                return new ResponseEntity<List<TerminalDTO>>(listTerminalDTO,HttpStatus.OK);
+        List<TerminalDTO> listTerminalDTO = new ArrayList<>();
+        if (businessId != null) {
+            Optional<Business> optional = this.serviceDBBusiness.findById(businessId);
+            if (optional.isPresent()) {
+                listTerminalDTO = this.mapper.map(
+                        this.serviceDBTerminal.findByBusinessAndExpirationDateLessThan(optional.get(), LocalDate.now()),
+                        new TypeToken<List<TerminalDTO>>() {
+                        }.getType());
+                return new ResponseEntity<List<TerminalDTO>>(listTerminalDTO, HttpStatus.OK);
             }
         }
-        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
-                throw objExeption;
+        EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                "El Business con businessId " + businessId + " no existe en la Base de datos");
+        throw objExeption;
     }
-    
+
 }

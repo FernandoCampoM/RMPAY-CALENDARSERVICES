@@ -131,7 +131,7 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
     public List<ItemForSale> getBestSellingItems(Long businessId, LocalDate startDate, LocalDate endDate);
     /**
      * Retrieves the best selling items by category within a specified date range for a given business.
-     * TODO: Cambair el orderby de acuerdo a la respuesta de Carlos Omar
+     * 
      * @param  businessId  the ID of the business
      * @param  startDate   the start date of the date range
      * @param  endDate     the end date of the date range

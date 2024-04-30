@@ -16,6 +16,8 @@ public class InvoiceDTO {
     private String paymentMethod;
     private Integer terminals;
     private Double totalAmount;
+    private Double subTotal;
+    private Double stateTax;
     private Long businessId;
     
     private String referenceNumber;
