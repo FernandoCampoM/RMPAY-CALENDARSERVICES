@@ -26,4 +26,5 @@ public class InvoiceDTO {
     private boolean inProcess=false; //Para indicar si el pago se encuentra en proceso
     private String terminalIds;
     private Long serviceId;
+    private String paymentDescription;
 }

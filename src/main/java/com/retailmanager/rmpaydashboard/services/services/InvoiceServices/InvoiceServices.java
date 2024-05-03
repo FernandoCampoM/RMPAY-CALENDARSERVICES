@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.gson.Gson;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
@@ -66,7 +67,7 @@ public class InvoiceServices implements IInvoiceServices {
     String msgError = "";
     @Autowired
     private TerminalRepository serviceDBTerminal;
-
+     Gson gson = new Gson();
     /**
      * Retrieves the payment history for a given business within a specified date
      * range.
@@ -81,7 +82,7 @@ public class InvoiceServices implements IInvoiceServices {
     public ResponseEntity<?> getPaymentHistoryByBusiness(Long businessId, LocalDate startDate, LocalDate endDate) {
         if (businessId != null && startDate != null && endDate != null) {
             List<Invoice> listInvoice = this.invoiceRepository
-                    .findByBusinessIdAndDateGreaterThanEqualAndDateLessThanEqual(businessId, startDate, endDate);
+                    .findByBusinessIdAndDateGreaterThanEqualAndDateLessThanEqualOrderByInvoiceNumberDesc(businessId, startDate, endDate);
             List<InvoiceDTO> listInvoiceDTO = this.mapper.map(listInvoice, new TypeToken<List<InvoiceDTO>>() {
             }.getType());
             return new ResponseEntity<>(listInvoiceDTO, HttpStatus.OK);
@@ -105,7 +106,7 @@ public class InvoiceServices implements IInvoiceServices {
         Long serviceIdPrincipal = -1L;
         Double stateTax=0.0;
         EmailBodyData objEmailBodyData = mapper.map(prmPaymentInfo, EmailBodyData.class);
-
+        List<String> paymentDescription=new ArrayList<>();
         Business objBusiness = this.serviceDBBusiness.findById(prmPaymentInfo.getBusinessId()).orElse(null);
         if (objBusiness == null) {
             EntidadNoExisteException objExeption = new EntidadNoExisteException(
@@ -147,7 +148,7 @@ public class InvoiceServices implements IInvoiceServices {
                 String descripcion = "";
                 if (objTerminalDB.isPrincipal()) {
                     descripcion = "Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
-                            + objService.getServiceName() + " $"
+                            + objService.getServiceName() + ": $"
                             + String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))) + "\n";
                     amount = objService.getServiceValue();
                     objTerminal.setPrincipal(true);
@@ -156,23 +157,24 @@ public class InvoiceServices implements IInvoiceServices {
                     objTerminal.setPrincipal(false);
                     if (prmPaymentInfo.getTerminalsNumber() <= 5) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
-                                + objService.getServiceName() + " $"
+                                + objService.getServiceName() + ": $"
                                 + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals2to5()))) + "\n";
                         amount = objService.getTerminals2to5();
                     } else if (prmPaymentInfo.getTerminalsNumber() > 5 && prmPaymentInfo.getTerminalsNumber() < 10) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
-                                + objService.getServiceName() + " $"
+                                + objService.getServiceName() + ": $"
                                 + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals6to9()))) + "\n";
                         amount = objService.getTerminals6to9();
                     } else {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
-                                + objService.getServiceName() + " $"
+                                + objService.getServiceName() + ": $"
                                 + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals10()))) + "\n";
                         amount = objService.getTerminals10();
                     }
                 }
                 objTerminal.setAmount(amount);
                 totalAmount += amount;
+                paymentDescription.add(descripcion);
                 objTerminal.setServiceDescription(descripcion);
             }
             objEmailBodyData.setDiscount(0.0);
@@ -221,10 +223,13 @@ public class InvoiceServices implements IInvoiceServices {
             objInvoice.setTotalAmount(totalAmount);
             objInvoice.setSubTotal(totalAmount-stateTax);
             objInvoice.setStateTax(stateTax);
+            objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
+            objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
             List<Long> listTerminalIds = new ArrayList<Long>();
             switch (prmPaymentInfo.getPaymethod()) {
                 case "CREDIT-CARD":
                     objBusiness.setLastPayment(LocalDate.now());
+
                     for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
                         Service service = listService.get(objTerminal.getIdService());
                         Terminal objTer = this.serviceDBTerminal.findById(objTerminal.getTerminalId()).orElse(null);
@@ -236,7 +241,6 @@ public class InvoiceServices implements IInvoiceServices {
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }
-
                         objTer.setPayment(true);
                         objTer.setService(service);
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
@@ -246,7 +250,7 @@ public class InvoiceServices implements IInvoiceServices {
 
                     objInvoice.setDate(LocalDate.now());
                     objInvoice.setTime(LocalTime.now());
-                    objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
+                    
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
                     objInvoice.setReferenceNumber(serviceReferenceNumber);
@@ -254,6 +258,7 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setInProcess(false);
                     objInvoice.setTerminalIds(
                             listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
+                    
                     objInvoice = serviceDBInvoice.save(objInvoice);
                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                     objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
@@ -266,11 +271,11 @@ public class InvoiceServices implements IInvoiceServices {
                         objTer.setEnable(true);
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
-                        if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
+                        /* if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
                             objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                        }
+                        } */
                         //objTer.setPayment(false);
                         objTer.setService(service);
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
@@ -300,11 +305,11 @@ public class InvoiceServices implements IInvoiceServices {
                         objTer.setEnable(true);
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
-                        if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
+                        /* if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
                             objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                        }
+                        } */
 
                         //objTer.setPayment(false);
                         objTer.setService(service);

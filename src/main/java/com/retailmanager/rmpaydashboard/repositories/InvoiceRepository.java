@@ -9,5 +9,5 @@ import com.retailmanager.rmpaydashboard.models.Invoice;
 
 public interface InvoiceRepository extends CrudRepository<Invoice, Long> {
 
-    public List<Invoice> findByBusinessIdAndDateGreaterThanEqualAndDateLessThanEqual(Long businessId, LocalDate startDate, LocalDate endDate);
+    public List<Invoice> findByBusinessIdAndDateGreaterThanEqualAndDateLessThanEqualOrderByInvoiceNumberDesc(Long businessId, LocalDate startDate, LocalDate endDate);
 }

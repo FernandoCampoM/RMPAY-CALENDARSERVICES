@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.gson.Gson;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
@@ -60,6 +61,7 @@ public class BusinessService implements IBusinessService {
     private IEmailService emailService;
     @Autowired 
     private InvoiceRepository serviceDBInvoice;
+    Gson gson = new Gson();
     DecimalFormat formato = new DecimalFormat("#.##");
     /**
      * Save a business entity.
@@ -248,27 +250,22 @@ public class BusinessService implements IBusinessService {
                 objEmailBodyData.setServiceDescription("");
             }
             if(objUserDTO!=null){
-                    BusinessDTO objBusinessDTO=new BusinessDTO();
-                    objBusinessDTO.setTerminals(new ArrayList<TerminalDTO>());
-                    objBusinessDTO.setUserId(objUserDTO.getUserID());
-                    objBusinessDTO.setName(prmBusiness.getName());
-                    objBusinessDTO.setAddress(prmBusiness.getAddress());
-                    objBusinessDTO.setBusinessPhoneNumber(prmBusiness.getBusinessPhoneNumber());
-                    objBusinessDTO.setAdditionalTerminals(prmBusiness.getAdditionalTerminals());
-                    objBusinessDTO.setMerchantId(prmBusiness.getMerchantId());
-                    objBusinessDTO.setServiceId(prmBusiness.getServiceId());
-                    objBusinessDTO.setEnable(true);
-                    objBusinessDTO.setDiscount(0.0);
+                    objBusiness.setAdditionalTerminals(prmBusiness.getAdditionalTerminals());
+                    objBusiness.setEnable(true);
+                    objBusiness.setDiscount(0.0);
                     if(prmBusiness.getPaymethod()!=null && prmBusiness.getPaymethod().equals("CREDIT-CARD")){
-                        objBusinessDTO.setLastPayment(LocalDate.now());
+                        objBusiness.setLastPayment(LocalDate.now());
                     }
-                    
                     objBusiness=this.serviceDBBusiness.save(objBusiness);
+                    objBusiness.setTerminals(new ArrayList<Terminal>());
+                    BusinessDTO objBusinessDTO=new BusinessDTO();
                     if(objBusiness!=null){
+                        
                         objBusinessDTO=this.mapper.map(objBusiness, BusinessDTO.class);
                         if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0 && objBusinessDTO!=null && prmBusiness.getPaymethod()!=null){
                             List<Long> listTerminalIds=new ArrayList<Long>();
                             Invoice objInvoice=new Invoice();
+                            List<String> paymentDescription=new ArrayList<>();
                             objInvoice.setSubTotal(getValueWithOutStateTax(amount));
                             objInvoice.setTotalAmount(amount);
                             objInvoice.setStateTax(amount*0.04);
@@ -297,6 +294,7 @@ public class BusinessService implements IBusinessService {
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(getValueWithOutStateTax(objEmailBodyData.getAdditionalTerminalsValue()))));
                                         }
+                                        paymentDescription.add(objTerminalsDoPaymentDTO.getServiceDescription());
                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
                                         objTerminalsDoPaymentDTO.setAmount(getValueWithOutStateTax(aditionalTerminalsValue));
@@ -305,7 +303,7 @@ public class BusinessService implements IBusinessService {
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
-                                    
+                                    objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
@@ -351,6 +349,7 @@ public class BusinessService implements IBusinessService {
                                         objBusinessDTO.getTerminals().add(this.mapper.map(objTerminal, TerminalDTO.class));
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
+                                    objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
@@ -396,6 +395,7 @@ public class BusinessService implements IBusinessService {
                                          objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                     }
+                                    objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmBusiness.getPaymethod());
@@ -413,6 +413,8 @@ public class BusinessService implements IBusinessService {
                             }
                         }
                         emailService.notifyNewBusiness(objEmailBodyData);
+                        objBusinessDTO.getUser().setBusiness(null);
+                        
                         return new ResponseEntity<BusinessDTO>(objBusinessDTO,HttpStatus.CREATED);
                     }
                 }

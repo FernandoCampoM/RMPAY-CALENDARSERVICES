@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.gson.Gson;
 import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
@@ -76,7 +77,7 @@ public class UserService implements IUserService{
     String msgError = "";
     @Autowired
     private TerminalRepository serviceDBTerminal;
-    
+    Gson gson = new Gson();
     /**
      * Save user data into the database and return the response entity
      *
@@ -421,6 +422,7 @@ public class UserService implements IUserService{
                             objInvoice.setStateTax(amount*0.04);
                             objInvoice.setTotalAmount(amount);
                             List<Long> listTerminalIds=new ArrayList<Long>();
+                            List<String> paymentDescription=new ArrayList<>();
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
@@ -453,7 +455,7 @@ public class UserService implements IUserService{
                                         objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         listTerminalIds.add(objTerminal.getTerminalId());
                                     }
-                                    
+                                    objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
@@ -499,6 +501,7 @@ public class UserService implements IUserService{
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                         
                                     }
+                                    objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
@@ -544,6 +547,7 @@ public class UserService implements IUserService{
                                          objTerminalsDoPaymentDTO.setIdService(objService.getServiceId());
                                          objEmailBodyData.getTerminalsDoPayment().add(objTerminalsDoPaymentDTO);
                                     }
+                                    objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
                                     objInvoice.setDate(LocalDate.now());
                                     objInvoice.setTime(LocalTime.now());
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());

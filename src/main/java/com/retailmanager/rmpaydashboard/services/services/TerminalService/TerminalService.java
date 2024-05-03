@@ -438,6 +438,7 @@ public class TerminalService implements ITerminalService {
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
                 }
+                objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] - ");
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
