@@ -149,7 +149,7 @@ public class InvoiceServices implements IInvoiceServices {
                 if (objTerminalDB.isPrincipal()) {
                     descripcion = "Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + ": $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(objService.getServiceValue()))) + "\n";
+                            + String.valueOf(formato.format(objService.getServiceValue())) + "\n";
                     amount = objService.getServiceValue();
                     objTerminal.setPrincipal(true);
                     serviceIdPrincipal = objService.getServiceId();
@@ -158,17 +158,17 @@ public class InvoiceServices implements IInvoiceServices {
                     if (prmPaymentInfo.getTerminalsNumber() <= 5) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + ": $"
-                                + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals2to5()))) + "\n";
+                                + String.valueOf(formato.format(objService.getTerminals2to5())) + "\n";
                         amount = objService.getTerminals2to5();
                     } else if (prmPaymentInfo.getTerminalsNumber() > 5 && prmPaymentInfo.getTerminalsNumber() < 10) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + ": $"
-                                + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals6to9()))) + "\n";
+                                + String.valueOf(formato.format(objService.getTerminals6to9())) + "\n";
                         amount = objService.getTerminals6to9();
                     } else {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + ": $"
-                                + String.valueOf(formato.format(getValueWithOutStateTax(objService.getTerminals10()))) + "\n";
+                                + String.valueOf(formato.format(objService.getTerminals10())) + "\n";
                         amount = objService.getTerminals10();
                     }
                 }
@@ -193,9 +193,10 @@ public class InvoiceServices implements IInvoiceServices {
                 }
             }
             stateTax=totalAmount*0.04;
-            objEmailBodyData.setSubTotal(totalAmount-stateTax);
+            objEmailBodyData.setSubTotal(totalAmount);
             objEmailBodyData.setStateTax(stateTax);
-            objEmailBodyData.setAmount(totalAmount);
+            objEmailBodyData.setAmount(totalAmount+stateTax);
+            totalAmount = totalAmount + stateTax;
             objBusiness.setAdditionalTerminals((Integer) prmPaymentInfo.getTerminalsNumber());
             if (serviceIdPrincipal != -1L) {
                 objBusiness.setServiceId(serviceIdPrincipal);
@@ -221,7 +222,7 @@ public class InvoiceServices implements IInvoiceServices {
             }
             Invoice objInvoice = new Invoice();
             objInvoice.setTotalAmount(totalAmount);
-            objInvoice.setSubTotal(totalAmount-stateTax);
+            objInvoice.setSubTotal(objEmailBodyData.getSubTotal());
             objInvoice.setStateTax(stateTax);
             objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
             objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
@@ -386,9 +387,7 @@ public class InvoiceServices implements IInvoiceServices {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-public double getValueWithOutStateTax(double prmValue) {
-    return prmValue - prmValue * 0.04;
-}
+
 
     /**
      * Generates a unique string using UUID.

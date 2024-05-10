@@ -287,14 +287,11 @@ public class TerminalService implements ITerminalService {
         throw objExeption;
     }
 
-    public double getValueWithOutStateTax(double prmValue) {
-        return prmValue - prmValue * 0.04;
-    }
-
     @Override
     public ResponseEntity<?> buyTerminal(BuyTerminalDTO prmTerminal) {
 
         Double amount = 0.0;
+        Double stateTax=0.0;
         Double serviceValue = 0.0;
         ResponsePayment respPayment;
         String serviceReferenceNumber = null;
@@ -362,8 +359,10 @@ public class TerminalService implements ITerminalService {
                 } else {
                     objTerminal.setPrincipal(false);
                 }
-                objEmailBodyData.setStateTax(amount * 0.04);
-                objEmailBodyData.setSubTotal(getValueWithOutStateTax(amount));
+                stateTax = amount * 0.04;
+                objEmailBodyData.setStateTax(stateTax);
+                objEmailBodyData.setSubTotal(amount);
+                amount = amount + stateTax;
                 objEmailBodyData.setAmount(amount);
                 objEmailBodyData.setServiceDescription(objService.getServiceDescription());
                 objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
@@ -410,8 +409,8 @@ public class TerminalService implements ITerminalService {
         objTerminal.setName("Terminal " + LocalDate.now().toString());
         Invoice objInvoice = new Invoice();
         objInvoice.setTotalAmount(amount);
-        objInvoice.setSubTotal(getValueWithOutStateTax(amount));
-        objInvoice.setStateTax(amount * 0.04);
+        objInvoice.setSubTotal(objEmailBodyData.getSubTotal());
+        objInvoice.setStateTax(stateTax);
         TerminalsDoPaymentDTO objTerDoPay = new TerminalsDoPaymentDTO();
         switch (prmTerminal.getPaymethod()) {
             case "CREDIT-CARD":
@@ -432,24 +431,24 @@ public class TerminalService implements ITerminalService {
                 if (objTerminal.isPrincipal()) {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 }
                 objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] - ");
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
-                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setAmount(amount);
                 objTerDoPay.setIdService(objTerminal.getService().getServiceId());
                 objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
                 emailService.notifyPaymentCreditCard(objEmailBodyData);
                 emailService.notifyNewTerminal(objEmailBodyData);
                 break;
             case "ATHMOVIL":
-
+                objTerminal.setExpirationDate(null);
                 objTerminal.setPayment(false);
                 objTerminal = this.serviceDBTerminal.save(objTerminal);
                 objInvoice.setDate(LocalDate.now());
@@ -466,23 +465,23 @@ public class TerminalService implements ITerminalService {
                 if (objTerminal.isPrincipal()) {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 }
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
-                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setAmount(amount);
                 objTerDoPay.setIdService(objTerminal.getService().getServiceId());
                 objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
                 emailService.notifyPaymentATHMovil(objEmailBodyData);
                 emailService.notifyNewTerminal(objEmailBodyData);
                 break;
             case "BANK-ACCOUNT":
-
+                objTerminal.setExpirationDate(null);
                 objTerminal.setPayment(false);
                 objTerminal = this.serviceDBTerminal.save(objTerminal);
                 objInvoice.setDate(LocalDate.now());
@@ -501,16 +500,16 @@ public class TerminalService implements ITerminalService {
                 if (objTerminal.isPrincipal()) {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 }
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
-                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setAmount(amount);
                 objTerDoPay.setIdService(objTerminal.getService().getServiceId());
                 objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
                 emailService.notifyPaymentBankAccount(objEmailBodyData);
@@ -534,16 +533,16 @@ public class TerminalService implements ITerminalService {
                 if (objTerminal.isPrincipal()) {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
-                            + String.valueOf(formato.format(getValueWithOutStateTax(serviceValue))));
+                            + String.valueOf(formato.format(serviceValue)));
                 }
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
-                objTerDoPay.setAmount(getValueWithOutStateTax(amount));
+                objTerDoPay.setAmount(amount);
                 objTerDoPay.setIdService(objTerminal.getService().getServiceId());
                 objEmailBodyData.getTerminalsDoPayment().add(objTerDoPay);
                 emailService.notifyPaymentDiscount(objEmailBodyData);
