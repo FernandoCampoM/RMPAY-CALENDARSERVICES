@@ -80,6 +80,10 @@ public class ProductsController {
     public ResponseEntity<?> findById(@PathVariable Long productId){
         return productService.findById(productId);
     }
+    @GetMapping("/products/{productId}/quantity")
+    public ResponseEntity<?> getQuantity(@PathVariable Long productId){
+        return productService.getQuantity(productId);
+    }
     /**
      * Elimina un producto
      * @param productCode Codigo del producto

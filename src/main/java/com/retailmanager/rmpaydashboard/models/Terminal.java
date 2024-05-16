@@ -48,6 +48,9 @@ public class Terminal {
     private boolean automaticPayments;
     private boolean isPayment;
     private boolean isPrincipal;
+
+    @Column(nullable = true)
+    private LocalDate registerDate;
     
     // Otros campos y métodos según se necesite
 }

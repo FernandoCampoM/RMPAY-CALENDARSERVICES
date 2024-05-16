@@ -18,6 +18,7 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @return         	listado de ventas
      */
     //
+    @Query("SELECT s FROM Sale s WHERE s.business.merchantId = :merchantId")
     public List<Sale> findByMerchantId(String merchantId);
     /**
      * Obtiene una lista de ventas por tipo de transacción, estado y identificador de comercio.
@@ -28,7 +29,7 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @return         			listado de ventas
      */
     //
-    public List<Sale> findBySaleTransactionTypeAndSaleStatusAndMerchantId(String saleTransactionType, String saleStatus, String merchantId);
+    public List<Sale> findBySaleTransactionTypeAndSaleStatusAndBusiness(String saleTransactionType, String saleStatus, Business business);
     /**
      * Obtiene una lista de ventas por tipo de transacción y identificador de comercio.
      *
@@ -37,7 +38,7 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @return                      listado de ventas
      */
     //
-    public List<Sale> findBySaleTransactionTypeAndMerchantId(String saleTransactionType, String merchantId);
+    public List<Sale> findBySaleTransactionTypeAndBusiness(String saleTransactionType, Business business);
     /**
      * Obtiene las ventas entre dos fechas y por tipo de transacción y estado e identificador de comercio.
      *
@@ -45,11 +46,11 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @param  endDate            fecha de fin
      * @param  saleTransactionType tipo de transacción
      * @param  saleStatus         estado
-     * @param  merchantId         identificador de comercio
+     * @param  business         identificador de comercio
      * @return                    listado de ventas
      */
     //
-    public List<Sale> findBySaleEndDateBetweenAndSaleTransactionTypeAndSaleStatusAndMerchantId(LocalDate startDate, LocalDate endDate, String saleTransactionType, String saleStatus, String merchantId);
+    public List<Sale> findBySaleEndDateBetweenAndSaleTransactionTypeAndSaleStatusAndBusiness(LocalDate startDate, LocalDate endDate, String saleTransactionType, String saleStatus, Business business);
 
 
     ///FUNCIONES DE REPORTES

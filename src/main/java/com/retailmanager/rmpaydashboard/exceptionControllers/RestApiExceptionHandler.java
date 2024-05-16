@@ -22,6 +22,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ErrorUtils;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Error;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -118,6 +119,18 @@ public class RestApiExceptionHandler {
                                                 HttpStatus.PAYMENT_REQUIRED.value())
                                 .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
                 return new ResponseEntity<>(error, HttpStatus.PAYMENT_REQUIRED);
+        }
+        @ExceptionHandler(TerminalDisabled.class)
+        public ResponseEntity<Error> handleTerminalDisabledException(final HttpServletRequest req,
+                        final TerminalDisabled ex, final Locale locale) {
+                final Error error = ErrorUtils
+                                .crearError(CodigoError.MAX_TERMINALS_REACHED.getCodigo(),
+                                                String.format("%s, %s",
+                                                                CodigoError.TERMINAL_DISABLED.getLlaveMensaje(),
+                                                                ex.getMessage()),
+                                                HttpStatus.FORBIDDEN.value())
+                                .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
+                return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
         }
         /**
          * Atiende las Exepciones MethodArgumentNotValidException y crea una rspuesta

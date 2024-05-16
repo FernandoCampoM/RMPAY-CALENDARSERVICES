@@ -47,5 +47,5 @@ public interface IProductService {
     public ResponseEntity<?> findAllAndFilter(Long businessId,String filter,Pageable pageable);
     public ResponseEntity<?> findAllByBusinessId(Long businessId,Pageable pageable);
     public ResponseEntity<?> findAllByBusinessIdCSV(Long businessId);
-    
+    public ResponseEntity<?> getQuantity(Long productId);
 }

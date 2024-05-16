@@ -71,5 +71,9 @@ public interface ProductRepository extends CrudRepository<Product,Long>,PagingAn
 
     @Query(value = "select p from Product p where p.category.business.businessId=:businessId and p.quantity < p.minimumLevel")  
     public List<Product> getLowInventory(Long businessId);
+
+    @Modifying
+    @Query("UPDATE Product u SET u.quantity = u.quantity - :quantity WHERE u.productId = :productId")
+    public int reduceInventory(Long productId, int quantity);
     
 }

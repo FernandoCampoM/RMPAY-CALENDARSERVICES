@@ -114,6 +114,7 @@ public class BusinessService implements IBusinessService {
                     objBusiness.setUser(existUser.get());
                 }
             }
+            objBusiness.setRegisterDate(LocalDate.now());
             objBusiness=this.serviceDBBusiness.save(objBusiness);
          }
         BusinessDTO businessDTO=this.mapper.map(objBusiness, BusinessDTO.class);
@@ -257,6 +258,7 @@ public class BusinessService implements IBusinessService {
                     if(prmBusiness.getPaymethod()!=null && prmBusiness.getPaymethod().equals("CREDIT-CARD")){
                         objBusiness.setLastPayment(LocalDate.now());
                     }
+                    objBusiness.setRegisterDate(LocalDate.now());
                     objBusiness=this.serviceDBBusiness.save(objBusiness);
                     objBusiness.setTerminals(new ArrayList<Terminal>());
                     BusinessDTO objBusinessDTO=new BusinessDTO();
@@ -275,6 +277,7 @@ public class BusinessService implements IBusinessService {
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
@@ -322,6 +325,7 @@ public class BusinessService implements IBusinessService {
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
@@ -368,6 +372,7 @@ public class BusinessService implements IBusinessService {
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
@@ -588,6 +593,9 @@ public class BusinessService implements IBusinessService {
              objBusiness.getAddress().setCity(prmBusiness.getAddress().getCity());
              objBusiness.getAddress().setCountry(prmBusiness.getAddress().getCountry());
              objBusiness.getAddress().setZipcode(prmBusiness.getAddress().getZipcode());
+             objBusiness.setComment(prmBusiness.getComment());
+             objBusiness.setLogo(prmBusiness.getLogo());
+             objBusiness.setLogoAth(prmBusiness.getLogoAth());
              objBusiness.setDiscount(prmBusiness.getDiscount());
              objBusiness.setName(prmBusiness.getName());
              objBusiness.setServiceId(serviceId);

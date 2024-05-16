@@ -35,6 +35,10 @@ public class BusinessDTO {
     private boolean enable=false;
     private boolean terms=false;
     private LocalDate lastPayment;
+    private String comment;
+    private String logo;
+    private String logoAth;
+    private LocalDate registerDate;
     @Valid
     private AddressDTO address;
     private UserDTO user;

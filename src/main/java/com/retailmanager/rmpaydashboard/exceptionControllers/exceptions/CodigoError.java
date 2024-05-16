@@ -15,7 +15,8 @@ public enum CodigoError {
                         "El usuario no ha sido verificado, por favor revise su correo para verificar su cuenta"),
         UNAUTHORISED("GC-0007", "El usuario no tiene acceso a éste recurso"),
         CONFIGURATION_NOT_FOUND("GC-0008", "Configuración no encontrada"),
-        MAX_TERMINALS_REACHED("GC-0009", "Se alcanzó el máximo de terminales permitido para su membresía, por favor compruebe sus terminales disponibles y de ser necesario adicione terminales a su membresía"),;
+        MAX_TERMINALS_REACHED("GC-0009", "Se alcanzó el máximo de terminales permitido para su membresía, por favor compruebe sus terminales disponibles y de ser necesario adicione terminales a su membresía"),
+        TERMINAL_DISABLED("GC-0010", "El terminal seleccionado está deshabilitado"),;
         private final String codigo;
         private final String llaveMensaje;
 }

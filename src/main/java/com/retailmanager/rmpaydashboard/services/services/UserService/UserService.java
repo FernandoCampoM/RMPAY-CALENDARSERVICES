@@ -429,6 +429,7 @@ public class UserService implements IUserService{
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
@@ -474,6 +475,7 @@ public class UserService implements IUserService{
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
@@ -521,6 +523,7 @@ public class UserService implements IUserService{
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);

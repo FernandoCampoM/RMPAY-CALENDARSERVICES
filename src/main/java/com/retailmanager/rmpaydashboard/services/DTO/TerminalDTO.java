@@ -34,5 +34,5 @@ public class TerminalDTO {
     private boolean isPayment;
     //INDICA SI EL TERMINAL ES EL QUE SE REALIZA EL COBRO PRINCIPAL DEL SERVICIO
     private boolean isPrincipal;
-
+    private LocalDate registerDate;
 }

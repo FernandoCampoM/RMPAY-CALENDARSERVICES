@@ -63,8 +63,8 @@ public class Sale {
     @Column(name = "userId", nullable = false)
     private Integer userId;
 
-    @Column(name = "merchantId", nullable = false)
-    private String merchantId;
+    //@Column(name = "merchantId", nullable = false)
+    //private String merchantId;
 
     @Column(name = "saleToRefund")
     private Integer saleToRefund;

@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -536,5 +537,17 @@ public class ProductService implements IProductService {
        Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
         rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
        return rta;
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getQuantity(Long productId) {
+        Product objProduct = this.serviceDBProducts.findById(productId).orElse(null);
+        if(objProduct!=null){
+            HashMap<String, Object> result = new HashMap<>();
+            result.put("quantity", objProduct.getQuantity());
+            return new ResponseEntity<>(result,HttpStatus.OK);
+        }else{
+            throw new EntidadNoExisteException("El producto con productId "+productId+" no existe en la base de datos");
+        }
     }
 }

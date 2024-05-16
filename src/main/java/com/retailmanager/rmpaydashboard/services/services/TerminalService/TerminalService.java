@@ -21,6 +21,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeA
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.Service;
@@ -68,27 +69,32 @@ public class TerminalService implements ITerminalService {
     @Override
     @Transactional
     public ResponseEntity<?> save(TerminalDTO prmTerminal) {
+        //TODO : MODIFICAR PARA REGUSTRAR EL TERMINAL TENEINDO EN CUENTA QUE ESTE YA EXISTE EN LA BASE DE DATOS
         Long terminalId = prmTerminal.getTerminalId();
+        Terminal terminal=null;
         if (terminalId != null) {
-            final boolean exist = this.serviceDBTerminal.existsById(terminalId);
-            if (exist) {
-                EntidadYaExisteException objExeption = new EntidadYaExisteException(
-                        "El terminal con terminalId " + prmTerminal.getTerminalId() + " ya existe en la Base de datos");
+            terminal = this.serviceDBTerminal.findById(terminalId).orElse(null);
+            if (terminal==null) {
+                EntidadNoExisteException objExeption = new EntidadNoExisteException(
+                        "El terminal con terminalId " + prmTerminal.getTerminalId() + " no existe en la Base de datos");
                 throw objExeption;
-            } else {
-                prmTerminal.setTerminalId(null);
             }
+        } else {
+            throw new EntidadNoExisteException("El terminalId no puede ser nulo");
         }
-        Optional<Terminal> exist = this.serviceDBTerminal.findOneBySerial(prmTerminal.getSerial());
-        if (exist.isPresent() && exist.get().getSerial() != null
-                && exist.get().getBusiness().getBusinessId() == prmTerminal.getBusinesId()) {
-            EntidadYaExisteException objExeption = new EntidadYaExisteException(
-                    "El terminal con serial " + prmTerminal.getSerial()
-                            + " ya existe en la Base de datos para el businessId " + prmTerminal.getBusinesId());
-            throw objExeption;
+        
+        if(!terminal.isEnable()){
+            throw new TerminalDisabled("El terminal con terminalId " + prmTerminal.getTerminalId() + " se encuentra deshabilitado");
         }
+        if(terminal.getExpirationDate()!=null && terminal.getExpirationDate().isBefore(LocalDate.now())){
+            throw new TerminalDisabled("El terminal con terminalId " + prmTerminal.getTerminalId() + " ha expirado");
+        }
+        if(terminal.getBusiness().getBusinessId()!=prmTerminal.getBusinesId()){
+            throw new TerminalDisabled("El terminal con terminalId " + prmTerminal.getTerminalId() + " no pertenece aal negocio con businessId " + prmTerminal.getBusinesId());
+        }
+
+        
         ResponseEntity<?> rta;
-        Terminal objTerminal = null;
         Long businessId = prmTerminal.getBusinesId();
         if (businessId != null) {
             Optional<Business> existBusiness = this.serviceDBBusiness.findById(businessId);
@@ -97,41 +103,17 @@ public class TerminalService implements ITerminalService {
                         "El business con businessId " + businessId + " no existe en la Base de datos");
                 throw objExeption;
             } else {
-
-                List<Terminal> allsTerminals = this.serviceDBTerminal.findByBusiness(existBusiness.get());
-                for (Terminal terminal : allsTerminals) {
-                    if (terminal.getExpirationDate() != null && terminal.getExpirationDate().isBefore(LocalDate.now())
-                            && terminal.getSerial() == null) {
-                        terminal.setSerial(prmTerminal.getSerial());
-                        terminal.setName(prmTerminal.getName());
-                        terminal.setEnable(prmTerminal.getEnable());
-                        objTerminal = this.serviceDBTerminal.save(terminal);
-                        break;
-
-                    }
-                    if (terminal.getExpirationDate() == null && terminal.getSerial() == null
-                            && existBusiness.get().getLastPayment() != null) {
-                        terminal.setSerial(prmTerminal.getSerial());
-                        terminal.setName(prmTerminal.getName());
-                        terminal.setEnable(prmTerminal.getEnable());
-                        terminal.setExpirationDate(LocalDate.now().plusDays(terminal.getService().getDuration()));
-
-                        objTerminal = this.serviceDBTerminal.save(terminal);
-                        break;
-                    }
-
-                }
+                terminal.setName(prmTerminal.getName());
+                terminal.setSerial(prmTerminal.getSerial());
+                terminal.setEnable(prmTerminal.getEnable());
             }
         }
-        // objTerminal=this.serviceDBTerminal.save(objTerminal);
-        if (objTerminal == null) {
-            MaxTerminalsReached objExeption = new MaxTerminalsReached("Se alcanzo el maximo de terminales");
-            throw objExeption;
-        }
-        TerminalDTO terminalDTO = this.mapper.map(objTerminal, TerminalDTO.class);
+        terminal=this.serviceDBTerminal.save(terminal);
+        
+        TerminalDTO terminalDTO = this.mapper.map(terminal, TerminalDTO.class);
         if (terminalDTO != null) {
 
-            rta = new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.CREATED);
+            rta = new ResponseEntity<TerminalDTO>(terminalDTO, HttpStatus.OK);
         } else {
             rta = new ResponseEntity<String>("Error al crear el Terminal", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -304,6 +286,7 @@ public class TerminalService implements ITerminalService {
         Business objBusiness = null;
         Terminal objTerminal = this.mapper.map(prmTerminal, Terminal.class);
         objTerminal.setTerminalId(null);
+        objTerminal.setRegisterDate(LocalDate.now());
         Long businessId = prmTerminal.getBusinesId();
         EmailBodyData objEmailBodyData = mapper.map(prmTerminal, EmailBodyData.class);
         objEmailBodyData.setAdditionalTerminals(1);

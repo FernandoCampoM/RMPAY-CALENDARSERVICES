@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.security;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,6 +54,7 @@ public class TokenUtils {
         
         User usuario= usuarioRepository.findOneByUsername(username).orElseThrow(()-> new UsernameNotFoundException("El usuario con user "+username+" no existe"));
         UserDetailsImpl objUser=new UserDetailsImpl(usuario);
+        usuarioRepository.updateLastLogin(usuario.getUserID(),LocalDate.now());
         return new UsernamePasswordAuthenticationToken(username,null,objUser.getAuthorities());
         } catch (JwtException  e) {
             return null;

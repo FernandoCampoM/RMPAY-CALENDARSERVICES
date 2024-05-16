@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
@@ -18,6 +19,7 @@ import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Sale;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
@@ -35,6 +37,8 @@ public class SaleService implements ISaleService {
     private TerminalRepository serviceDBTerminal;
     @Autowired
     private SaleRepository serviceDBSale;
+    @Autowired
+    private ProductRepository serviceDBProduct;
 
     /**
      * Adds a sale to the database.
@@ -43,15 +47,17 @@ public class SaleService implements ISaleService {
      * @return           a ResponseEntity containing the added sale or an error message
      */
     @Override
+    @Transactional
     public ResponseEntity<?> addSale(SaleDTO saleDTO) {
-        Business business = this.serviceDBBusiness.findOneByMerchantId(saleDTO.getMerchantId()).get();
+
+        Business business = this.serviceDBBusiness.findById(saleDTO.getBusinessId()).orElse(null);
         Terminal terminal = this.serviceDBTerminal.findById(saleDTO.getTerminalId()).get();
         Sale sale = mapper.map(saleDTO, Sale.class);
         if(business==null){
-            throw new EntidadNoExisteException("El Business con merchantId "+saleDTO.getMerchantId()+" no existe en la Base de datos");
+            throw new EntidadNoExisteException("El Business con businessId "+saleDTO.getBusinessId()+" no existe en la Base de datos");
         }
         if(terminal==null){
-            throw new EntidadNoExisteException("El Terminal con terminalId "+saleDTO.getTerminalId()+" no existe en la Base de datos");
+            throw new EntidadNoExisteException("El Terminal con businessId "+saleDTO.getBusinessId()+" no existe en la Base de datos");
         }
         
         if(sale!=null){
@@ -59,8 +65,15 @@ public class SaleService implements ISaleService {
                 sale.setTerminal(terminal);
                 sale.setBusiness(business);
                 sale.setItemsList(jsonToListItems(saleDTO.getItems(),sale));
+                ////Descontar los items del los productos
+                for (ItemForSale item : sale.getItemsList()) {
+                    serviceDBProduct.reduceInventory(item.getProductId(), item.getQuantity());
+                }
                 sale=this.serviceDBSale.save(sale);
                 saleDTO.setSaleID(sale.getSaleID());
+                terminal.setLastTransmision(LocalDate.now());
+                serviceDBTerminal.save(terminal);
+                
                 return new ResponseEntity<>(saleDTO,HttpStatus.CREATED);
             }catch(Exception e){
                 return new ResponseEntity<>("Error: "+e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
@@ -77,8 +90,13 @@ public class SaleService implements ISaleService {
      * @return             ResponseEntity containing a list of SaleDTO objects with HttpStatus OK
      */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getAllSales(String merchantId) {
-        List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndMerchantId("SALE", merchantId);
+        Business business= this.serviceDBBusiness.findOneByMerchantId(merchantId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
+        }
+        List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndBusiness("SALE", business);
         List<SaleDTO> salesDTO = mapper.map(sales, new TypeToken<List<SaleDTO>>() {}.getType());
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
@@ -90,8 +108,13 @@ public class SaleService implements ISaleService {
      * @return              a response entity containing a list of completed sales DTOs and HTTP status OK
      */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getCompletedSales(String merchantId) {
-        List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndMerchantId("SALE", "SUCCEED", merchantId);
+        Business business= this.serviceDBBusiness.findOneByMerchantId(merchantId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
+        }
+        List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusiness("SALE", "SUCCEED", business);
         List<SaleDTO> salesDTO = mapper.map(sales, new TypeToken<List<SaleDTO>>() {}.getType());
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
@@ -105,13 +128,26 @@ public class SaleService implements ISaleService {
      * @return             a ResponseEntity containing a list of completed sales within the specified date range
      */
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getCompletedSalesByDateRange(String merchantId, LocalDate startDate, LocalDate endDate) {
-        List<Sale> sales = this.serviceDBSale.findBySaleEndDateBetweenAndSaleTransactionTypeAndSaleStatusAndMerchantId(startDate, endDate, "SALE", "SUCCEED", merchantId);
+        Business business= this.serviceDBBusiness.findOneByMerchantId(merchantId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
+        }
+        
+        List<Sale> sales = this.serviceDBSale.findBySaleEndDateBetweenAndSaleTransactionTypeAndSaleStatusAndBusiness(startDate, endDate, "SALE", "SUCCEED", business);
         List<SaleDTO> salesDTO = mapper.map(sales, new TypeToken<List<SaleDTO>>() {}.getType());
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
     
 
+    /**
+     * Converts a JSON string to a list of items for sale and associates each item with a sale object.
+     *
+     * @param  json  the JSON string to convert
+     * @param  sale  the sale object to associate with each item
+     * @return       a list of items for sale with the sale object set
+     */
     private List<ItemForSale> jsonToListItems(String json, Sale sale){
         try {
             if(json==null){

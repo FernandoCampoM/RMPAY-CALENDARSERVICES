@@ -16,6 +16,7 @@ public class SaleDTO {
 
     private Long saleID;
 
+
     @NotBlank(message = "{saleCreationDate.notBlank}")
     private String saleCreationDate;
 
@@ -58,9 +59,10 @@ public class SaleDTO {
     @Positive(message = "{userId.positive}")
     private Integer userId;
 
-    @NotBlank(message = "{merchantId.notBlank}")
-    private String merchantId;
-
+    //@NotBlank(message = "{merchantId.notBlank}")
+    //private String merchantId;
+    @PositiveOrZero(message = "{sale.businessId.notBlank}")
+    private Long businessId;
     private Integer saleToRefund;
 
     private Long terminalId;

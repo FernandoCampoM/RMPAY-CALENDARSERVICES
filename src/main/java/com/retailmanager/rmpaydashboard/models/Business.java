@@ -43,6 +43,13 @@ public class Business {
     private double discount=0.0;
     @Column(nullable = true)
     private LocalDate lastPayment;
+    @Column(nullable = true)
+    private String comment;
+
+    private String logo;
+    private String logoAth;
+    @Column(nullable = true)
+    private LocalDate registerDate;
     /**Objeto que encapsula la información de la dirección */
     @OneToOne(cascade=CascadeType.ALL,optional = true)
     @JoinColumn( name="addressId",nullable = true)
