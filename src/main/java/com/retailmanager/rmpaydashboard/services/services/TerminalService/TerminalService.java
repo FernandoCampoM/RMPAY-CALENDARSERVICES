@@ -415,12 +415,14 @@ public class TerminalService implements ITerminalService {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 }
-                objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] - ");
+                objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] ");
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
@@ -449,11 +451,14 @@ public class TerminalService implements ITerminalService {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 }
+                objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] ");
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
@@ -484,11 +489,14 @@ public class TerminalService implements ITerminalService {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 }
+                objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] ");
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
@@ -517,11 +525,14 @@ public class TerminalService implements ITerminalService {
                     objTerDoPay.setServiceDescription("Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 } else {
                     objTerDoPay.setServiceDescription("Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + " $"
                             + String.valueOf(formato.format(serviceValue)));
+                            objTerminal.setLastPaymentValue(serviceValue);
                 }
+                objInvoice.setPaymentDescription("[ \"" + objTerDoPay.getServiceDescription() + "\"] ");
                 objEmailBodyData.setServiceDescription(objTerDoPay.getServiceDescription());
                 objTerDoPay.setTerminalId(objTerminal.getTerminalId());
                 objTerDoPay.setPrincipal(objTerminal.isPrincipal());
@@ -532,7 +543,8 @@ public class TerminalService implements ITerminalService {
                 emailService.notifyNewTerminal(objEmailBodyData);
                 break;
         }
-
+        objTerminal.setName("Terminal " + objTerminal.getTerminalId());
+        objTerminal = this.serviceDBTerminal.save(objTerminal);
         TerminalDTO terminalDTO = this.mapper.map(objTerminal, TerminalDTO.class);
         if (terminalDTO != null) {
             objBusiness.setAdditionalTerminals(objBusiness.getAdditionalTerminals() + 1);

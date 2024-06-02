@@ -51,6 +51,10 @@ public class Terminal {
 
     @Column(nullable = true)
     private LocalDate registerDate;
+    @Column(nullable = true)
+    private LocalDate lastPayment;
+    @Column(nullable = true)
+    private Double lastPaymentValue;
     
     // Otros campos y métodos según se necesite
 }

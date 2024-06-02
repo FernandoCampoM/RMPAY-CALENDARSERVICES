@@ -447,8 +447,10 @@ public class UserService implements IUserService{
                                         //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                         if(i==0){
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminal.setLastPaymentValue(objService.getServiceValue());
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        objTerminal.setLastPaymentValue(aditionalTerminalsValue);
                                         }
                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                         objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
@@ -494,8 +496,10 @@ public class UserService implements IUserService{
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminal.setLastPaymentValue(objService.getServiceValue());
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminal.setLastPaymentValue(aditionalTerminalsValue);
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
@@ -542,8 +546,10 @@ public class UserService implements IUserService{
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminal.setLastPaymentValue(objService.getServiceValue());
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminal.setLastPaymentValue(aditionalTerminalsValue);
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());

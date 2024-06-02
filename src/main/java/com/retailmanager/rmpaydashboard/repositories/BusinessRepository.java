@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.repositories;
 
 import com.retailmanager.rmpaydashboard.models.Business;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 public interface BusinessRepository extends CrudRepository<Business,Long> {
     Optional<Business> findOneByMerchantId(String merchantId);
@@ -21,4 +23,7 @@ public interface BusinessRepository extends CrudRepository<Business,Long> {
 
     @Query("SELECT DISTINCT B FROM Business B " )
     public Page<Business> findyAllClientsPageable(Pageable pageable);
+
+    @Query("SELECT b FROM Business b WHERE MONTH(b.registerDate) = :month AND YEAR(b.registerDate) = :year")
+    List<Business> findAllByRegisterMonthAndYear(int month,  int year);
 }

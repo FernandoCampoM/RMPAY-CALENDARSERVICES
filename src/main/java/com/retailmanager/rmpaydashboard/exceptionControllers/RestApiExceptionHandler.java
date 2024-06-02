@@ -23,6 +23,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadY
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ErrorUtils;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Error;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -131,6 +132,18 @@ public class RestApiExceptionHandler {
                                                 HttpStatus.FORBIDDEN.value())
                                 .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
                 return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+        }
+        @ExceptionHandler(UserDisabled.class)
+        public ResponseEntity<Error> handleUserDisabledException(final HttpServletRequest req,
+                        final TerminalDisabled ex, final Locale locale) {
+                final Error error = ErrorUtils
+                                .crearError(CodigoError.USUARIO_DESACTIVADO.getCodigo(),
+                                                String.format("%s, %s",
+                                                                CodigoError.USUARIO_DESACTIVADO.getLlaveMensaje(),
+                                                                ex.getMessage()),
+                                                HttpStatus.UNAUTHORIZED.value())
+                                .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
+                return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
         }
         /**
          * Atiende las Exepciones MethodArgumentNotValidException y crea una rspuesta

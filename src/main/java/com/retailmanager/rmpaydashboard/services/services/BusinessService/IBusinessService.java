@@ -16,6 +16,6 @@ public interface IBusinessService {
     public ResponseEntity<?> getCategories(Long businessId);
     public ResponseEntity<?> updateEnable(Long businessId, boolean enable);
     public ResponseEntity<?> findAll();
-    public ResponseEntity<?> getActivations();
+    public ResponseEntity<?> getActivations(int month);
     public ResponseEntity<?> getMonthActivations();
 }

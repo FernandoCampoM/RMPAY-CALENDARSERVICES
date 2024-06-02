@@ -23,4 +23,6 @@ public interface IReportService {
     public ResponseEntity<?> getTaxes(Long businessId,LocalDate startDate, LocalDate endDate);
 
     public ResponseEntity<?> getReceipts(Long businessId,LocalDate startDate, LocalDate endDate);
+
+    public ResponseEntity<?> getActivationsReport(int month);
 }

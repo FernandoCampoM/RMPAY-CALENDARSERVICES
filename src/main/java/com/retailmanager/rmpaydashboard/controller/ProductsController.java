@@ -80,6 +80,12 @@ public class ProductsController {
     public ResponseEntity<?> findById(@PathVariable Long productId){
         return productService.findById(productId);
     }
+    /**
+     * Consulta la cantidad de un producto por su ID.
+     *
+     * @param  productId   el ID del producto a consultar
+     * @return             la cantidad del producto
+     */
     @GetMapping("/products/{productId}/quantity")
     public ResponseEntity<?> getQuantity(@PathVariable Long productId){
         return productService.getQuantity(productId);

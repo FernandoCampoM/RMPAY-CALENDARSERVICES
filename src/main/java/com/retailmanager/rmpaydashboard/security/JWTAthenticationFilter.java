@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 
 import jakarta.servlet.FilterChain;
@@ -47,6 +48,9 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         Authentication authResult) throws IOException, ServletException {
         
         UserDetailsImpl userDetails=(UserDetailsImpl) authResult.getPrincipal();
+        if(userDetails.getUserObject().isEnable()==false){
+            throw new UserDisabled("");
+        }
         usuarioRepository.updateLastLogin(userDetails.getUserObject().getUserID(),LocalDate.now());    
         String token=TokenUtils.createToken(userDetails.getUserObject());
         

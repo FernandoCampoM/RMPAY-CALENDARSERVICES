@@ -295,8 +295,10 @@ public class BusinessService implements IBusinessService {
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminal.setLastPaymentValue(objService.getServiceValue());
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objEmailBodyData.getAdditionalTerminalsValue())));
+                                            objTerminal.setLastPaymentValue(objEmailBodyData.getAdditionalTerminalsValue());
                                         }
                                         paymentDescription.add(objTerminalsDoPaymentDTO.getServiceDescription());
                                         objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
@@ -343,8 +345,10 @@ public class BusinessService implements IBusinessService {
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminal.setLastPaymentValue(objService.getServiceValue());
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                            objTerminal.setLastPaymentValue(objEmailBodyData.getAdditionalTerminalsValue());
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
@@ -392,8 +396,11 @@ public class BusinessService implements IBusinessService {
                                          //guardamos algunos datos en este objeto para discriminar el pago dentro del correo que se envia al usuario
                                          if(i==0){
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Principal ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(objService.getServiceValue())));
+                                            objTerminal.setLastPaymentValue(objService.getServiceValue());                                       
                                         }else{
                                             objTerminalsDoPaymentDTO.setServiceDescription("Terminal Adicional ID ["+objTerminal.getTerminalId()+"] - "+objService.getServiceName()+" $"+String.valueOf(formato.format(aditionalTerminalsValue)));
+                                        
+                                            objTerminal.setLastPaymentValue(objEmailBodyData.getAdditionalTerminalsValue());
                                         }
                                          objTerminalsDoPaymentDTO.setTerminalId(objTerminal.getTerminalId());
                                          objTerminalsDoPaymentDTO.setPrincipal(objTerminal.isPrincipal());
@@ -745,10 +752,70 @@ public class BusinessService implements IBusinessService {
         });
         return new ResponseEntity<List<BusinessDTO>>(listBusinessDTO,HttpStatus.OK);
     }
+    /**
+     * Retrieves the activations for a given month.
+     *
+     * @param  month  the month for which activations are to be retrieved
+     * @return        a ResponseEntity containing the activations for the given month
+     */
     @Override
-    public ResponseEntity<?> getActivations() {
-        // TODO: FALTA IMPLEMENTAR
-        throw new UnsupportedOperationException("Unimplemented method 'getActivations'");
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getActivations(int month) {
+        HashMap<String, Object> result = new HashMap<>();
+        LocalDate date = LocalDate.now();
+        int year = date.getYear();
+        List<Business> listBusiness = this.serviceDBBusiness.findAllByRegisterMonthAndYear(month, year);
+        List<Terminal> listTerminal = this.serviceDBTerminal.findAllByRegisterMonthAndYear(month, year);
+        List<HashMap<String, Object>> listRegistraciones = new ArrayList<>();
+        
+        List<HashMap<String, Object>> listActivaciones = new ArrayList<>();
+        
+        for (Business business : listBusiness) {
+            HashMap<String, Object> registro = new HashMap<>();
+            registro.put("businessId", business.getBusinessId());
+            registro.put("businessName", business.getName());
+            registro.put("town",business.getAddress().getCity()); 
+            registro.put("phoneNumber", business.getBusinessPhoneNumber());
+            registro.put("user-name",business.getUser().getName());
+            listRegistraciones.add(registro);
+        }
+        Double totalSales=0.0;
+        for(Terminal terminal:listTerminal){
+            HashMap<String, Object> activacion = new HashMap<>();
+            activacion.put("terminalId", terminal.getTerminalId());
+            activacion.put("businesName", terminal.getBusiness().getName());
+            if(terminal.getRegisterDate()!=null){
+                totalSales+=terminal.getLastPaymentValue();
+                if(terminal.getRegisterDate().getMonthValue()!=month || terminal.getRegisterDate().getYear()!=year){
+                    if(terminal.isPrincipal()){
+                        activacion.put("serviceName", "TERMINAL PRINCIPAL"+terminal.getService().getServiceName());
+                    }else{
+                        activacion.put("serviceName", "TERMINAL ADICIONAL "+terminal.getService().getServiceName());
+                    }
+                    
+                }else{
+                    if(terminal.isPrincipal()){
+                        activacion.put("serviceName", "RENOVACIÓN TERMINAL PRINCIPAL"+terminal.getService().getServiceName());
+                    }else{
+                        activacion.put("serviceName", "RENOVACIÓN TERMINAL ADICIONAL "+terminal.getService().getServiceName());
+                    }
+                }
+
+            }
+            activacion.put("serviceName", terminal.getService().getServiceName());
+            activacion.put("serviceValue",terminal.getService().getServiceValue());
+            activacion.put("user-name", terminal.getBusiness().getUser().getName());
+            activacion.put("serial", terminal.getSerial());
+            activacion.put("terminalName", terminal.getName());
+            listActivaciones.add(activacion);
+        }
+        result.put("totalRegistrations", listRegistraciones.size());
+        result.put("totalActivations", listActivaciones.size());
+        result.put("totalSales", totalSales);
+        result.put("registrations", listRegistraciones);
+        result.put("activations", listActivaciones);
+        return new ResponseEntity<HashMap<String, Object>>(result,HttpStatus.OK);
+        
     }
     @Override
     public ResponseEntity<?> getMonthActivations() {

@@ -513,4 +513,10 @@ public class ReportService implements IReportService {
 
         return new ResponseEntity<>(transactionsDTOs,HttpStatus.OK);
     }
+
+    @Override
+    public ResponseEntity<?> getActivationsReport(int month) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getActivationsReport'");
+    }
 }

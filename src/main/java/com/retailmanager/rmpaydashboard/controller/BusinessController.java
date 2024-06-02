@@ -143,4 +143,15 @@ public class BusinessController {
     public ResponseEntity<?> downloadProducsCSV(@PathVariable Long businessId){
         return productService.findAllByBusinessIdCSV(businessId);
     }
+    /**
+     * Retrieves the activations and registrations for a specific month and business.
+     *
+     * @param  businessId  the ID of the business
+     * @param  month       the month for which activations are to be retrieved
+     * @return             a ResponseEntity containing the activations for the specified month and business
+     */
+    @GetMapping("/business/activations/{month}")
+    public ResponseEntity<?> activationsByMonth(@PathVariable @Positive(message = "El mes debe ser positivo")int month){
+        return businessService.getActivations(month);
+    }
 }

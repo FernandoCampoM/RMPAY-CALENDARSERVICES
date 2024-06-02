@@ -44,6 +44,7 @@ public class Invoice {
     private boolean paid=false; //Para indicar si un pago rechazado fue cobrado nuevamente
     private boolean inProcess=false; //Para indicar si el pago se encuentra en proceso
     private String terminalIds;
+    @Column(columnDefinition = "VARCHAR(MAX)", nullable = true)
     private String paymentDescription;
     private Long serviceId;
 

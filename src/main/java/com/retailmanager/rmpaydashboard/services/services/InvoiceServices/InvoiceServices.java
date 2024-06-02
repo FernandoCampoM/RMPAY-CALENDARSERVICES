@@ -242,6 +242,7 @@ public class InvoiceServices implements IInvoiceServices {
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }
+                        objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setPayment(true);
                         objTer.setService(service);
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
@@ -278,6 +279,7 @@ public class InvoiceServices implements IInvoiceServices {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         } */
                         //objTer.setPayment(false);
+                        objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setService(service);
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
                         objTer = this.serviceDBTerminal.save(objTer);
@@ -314,7 +316,7 @@ public class InvoiceServices implements IInvoiceServices {
 
                         //objTer.setPayment(false);
                         objTer.setService(service);
-
+                        objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
                         objTer = this.serviceDBTerminal.save(objTer);
                         listTerminalIds.add(objTerminal.getTerminalId());
@@ -351,6 +353,7 @@ public class InvoiceServices implements IInvoiceServices {
 
                         objTer.setPayment(true);
                         objTer.setService(service);
+                        objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
                         objTer = this.serviceDBTerminal.save(objTer);
                         listTerminalIds.add(objTerminal.getTerminalId());
