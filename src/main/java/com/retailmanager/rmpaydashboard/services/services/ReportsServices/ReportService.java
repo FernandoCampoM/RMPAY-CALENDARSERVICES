@@ -27,7 +27,6 @@ import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
 import com.retailmanager.rmpaydashboard.repositories.TransactionsRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
-import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TransactionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.DailySummaryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.EarningsReportDTO;
@@ -505,7 +504,7 @@ public class ReportService implements IReportService {
         if(transactions!=null && transactions.size()>0){
             for(Transactions transaction:transactions){
                 TransactionDTO transactionDTO = this.mapper.map(transaction, TransactionDTO.class);
-                transactionDTO.setInfoSale(this.mapper.map(transaction.getSale(), SaleDTO.class));
+                transactionDTO.setInfoSale(transaction.getSale().toDTO());
 
                 transactionsDTOs.add(transactionDTO);
             }
@@ -518,5 +517,53 @@ public class ReportService implements IReportService {
     public ResponseEntity<?> getActivationsReport(int month) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getActivationsReport'");
+    }
+
+    @Override
+    public ResponseEntity<?> getHomeReport(Long businessId, LocalDate startDate, LocalDate endDate) {
+        Business business=serviceDBBusiness.findById(businessId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        ///////////Info para el reporte del dia
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,startDate,startDate);
+        Object [] dailySummaryV=null;
+        if(dailySummary!=null && dailySummary[0]!=null){
+            dailySummaryV=(Object[]) dailySummary[0];
+        }else{
+            return new ResponseEntity<String>("{\"message\":\"No existen ventas para el Business con businessId "+businessId+"\"}",HttpStatus.NOT_FOUND);
+        }
+        HashMap<String,Double> dailySummaryDTO=new HashMap<>();
+        if(dailySummaryV[0]!=null){
+            dailySummaryDTO.put("totalSales", Double.parseDouble(dailySummaryV[0].toString()));
+        }
+        Double totalTax=0.0;
+        if(dailySummaryV[2]!=null){
+            totalTax=totalTax+Double.parseDouble(dailySummaryV[2].toString());
+        }
+        if(dailySummaryV[3]!=null){
+            totalTax=totalTax+Double.parseDouble(dailySummaryV[3].toString());
+        }
+        if(dailySummaryV[4]!=null){
+            totalTax=totalTax+Double.parseDouble(dailySummaryV[4].toString());
+        }
+        if(dailySummaryV[2]!=null){
+            dailySummaryDTO.put("totalTax", totalTax);
+        }
+        /////////////Info para el reporte de LOS 10 PODUCTOS MAS VENDIDOS DEL DIA
+        List<HashMap<String,String>> dailySummaryBestSellingProducts=new ArrayList<>();
+        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, startDate, startDate);
+        if(dailySummaryBestSellingItems!=null){
+            for(int i=0;i<dailySummaryBestSellingItems.length;i++){
+                Object [] dailySummaryBestSellingItemsV=(Object[]) dailySummaryBestSellingItems[i];
+                HashMap<String,String> bestSellingProducts=new HashMap<>();
+                bestSellingProducts.put("name", objectToString(dailySummaryBestSellingItemsV[4]));
+                bestSellingProducts.put("quantity", objectToString(dailySummaryBestSellingItemsV[1]));
+                bestSellingProducts.put("totalAmount", objectToString(dailySummaryBestSellingItemsV[2]));
+                bestSellingProducts.put("benefit", objectToString(dailySummaryBestSellingItemsV[3]));
+                dailySummaryBestSellingProducts.add(bestSellingProducts);
+            }
+            
+        }
     }
 }

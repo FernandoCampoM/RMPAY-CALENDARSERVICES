@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -86,4 +88,27 @@ public class Sale {
     @OneToMany(mappedBy = "sale",fetch = FetchType.LAZY)
     private List<Transactions> transactions = new ArrayList<>();
 
+    public SaleDTO toDTO() {
+        SaleDTO saleDTO = new SaleDTO();
+        saleDTO.setSaleID(this.getSaleID());
+        saleDTO.setSaleCreationDate(this.getSaleCreationDate());
+        saleDTO.setSaleEndDate(this.getSaleEndDate());
+        saleDTO.setItems(this.getItems());
+        saleDTO.setSaleSubtotal(this.getSaleSubtotal());
+        saleDTO.setSaleStateTaxAmount(this.getSaleStateTaxAmount());
+        saleDTO.setSaleCityTaxAmount(this.getSaleCityTaxAmount());
+        saleDTO.setSaleReduceTax(this.getSaleReduceTax());
+        saleDTO.setSaleTotalAmount(this.getSaleTotalAmount());
+        saleDTO.setSaleTransactionType(this.getSaleTransactionType());
+        saleDTO.setSaleMachineID(this.getSaleMachineID());
+        saleDTO.setSaleIvuNumber(this.getSaleIvuNumber());
+        saleDTO.setSaleStatus(this.getSaleStatus());
+        saleDTO.setSaleChange(this.getSaleChange());
+        saleDTO.setUserId(this.getUserId());
+        saleDTO.setSaleToRefund(this.getSaleToRefund());
+        saleDTO.setTipAmount(this.getTipAmount());
+        saleDTO.setBusinessId(this.getBusiness().getBusinessId());
+        saleDTO.setTerminalId(this.getTerminal().getTerminalId());
+        return saleDTO;
+    }
 }
