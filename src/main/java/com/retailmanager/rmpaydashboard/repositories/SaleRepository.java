@@ -77,7 +77,9 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
                 "  (SELECT sum(saleReduceTax) \r\n" + 
                 "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as redTax, "+
                 " (SELECT sum(saleSubtotal) " + 
-                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as subTotalSales ", nativeQuery = true)
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as subTotalSales, "+
+                " (SELECT  SUM(it.grossProfit) AS profit FROM [RMPAY].[dbo].[ItemForSale] it JOIN [RMPAY].[dbo].[Sale] s ON it.saleID = s.saleID WHERE s.saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' AND s.businessId = :businessId) as  grossBenefit, "+
+                " (SELECT  SUM(s.tipAmount) from [RMPAY].[dbo].[Sale] s  WHERE s.saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' AND s.businessId = :businessId) as totalTips ", nativeQuery = true)
     public Object[] dailySummary(Long businessId,LocalDate startDate, LocalDate endDate);
 
     /**
@@ -97,10 +99,10 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
      * @param  businessId	identificador del negocio
      * @return         	
      */
-    @Query(value="SELECT productId, sum(it.quantity) as quantity,sum(it.quantity*it.price) as totalAmount, sum(it.grossProfit) as profit, (select top(1) name from [RMPAY].[dbo].[ItemForSale] ift where ift.productId=it.productId) as name\r\n" + //
+    @Query(value="SELECT productId, sum(it.quantity) as quantity,sum(it.quantity*it.price) as totalAmount, sum(it.grossProfit) as profit, (select top(1) name from [RMPAY].[dbo].[ItemForSale] ift where ift.productId=it.productId) as name,  it.category,  it.category " + //
                 "  FROM [RMPAY].[dbo].[ItemForSale] it join [RMPAY].[dbo].[Sale] s on it.saleID=s.saleID  \r\n" + //
                 "  where s.saleEndDate BETWEEN :startDate AND :endDate and s.businessId=:businessId \r\n" + //
-                "  group by productId \r\n" + //
+                "  group by productId,  it.category,  it.category " + //
                 "  order by sum(it.quantity) desc ", nativeQuery = true)
     public Object[] dailySummaryBestSellingItems(Long businessId,LocalDate startDate,LocalDate endDate);
     

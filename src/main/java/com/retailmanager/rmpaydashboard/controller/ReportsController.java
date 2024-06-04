@@ -76,4 +76,10 @@ public class ReportsController {
                                        @RequestParam(name = "endDate") @Valid LocalDate endDate) {
         return reportService.getReceipts(businessId, startDate, endDate);
     }
+    @GetMapping("/reports/home")
+    public ResponseEntity<?> getHomeReport(@RequestParam(name = "businessId") Long businessId,
+                                       @RequestParam(name = "startDate") @Valid LocalDate startDate,
+                                       @RequestParam(name = "endDate",required = false) @Valid LocalDate endDate,@RequestParam(name = "filter",required = false) String filter) {
+        return reportService.getHomeReport(businessId, startDate, endDate, filter);
+    }
 }

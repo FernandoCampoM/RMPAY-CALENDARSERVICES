@@ -1,10 +1,14 @@
 package com.retailmanager.rmpaydashboard.services.services.ReportsServices;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -518,22 +522,51 @@ public class ReportService implements IReportService {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getActivationsReport'");
     }
-
+    /**
+     * Retrieves the home report for a given business, start date, end date, and filter.
+     *
+     * @param  businessId   the ID of the business
+     * @param  startDate    the start date of the report
+     * @param  endDate      the end date of the report (optional)
+     * @param  filter       the filter for the report (optional)
+     * @return              a ResponseEntity containing the home report as a HashMap
+     * @throws EntidadNoExisteException if the business with the given ID does not exist in the database
+     */
     @Override
-    public ResponseEntity<?> getHomeReport(Long businessId, LocalDate startDate, LocalDate endDate) {
+    public ResponseEntity<?> getHomeReport(Long businessId, LocalDate startDate, LocalDate endDate,String filter) {
         Business business=serviceDBBusiness.findById(businessId).orElse(null);
         if(business==null){
             throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
         }
+        if(filter!=null && filter.compareTo("")>0){
+            filter.toUpperCase();
+            if(filter.compareTo("WEEK")!=0){
+                LocalDate firstDayOfWeek = startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                startDate=firstDayOfWeek;
+                endDate=firstDayOfWeek.plusDays(6);
+            }
+            if(filter.compareTo("MONTH")!=0){
+                // Obtener el primer dia del mes
+                LocalDate firstDayOfMonth = startDate.with(TemporalAdjusters.firstDayOfMonth());
+                startDate=firstDayOfMonth;
+                // Obtener el último día del mes
+                LocalDate lastDayOfMonth = startDate.with(TemporalAdjusters.lastDayOfMonth());
+                endDate=lastDayOfMonth;
+            }
+        }else{
+            if(endDate==null){  
+                endDate=startDate;
+            }
+        }
         ///////////Info para el reporte del dia
-        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,startDate,startDate);
+        Object [] dailySummary=this.serviceDBSale.dailySummary(businessId,startDate,endDate);
         Object [] dailySummaryV=null;
         if(dailySummary!=null && dailySummary[0]!=null){
             dailySummaryV=(Object[]) dailySummary[0];
         }else{
             return new ResponseEntity<String>("{\"message\":\"No existen ventas para el Business con businessId "+businessId+"\"}",HttpStatus.NOT_FOUND);
         }
-        HashMap<String,Double> dailySummaryDTO=new HashMap<>();
+        HashMap<String,Object> dailySummaryDTO=new HashMap<>();
         if(dailySummaryV[0]!=null){
             dailySummaryDTO.put("totalSales", Double.parseDouble(dailySummaryV[0].toString()));
         }
@@ -550,9 +583,16 @@ public class ReportService implements IReportService {
         if(dailySummaryV[2]!=null){
             dailySummaryDTO.put("totalTax", totalTax);
         }
+        if(dailySummaryV[6]!=null){
+            dailySummaryDTO.put("grossProfit", Double.parseDouble(dailySummaryV[6].toString()));
+        }
+        if(dailySummaryV[7]!=null){
+            dailySummaryDTO.put("totalTips", Double.parseDouble(dailySummaryV[7].toString()));
+        }
+
         /////////////Info para el reporte de LOS 10 PODUCTOS MAS VENDIDOS DEL DIA
         List<HashMap<String,String>> dailySummaryBestSellingProducts=new ArrayList<>();
-        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, startDate, startDate);
+        Object [] dailySummaryBestSellingItems=this.serviceDBSale.dailySummaryBestSellingItems(businessId, startDate, endDate);
         if(dailySummaryBestSellingItems!=null){
             for(int i=0;i<dailySummaryBestSellingItems.length;i++){
                 Object [] dailySummaryBestSellingItemsV=(Object[]) dailySummaryBestSellingItems[i];
@@ -561,9 +601,12 @@ public class ReportService implements IReportService {
                 bestSellingProducts.put("quantity", objectToString(dailySummaryBestSellingItemsV[1]));
                 bestSellingProducts.put("totalAmount", objectToString(dailySummaryBestSellingItemsV[2]));
                 bestSellingProducts.put("benefit", objectToString(dailySummaryBestSellingItemsV[3]));
+                bestSellingProducts.put("category", objectToString(dailySummaryBestSellingItemsV[5]));
+                bestSellingProducts.put("cost", objectToString(dailySummaryBestSellingItemsV[6]));
                 dailySummaryBestSellingProducts.add(bestSellingProducts);
             }
-            
         }
+        dailySummaryDTO.put("bestSellingProducts", dailySummaryBestSellingProducts);
+        return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
     }
 }
