@@ -1,8 +1,11 @@
 package com.retailmanager.rmpaydashboard.controller;
 
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -150,8 +153,8 @@ public class BusinessController {
      * @param  month       the month for which activations are to be retrieved
      * @return             a ResponseEntity containing the activations for the specified month and business
      */
-    @GetMapping("/business/activations/{month}")
-    public ResponseEntity<?> activationsByMonth(@PathVariable @Positive(message = "El mes debe ser positivo")int month){
-        return businessService.getActivations(month);
+    @GetMapping("/business/activations")
+    public ResponseEntity<?> activationsByMonth(@RequestParam(name ="startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam(name ="endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
+        return businessService.getActivations(startDate, endDate);
     }
 }

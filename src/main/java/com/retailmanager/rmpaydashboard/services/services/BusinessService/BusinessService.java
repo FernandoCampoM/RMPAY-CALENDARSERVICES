@@ -760,12 +760,11 @@ public class BusinessService implements IBusinessService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getActivations(int month) {
+    public ResponseEntity<?> getActivations(LocalDate starDate, LocalDate endDate) {
         HashMap<String, Object> result = new HashMap<>();
-        LocalDate date = LocalDate.now();
-        int year = date.getYear();
-        List<Business> listBusiness = this.serviceDBBusiness.findAllByRegisterMonthAndYear(month, year);
-        List<Terminal> listTerminal = this.serviceDBTerminal.findAllByRegisterMonthAndYear(month, year);
+       
+        List<Business> listBusiness = this.serviceDBBusiness.findAllByRegistrations(starDate, endDate);
+        List<Terminal> listTerminal = this.serviceDBTerminal.findAllByActivations(starDate, endDate);
         List<HashMap<String, Object>> listRegistraciones = new ArrayList<>();
         
         List<HashMap<String, Object>> listActivaciones = new ArrayList<>();
@@ -784,9 +783,12 @@ public class BusinessService implements IBusinessService {
             HashMap<String, Object> activacion = new HashMap<>();
             activacion.put("terminalId", terminal.getTerminalId());
             activacion.put("businesName", terminal.getBusiness().getName());
-            if(terminal.getRegisterDate()!=null){
+            if(terminal.getLastPaymentValue()==null){
+                terminal.setLastPaymentValue(0.0);
+            }
+            if(terminal.getRegisterDate()!=null && terminal.getLastPayment()!=null ){
                 totalSales+=terminal.getLastPaymentValue();
-                if(terminal.getRegisterDate().getMonthValue()!=month || terminal.getRegisterDate().getYear()!=year){
+                if( terminal.getRegisterDate().getMonth()==terminal.getLastPayment().getMonth() && terminal.getRegisterDate().getYear()==terminal.getLastPayment().getYear()){
                     if(terminal.isPrincipal()){
                         activacion.put("serviceName", "TERMINAL PRINCIPAL"+terminal.getService().getServiceName());
                     }else{

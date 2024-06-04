@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.repositories;
 
 import com.retailmanager.rmpaydashboard.models.Business;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,6 @@ public interface BusinessRepository extends CrudRepository<Business,Long> {
     @Query("SELECT DISTINCT B FROM Business B " )
     public Page<Business> findyAllClientsPageable(Pageable pageable);
 
-    @Query("SELECT b FROM Business b WHERE MONTH(b.registerDate) = :month AND YEAR(b.registerDate) = :year")
-    List<Business> findAllByRegisterMonthAndYear(int month,  int year);
+    @Query("SELECT b FROM Business b WHERE b.registerDate BETWEEN :startDate AND :endDate")
+    List<Business> findAllByRegistrations(LocalDate startDate, LocalDate endDate);
 }

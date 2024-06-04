@@ -30,7 +30,7 @@ public interface TerminalRepository extends CrudRepository<Terminal, Long> {
     //
     public List<Terminal> findByBusinessAndExpirationDateLessThan(Business business, LocalDate date);
 
-    @Query("SELECT b FROM Terminal b WHERE MONTH(b.lastPayment) = :month AND YEAR(b.lastPayment) = :year")
-    List<Terminal> findAllByRegisterMonthAndYear(int month,  int year);
+    @Query("SELECT b FROM Terminal b WHERE b.lastPayment BETWEEN :startDate AND :endDate")
+    List<Terminal> findAllByActivations(LocalDate startDate, LocalDate endDate);
     
 }

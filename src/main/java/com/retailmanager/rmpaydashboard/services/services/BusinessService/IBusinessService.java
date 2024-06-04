@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.BusinessService;
 
+import java.time.LocalDate;
+
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
@@ -16,6 +18,6 @@ public interface IBusinessService {
     public ResponseEntity<?> getCategories(Long businessId);
     public ResponseEntity<?> updateEnable(Long businessId, boolean enable);
     public ResponseEntity<?> findAll();
-    public ResponseEntity<?> getActivations(int month);
+    public ResponseEntity<?> getActivations(LocalDate starDate, LocalDate endDate);
     public ResponseEntity<?> getMonthActivations();
 }
