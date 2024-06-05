@@ -765,6 +765,9 @@ public class BusinessService implements IBusinessService {
        
         List<Business> listBusiness = this.serviceDBBusiness.findAllByRegistrations(starDate, endDate);
         List<Terminal> listTerminal = this.serviceDBTerminal.findAllByActivations(starDate, endDate);
+        //Activaciones y registraciones del mes anterior en el mismo rango de fechas
+        List<Business> lastMonthlistBusiness = this.serviceDBBusiness.findAllByRegistrations(starDate.minusMonths(1), endDate.minusMonths(1));
+        List<Terminal>  lastMonthlistTerminal = this.serviceDBTerminal.findAllByActivations(starDate.minusMonths(1), endDate.minusMonths(1)); 
         List<HashMap<String, Object>> listRegistraciones = new ArrayList<>();
         
         List<HashMap<String, Object>> listActivaciones = new ArrayList<>();
@@ -813,9 +816,12 @@ public class BusinessService implements IBusinessService {
         }
         result.put("totalRegistrations", listRegistraciones.size());
         result.put("totalActivations", listActivaciones.size());
+        result.put("lastMonthRegistrations", lastMonthlistBusiness.size());
+        result.put("lastMonthActivations", lastMonthlistTerminal.size()); 
         result.put("totalSales", totalSales);
         result.put("registrations", listRegistraciones);
         result.put("activations", listActivaciones);
+
         return new ResponseEntity<HashMap<String, Object>>(result,HttpStatus.OK);
         
     }
