@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.UsersBusinessService.IUsersBusinessService;
 
@@ -121,8 +122,34 @@ public class UserBusinessController {
     public ResponseEntity<?> getUsersBusiness(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
         return usersBusinessService.getUsersBusiness(userBusinessId);
     }
+    /**
+     * Updates the download category for a specific user business.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @return                 a ResponseEntity containing the updated user business and the HTTP status
+     */
     @PutMapping("/userBusiness/download/{userBusinessId}")
     public ResponseEntity<?> updateDownloadCategory(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
         return usersBusinessService.updateDownloadUserBusiness(userBusinessId);
+    }
+    /**
+     * Saves an activity entry or exit for a user business.
+     *
+     * @param  prmEntryExit  the EntryExitDTO object containing the activity details
+     * @return               a ResponseEntity containing the result of the operation
+     */
+    @PostMapping("/userBusiness/activity")
+    public ResponseEntity<?> saveActivity(@Valid @RequestBody EntryExitDTO prmEntryExit) {
+        return usersBusinessService.registerEntryOrExit(prmEntryExit);
+    }
+    /**
+     * Retrieves the last activity for a given user business.
+     *
+     * @param  userBusinessId  the ID of the user business
+     * @return                 a ResponseEntity containing the last activity or an error message
+     */
+    @GetMapping("/userBusiness/activity/last/{userBusinessId}")
+    public ResponseEntity<?> getActivity(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
+        return usersBusinessService.getLastActivity(userBusinessId);
     }
 }

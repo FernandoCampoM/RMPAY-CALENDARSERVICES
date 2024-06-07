@@ -14,18 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.EntryExit;
 import com.retailmanager.rmpaydashboard.models.Permission;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UserPermission;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.EntryExitRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PermissionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
@@ -37,6 +40,8 @@ public class UsersBusinesService implements IUsersBusinessService{
     private ModelMapper mapper;
     @Autowired
     private UsersAppRepository usersAppDBService;
+    @Autowired
+    private EntryExitRepository entryExitDBService;
     @Autowired
     private UserBusiness_ProductRepository ubpServices;
     @Autowired
@@ -450,5 +455,48 @@ public class UsersBusinesService implements IUsersBusinessService{
 
         return new ResponseEntity<>(true,HttpStatus.OK);
         }
+
+/**
+     * Registers an entry or exit for a userBusiness , i.e. registers a new entry or exit for a employee.
+     *
+     * @param  prmEntryExit  the EntryExitDTO object containing the entry details
+     * @return               a ResponseEntity with a boolean value indicating success and the HTTP status code
+     * @throws EntidadNoExisteException if the UsersBusiness with the given userId does not exist in the database
+     */       
+     @Override
+    public ResponseEntity<?> registerEntryOrExit(EntryExitDTO prmEntryExit) {
+        UsersBusiness objUser=this.usersAppDBService.findById(prmEntryExit.getUserId()).orElse(null);
+        if(objUser==null){
+            throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmEntryExit.getUserId()+" no existe en la Base de datos");
+        }
+        EntryExit objEntryExit=this.mapper.map(prmEntryExit, EntryExit.class);
+        objEntryExit.setUserBusiness(objUser);
+        objEntryExit=this.entryExitDBService.save(objEntryExit);
+        prmEntryExit=this.mapper.map(objEntryExit, EntryExitDTO.class);
+        prmEntryExit.setUserId(objUser.getUserBusinessId());
+        return new ResponseEntity<>(prmEntryExit,HttpStatus.CREATED);
+    }
+/**
+     * Retrieves the last activity for a given user business ID.
+     *
+     * @param  prmUserBusinessId  the ID of the user business
+     * @return                    a ResponseEntity containing the last activity details
+     *                            or an EntidadNoExisteException if the user business or activity does not exist
+     */
+@Override
+public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
+    UsersBusiness objUser=this.usersAppDBService.findById(prmUserBusinessId).orElse(null);
+        if(objUser==null){
+            throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no existe en la Base de datos");
+        }
+        List<EntryExit> objEntryExit=this.entryExitDBService.findByUserBusinessId(prmUserBusinessId);
+        if(objEntryExit==null || objEntryExit.isEmpty()){
+            throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no tiene actividad registrada");
+        }
+        EntryExitDTO objEntryExitDTO=this.mapper.map(objEntryExit.get(0), EntryExitDTO.class);
+        objEntryExitDTO.setUserId(objUser.getUserBusinessId());
+        return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
+}
+
     
 }
