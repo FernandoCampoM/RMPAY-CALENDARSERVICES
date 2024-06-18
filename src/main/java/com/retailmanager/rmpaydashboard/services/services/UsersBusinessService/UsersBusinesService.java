@@ -1,5 +1,8 @@
 package com.retailmanager.rmpaydashboard.services.services.UsersBusinessService;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.EntryExit;
 import com.retailmanager.rmpaydashboard.models.Permission;
@@ -27,6 +31,7 @@ import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryReposi
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
+import com.retailmanager.rmpaydashboard.security.AuthCredentials;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PermissionDTO;
@@ -464,7 +469,7 @@ public class UsersBusinesService implements IUsersBusinessService{
      * @throws EntidadNoExisteException if the UsersBusiness with the given userId does not exist in the database
      */       
      @Override
-    public ResponseEntity<?> registerEntryOrExit(EntryExitDTO prmEntryExit) {
+    public ResponseEntity<?> registerExit(EntryExitDTO prmEntryExit) {
         UsersBusiness objUser=this.usersAppDBService.findById(prmEntryExit.getUserId()).orElse(null);
         if(objUser==null){
             throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmEntryExit.getUserId()+" no existe en la Base de datos");
@@ -475,6 +480,28 @@ public class UsersBusinesService implements IUsersBusinessService{
         prmEntryExit=this.mapper.map(objEntryExit, EntryExitDTO.class);
         prmEntryExit.setUserId(objUser.getUserBusinessId());
         return new ResponseEntity<>(prmEntryExit,HttpStatus.CREATED);
+    }
+    @Override
+    public ResponseEntity<?> registerEntry(AuthCredentials prmAuthCredentials) {
+        UsersBusiness objUser=this.usersAppDBService.findByUsername(prmAuthCredentials.getUsername()).orElse(null);
+        if(objUser==null){
+            throw new EntidadNoExisteException("El Empleado con username "+prmAuthCredentials.getUsername()+" no existe en la Base de datos");
+        }
+        if(!objUser.getEnable()){
+            throw new UserDisabled("El Empleado con username "+prmAuthCredentials.getUsername()+" ha sido deshabilitado");
+        }
+        if(objUser.getPassword().compareTo(prmAuthCredentials.getPassword())!=0){
+            return new ResponseEntity<>("{\"message\":\"Contraseña incorrecta\"}",HttpStatus.FORBIDDEN);
+        }
+        EntryExit objEntryExit=new EntryExit();
+        objEntryExit.setEntry(true);
+        objEntryExit.setDate(LocalDate.now());
+        objEntryExit.setHour(LocalTime.now());
+        objEntryExit.setUserBusiness(objUser);
+        objEntryExit=this.entryExitDBService.save(objEntryExit);
+        EntryExitDTO EntryExitDTO=this.mapper.map(objEntryExit, EntryExitDTO.class);
+        EntryExitDTO.setUserId(objUser.getUserBusinessId());
+        return new ResponseEntity<>(EntryExitDTO,HttpStatus.CREATED);
     }
 /**
      * Retrieves the last activity for a given user business ID.

@@ -135,7 +135,7 @@ public class RestApiExceptionHandler {
         }
         @ExceptionHandler(UserDisabled.class)
         public ResponseEntity<Error> handleUserDisabledException(final HttpServletRequest req,
-                        final TerminalDisabled ex, final Locale locale) {
+                        final UserDisabled ex, final Locale locale) {
                 final Error error = ErrorUtils
                                 .crearError(CodigoError.USUARIO_DESACTIVADO.getCodigo(),
                                                 String.format("%s, %s",
