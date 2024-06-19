@@ -238,7 +238,12 @@ public class InvoiceServices implements IInvoiceServices {
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
                         if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
-                            objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
+                            if(objTer.getExpirationDate().isBefore(LocalDate.now())){
+                                objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                            }else{
+                                objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
+                            }
+                            
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }

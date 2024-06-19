@@ -609,6 +609,7 @@ public class BusinessService implements IBusinessService {
              if(objBusiness!=null){
                 objBusiness=this.serviceDBBusiness.save(objBusiness);
              }
+             objBusiness.getUser().setBusiness(null);
             BusinessDTO businessDTO=this.mapper.map(objBusiness, BusinessDTO.class);
             if(businessDTO!=null){
                 rta=new ResponseEntity<BusinessDTO>(businessDTO, HttpStatus.CREATED);

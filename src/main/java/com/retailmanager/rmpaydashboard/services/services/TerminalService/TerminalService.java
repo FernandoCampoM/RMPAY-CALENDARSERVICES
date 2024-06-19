@@ -303,6 +303,8 @@ public class TerminalService implements ITerminalService {
 
                 amount = objService.getServiceValue();
                 objBusiness = existBusiness.get();
+                int activesTerminals = this.serviceDBTerminal.countActiveTerminals(businessId);
+                objBusiness.setAdditionalTerminals(activesTerminals);
                 objEmailBodyData.setBusinessName(objBusiness.getName());
                 objEmailBodyData.setEmail(objBusiness.getUser().getEmail());
                 objEmailBodyData.setMerchantId(objBusiness.getMerchantId());

@@ -9,6 +9,8 @@ import org.springframework.data.repository.CrudRepository;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 
+import jakarta.transaction.Transactional;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -32,5 +34,20 @@ public interface TerminalRepository extends CrudRepository<Terminal, Long> {
 
     @Query("SELECT b FROM Terminal b WHERE b.lastPayment BETWEEN :startDate AND :endDate")
     List<Terminal> findAllByActivations(LocalDate startDate, LocalDate endDate);
-    
+
+    @Query("Select COUNT(t) from Terminal t where t.enable = true and t.business.businessId = :businessId")
+    int countActiveTerminals(Long businessId);
+
+    List<Terminal> findByExpirationDateBefore(LocalDate date);
+    @Modifying
+    @Transactional
+    @Query("UPDATE Terminal t SET t.enable= false where t.terminalId = :terminalId")
+     int deactivateExpiredTerminals(Long terminalId);
+
+    @Query("Select t from Terminal t where t.business.priorNotification IS NULL and t.isPrincipal=true and t.expirationDate=:targetDate")
+     List<Terminal> getBusinessForPriorNotification(LocalDate targetDate);
+     @Query("Select t from Terminal t where t.business.lastDayNotification IS NULL and t.isPrincipal=true and t.expirationDate=:targetDate")
+     List<Terminal> getBusinessForLastDayNotification(LocalDate targetDate);
+     @Query("Select t from Terminal t where t.business.afterNotification IS NULL and t.isPrincipal=true and t.expirationDate=:targetDate")
+     List<Terminal> getBusinessForAfterNotification(LocalDate targetDate);
 }

@@ -3,6 +3,7 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 import java.time.LocalDate;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -39,6 +40,9 @@ public class BusinessDTO {
     private String logo;
     private String logoAth;
     private LocalDate registerDate;
+    private LocalDate priorNotification;
+    private LocalDate lastDayNotification;
+    private LocalDate afterNotification;
     @Valid
     private AddressDTO address;
     private UserDTO user;

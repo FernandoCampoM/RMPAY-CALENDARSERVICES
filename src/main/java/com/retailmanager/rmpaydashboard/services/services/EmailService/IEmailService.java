@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.services.EmailService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface IEmailService {
@@ -13,6 +14,9 @@ public interface IEmailService {
     public void notifyNewBusiness(EmailBodyData emailData);
     public void notifyRejectedPayment(EmailBodyData emailData);
     public void notifyErrorRegister(EmailBodyData emailData);
-
     public void notifyNewTerminal(EmailBodyData emailData);
+
+    public void priorNotificationEmail(String email,String userName, String businessName, String merchatId);
+    public void lastDayNotificationEmail(String email,String userName, String businessName, String merchatId);
+    public void beforeNotificationEmail(String email,String userName, String businessName, String merchatId, LocalDate expirationDate);
 }

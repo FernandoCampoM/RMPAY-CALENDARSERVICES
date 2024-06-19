@@ -48,6 +48,13 @@ public class Business {
 
     private String logo;
     private String logoAth;
+
+    @Column(nullable = true)
+    private LocalDate priorNotification;
+    @Column(nullable = true)
+    private LocalDate lastDayNotification;
+    @Column(nullable = true)
+    private LocalDate afterNotification;
     @Column(nullable = true)
     private LocalDate registerDate;
     /**Objeto que encapsula la información de la dirección */
