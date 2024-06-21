@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.security.AuthCredentials;
+import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 
@@ -23,8 +24,8 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> updateDownloadProducts(Long userBusinessId,List<Long> product_ids);
     public ResponseEntity<?> updateDownloadCategory(Long userBusinessId,List<Long> category_ids);
     public ResponseEntity<?> updateDownloadUserBusiness(Long userBusinessId);
-    public ResponseEntity<?> registerEntry(AuthCredentials prmAuthCredentials);
-    public ResponseEntity<?> registerExit(EntryExitDTO prmEntryExit);
+    public ResponseEntity<?> registerEntry(EmployeeAuthentication prmEmployeeAuthentication);
+    public ResponseEntity<?> registerExit(EmployeeAuthentication prmEmployeeAuthentication);
     public ResponseEntity<?> getLastActivity(Long prmUserBusinessId);
 
 

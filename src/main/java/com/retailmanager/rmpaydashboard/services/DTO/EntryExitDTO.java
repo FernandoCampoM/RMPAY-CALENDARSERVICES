@@ -17,6 +17,8 @@ public class EntryExitDTO {
     @NotNull(message = "{entryexit.userBusinessId.notNull}")
     private Long userId;
 
+    private String name;
+
     @NotNull(message = "{entryexit.hour.notNull}")
     private LocalTime hour;
 

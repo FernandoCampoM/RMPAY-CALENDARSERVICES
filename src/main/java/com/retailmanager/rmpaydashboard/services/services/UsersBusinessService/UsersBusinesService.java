@@ -33,6 +33,7 @@ import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.security.AuthCredentials;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PermissionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
@@ -469,38 +470,45 @@ public class UsersBusinesService implements IUsersBusinessService{
      * @throws EntidadNoExisteException if the UsersBusiness with the given userId does not exist in the database
      */       
      @Override
-    public ResponseEntity<?> registerExit(EntryExitDTO prmEntryExit) {
-        UsersBusiness objUser=this.usersAppDBService.findById(prmEntryExit.getUserId()).orElse(null);
-        if(objUser==null){
-            throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmEntryExit.getUserId()+" no existe en la Base de datos");
+    @Transactional
+    public ResponseEntity<?> registerExit(EmployeeAuthentication prmEmployeeAuthentication) {
+        List<UsersBusiness> objUser=this.usersAppDBService.findByPassword(String.valueOf(prmEmployeeAuthentication.getPassword()));
+        if(objUser==null || objUser.isEmpty()){
+            throw new EntidadNoExisteException("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" no existe en la Base de datos");
         }
-        EntryExit objEntryExit=this.mapper.map(prmEntryExit, EntryExit.class);
-        objEntryExit.setUserBusiness(objUser);
+        
+        //TODO: PENDIENTE IDENTIFICAR EL NEGOCO AL QUE PERTENECE EL USUARIO
+        EntryExit objEntryExit=new EntryExit();
+        objEntryExit.setEntry(false);
+        objEntryExit.setDate(LocalDate.now());
+        objEntryExit.setHour(LocalTime.now());
+        objEntryExit.setUserBusiness(objUser.get(0));
         objEntryExit=this.entryExitDBService.save(objEntryExit);
-        prmEntryExit=this.mapper.map(objEntryExit, EntryExitDTO.class);
-        prmEntryExit.setUserId(objUser.getUserBusinessId());
+        EntryExitDTO prmEntryExit=this.mapper.map(objEntryExit, EntryExitDTO.class);
+        prmEntryExit.setUserId(objUser.get(0).getUserBusinessId());
+        prmEntryExit.setName(objUser.get(0).getUsername());
         return new ResponseEntity<>(prmEntryExit,HttpStatus.CREATED);
     }
     @Override
-    public ResponseEntity<?> registerEntry(AuthCredentials prmAuthCredentials) {
-        UsersBusiness objUser=this.usersAppDBService.findByUsername(prmAuthCredentials.getUsername()).orElse(null);
-        if(objUser==null){
-            throw new EntidadNoExisteException("El Empleado con username "+prmAuthCredentials.getUsername()+" no existe en la Base de datos");
+    @Transactional
+    public ResponseEntity<?> registerEntry(EmployeeAuthentication prmEmployeeAuthentication) {
+        List<UsersBusiness> objUser=this.usersAppDBService.findByPassword(String.valueOf(prmEmployeeAuthentication.getPassword()));
+        if(objUser==null || objUser.isEmpty()){
+            throw new EntidadNoExisteException("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" no existe en la Base de datos");
         }
-        if(!objUser.getEnable()){
-            throw new UserDisabled("El Empleado con username "+prmAuthCredentials.getUsername()+" ha sido deshabilitado");
+        if(objUser.get(0).getEnable()==false){
+            throw new UserDisabled("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" esta deshabilitado");
         }
-        if(objUser.getPassword().compareTo(prmAuthCredentials.getPassword())!=0){
-            return new ResponseEntity<>("{\"message\":\"Contraseña incorrecta\"}",HttpStatus.FORBIDDEN);
-        }
+        //TODO: PENDIENTE IDENTIFICAR EL NEGOCO AL QUE PERTENECE EL USUARIO
         EntryExit objEntryExit=new EntryExit();
         objEntryExit.setEntry(true);
         objEntryExit.setDate(LocalDate.now());
         objEntryExit.setHour(LocalTime.now());
-        objEntryExit.setUserBusiness(objUser);
+        objEntryExit.setUserBusiness(objUser.get(0));
         objEntryExit=this.entryExitDBService.save(objEntryExit);
         EntryExitDTO EntryExitDTO=this.mapper.map(objEntryExit, EntryExitDTO.class);
-        EntryExitDTO.setUserId(objUser.getUserBusinessId());
+        EntryExitDTO.setUserId(objUser.get(0).getUserBusinessId());
+        EntryExitDTO.setName(objUser.get(0).getUsername());
         return new ResponseEntity<>(EntryExitDTO,HttpStatus.CREATED);
     }
 /**

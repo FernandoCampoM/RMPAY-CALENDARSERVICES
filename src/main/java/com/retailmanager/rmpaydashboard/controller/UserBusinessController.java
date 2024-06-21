@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.retailmanager.rmpaydashboard.security.AuthCredentials;
+import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.UsersBusinessService.IUsersBusinessService;
@@ -140,8 +141,8 @@ public class UserBusinessController {
      * @return               a ResponseEntity containing the result of the operation
      */
     @PostMapping("/userBusiness/activity/exit")
-    public ResponseEntity<?> saveExit(@Valid @RequestBody EntryExitDTO prmEntryExit) {
-        return usersBusinessService.registerExit(prmEntryExit);
+    public ResponseEntity<?> saveExit(@Valid @RequestBody EmployeeAuthentication prmEmployeeAuthentication ) {
+        return usersBusinessService.registerExit(prmEmployeeAuthentication);
     }
     /**
      * Saves an activity entry for a user business.
@@ -150,8 +151,8 @@ public class UserBusinessController {
      * @return               a ResponseEntity containing the result of the operation
      */
     @PostMapping("/userBusiness/activity/entry")
-    public ResponseEntity<?> saveExit(@Valid @RequestBody AuthCredentials prmEntryExit) {
-        return usersBusinessService.registerEntry(prmEntryExit);
+    public ResponseEntity<?> saveEntry(@Valid @RequestBody EmployeeAuthentication prmEmployeeAuthentication) {
+        return usersBusinessService.registerEntry(prmEmployeeAuthentication);
     }
     /**
      * Retrieves the last activity for a given user business.

@@ -15,6 +15,7 @@ public interface UsersAppRepository extends CrudRepository<UsersBusiness,Long>{
     List<UsersBusiness> findByBusiness(Business business);
 
     Optional<UsersBusiness> findByUsername(String username);
+    List<UsersBusiness> findByPassword(String username);
 
     @Modifying
     @Query("UPDATE UsersBusiness u SET u.enable = :enable WHERE u.userBusinessId = :userBusinessId")
