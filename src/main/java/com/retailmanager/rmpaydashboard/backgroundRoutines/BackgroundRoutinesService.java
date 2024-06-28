@@ -1,6 +1,8 @@
 package com.retailmanager.rmpaydashboard.backgroundRoutines;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,34 +30,100 @@ public class BackgroundRoutinesService {
     }
     @Transactional
     public void priorNotificaionEmail(){
+         HashMap<Long, Object> users = new HashMap<Long, Object>();
          LocalDate date = LocalDate.now();
-         date=date.minusDays(30);
+         date=date.minusDays(10);
          List<Terminal> terminals = terminalRepository.getBusinessForPriorNotification(date);
          for (Terminal terminal : terminals) {
-            emailService.priorNotificationEmail(terminal.getBusiness().getUser().getEmail(), terminal.getBusiness().getUser().getName(), terminal.getBusiness().getName(), terminal.getBusiness().getMerchantId());
+            if(users.containsKey(terminal.getBusiness().getUser().getUserID())){
+                HashMap<String, Object> bsuiness = (HashMap<String, Object>) users.get(terminal.getBusiness().getUser().getUserID());
+                List<String> services=(List<String>) bsuiness.get("services");
+                services.add("Terminal id: "+terminal.getTerminalId()+" - "+terminal.getService().getServiceName());
+                bsuiness.put("services", services);
+                users.put(terminal.getBusiness().getUser().getUserID(), bsuiness);
+            }else{
+                HashMap<String, Object> bsuiness = new HashMap<String, Object>();
+                List<String> services = new ArrayList<String>();
+                services.add("Terminal id: "+terminal.getTerminalId()+" - "+terminal.getService().getServiceName());
+                bsuiness.put("services", services);
+                bsuiness.put("businessName", terminal.getBusiness().getUser().getName());
+                bsuiness.put("userEmail", terminal.getBusiness().getUser().getEmail());
+                bsuiness.put("userName", terminal.getBusiness().getUser().getName());
+                bsuiness.put("businessId", terminal.getBusiness().getBusinessId());
+                users.put(terminal.getBusiness().getUser().getUserID(), bsuiness);
+            }
+            
             terminal.getBusiness().setPriorNotification(date);
+        }
+        for (Long key : users.keySet()) {
+            HashMap<String, Object> bsuiness = (HashMap<String, Object>) users.get(key);
+            emailService.priorNotificationEmail(bsuiness.get("userEmail").toString(), bsuiness.get("userName").toString(),bsuiness.get("businessName").toString(), (List<String>) bsuiness.get("services"));
         }
          terminalRepository.saveAll(terminals);
     }
     @Transactional
     public void lastDayNotificaionEmail(){
-        LocalDate date = LocalDate.now();
-        List<Terminal> terminals = terminalRepository.getBusinessForLastDayNotification(date);
-        for (Terminal terminal : terminals) {
-           emailService.lastDayNotificationEmail(terminal.getBusiness().getUser().getEmail(), terminal.getBusiness().getUser().getName(), terminal.getBusiness().getName(), terminal.getBusiness().getMerchantId());
-           terminal.getBusiness().setLastDayNotification(date);
+        HashMap<Long, Object> users = new HashMap<Long, Object>();
+         LocalDate date = LocalDate.now();
+         date=date.minusDays(5);
+         List<Terminal> terminals = terminalRepository.getBusinessForLastDayNotification(date);
+         for (Terminal terminal : terminals) {
+            if(users.containsKey(terminal.getBusiness().getUser().getUserID())){
+                HashMap<String, Object> bsuiness = (HashMap<String, Object>) users.get(terminal.getBusiness().getUser().getUserID());
+                List<String> services=(List<String>) bsuiness.get("services");
+                services.add("Terminal id: "+terminal.getTerminalId()+" - "+terminal.getService().getServiceName());
+                bsuiness.put("services", services);
+                users.put(terminal.getBusiness().getUser().getUserID(), bsuiness);
+            }else{
+                HashMap<String, Object> bsuiness = new HashMap<String, Object>();
+                List<String> services = new ArrayList<String>();
+                services.add("Terminal id: "+terminal.getTerminalId()+" - "+terminal.getService().getServiceName());
+                bsuiness.put("services", services);
+                bsuiness.put("businessName", terminal.getBusiness().getUser().getName());
+                bsuiness.put("userEmail", terminal.getBusiness().getUser().getEmail());
+                bsuiness.put("userName", terminal.getBusiness().getUser().getName());
+                bsuiness.put("businessId", terminal.getBusiness().getBusinessId());
+                users.put(terminal.getBusiness().getUser().getUserID(), bsuiness);
+            }
+            
+            terminal.getBusiness().setLastDayNotification(date);
         }
-        terminalRepository.saveAll(terminals);
+        for (Long key : users.keySet()) {
+            HashMap<String, Object> bsuiness = (HashMap<String, Object>) users.get(key);
+            emailService.lastDayNotificationEmail(bsuiness.get("userEmail").toString(), bsuiness.get("userName").toString(),bsuiness.get("businessName").toString(), (List<String>) bsuiness.get("services"));
+        }
+         terminalRepository.saveAll(terminals);
    }
    @Transactional
    public void afterNotificaionEmail(){
-    LocalDate date = LocalDate.now();
-    date=date.plusDays(5);
-    List<Terminal> terminals = terminalRepository.getBusinessForAfterNotification(date);
-    for (Terminal terminal : terminals) {
-       emailService.beforeNotificationEmail(terminal.getBusiness().getUser().getEmail(), terminal.getBusiness().getUser().getName(), terminal.getBusiness().getName(), terminal.getBusiness().getMerchantId(), terminal.getExpirationDate());
-       terminal.getBusiness().setAfterNotification(date);    
-    }
-        terminalRepository.saveAll(terminals);
+    HashMap<Long, Object> users = new HashMap<Long, Object>();
+         LocalDate date = LocalDate.now();
+         List<Terminal> terminals = terminalRepository.getBusinessForAfterNotification(date);
+         for (Terminal terminal : terminals) {
+            if(users.containsKey(terminal.getBusiness().getUser().getUserID())){
+                HashMap<String, Object> bsuiness = (HashMap<String, Object>) users.get(terminal.getBusiness().getUser().getUserID());
+                List<String> services=(List<String>) bsuiness.get("services");
+                services.add("Terminal id: "+terminal.getTerminalId()+" - "+terminal.getService().getServiceName());
+                bsuiness.put("services", services);
+                users.put(terminal.getBusiness().getUser().getUserID(), bsuiness);
+            }else{
+                HashMap<String, Object> bsuiness = new HashMap<String, Object>();
+                List<String> services = new ArrayList<String>();
+                services.add("Terminal id: "+terminal.getTerminalId()+" - "+terminal.getService().getServiceName());
+                bsuiness.put("services", services);
+                bsuiness.put("businessName", terminal.getBusiness().getUser().getName());
+                bsuiness.put("userEmail", terminal.getBusiness().getUser().getEmail());
+                bsuiness.put("userName", terminal.getBusiness().getUser().getName());
+                bsuiness.put("businessId", terminal.getBusiness().getBusinessId());
+                users.put(terminal.getBusiness().getUser().getUserID(), bsuiness);
+            }
+            
+            terminal.getBusiness().setAfterNotification(date);
+        }
+        for (Long key : users.keySet()) {
+            HashMap<String, Object> bsuiness = (HashMap<String, Object>) users.get(key);
+            emailService.beforeNotificationEmail(bsuiness.get("userEmail").toString(), bsuiness.get("userName").toString(),bsuiness.get("businessName").toString(), (List<String>) bsuiness.get("services"));
+        }
+         terminalRepository.saveAll(terminals);
     }
 }

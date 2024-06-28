@@ -304,25 +304,11 @@ public class EmailService implements IEmailService{
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
     }
     @Override
-    public void priorNotificationEmail(String email, String userName, String businessName, String merchatId) {
-        String mensage = "<p>Esperamos que se encuentre bien. Queremos aprovechar esta oportunidad para agradecerle por su continua confianza en nuestros servicios/productos Nos complace enormemente ser su elección.\n"
-                + " <br><br>\n"
-                + " Deseamos informarle amablemente que la fecha de renovación de su Ilvu Control] está próxima a vencer en los próximos 30 días. Queremos asegurarnos de que tenga suficiente tiempo para considerar sus opciones y tomar la mejor decisión para sus necesidades.\n"
-                + " <br><br>\n"
-                + " Entendemos que las decisiones de renovación pueden requerir una evaluación cuidadosa y un análisis de sus requerimientos actuales Para ayudarlo en este proceso, estamos aquí para responder cualquier pregunta que pueda tener y proporcionarle cualquier información adicional que necesite para tomar una decisión informada.\n"
-                + " <br><br>\n"
-                + "  Nuestro objetivo es hacer que este proceso sea lo más conveniente posible para usted. Si desea renovar su [servicio/ producto o si necesita ajustes en su plan actual, por favor comuniquese con nosotros antes de la fecha de vencimiento para que podamos garantizar una transición fluida\n"
-                + "  <br><br>\n"
-                + "  Si por alguna razón ha decidido no renovar o está considerando otras opciones, le agradeceríamos mucho si nos comparte sus comentarios. Su opinión es extremadamente valiosa para nosotros y nos ayudará a seguir mejorando nuestros servicios\n"
-                + "  <br><br>\n"
-                + "  Una vez más, queremos expresar nuestro agradecimiento por su asociación con nosotros. Esperamos continuar brindándole el mejor servicio posible y satisfacer todas sus necesidades en el futuro.\n"
-                + "  <br><br>\n"
-                + "  Quedamos a su disposición para cualquier consulta que pueda tener. No dude en ponerse en contacto con nuestro equipo de soporte al cliente en info@retallmanagerpr.com o al 1-787-466-2091 en cualquier momento.\n"
-                + "  <br><br>\n"
-                + "  Atentamente,</p>";
+    public void priorNotificationEmail(String email, String userName, String businessName,List<String> services) {
+        
         List<String> toList = Arrays.asList(email);
-        String htmlBody=createBodyPaymentNotification(mensage,userName,businessName,merchatId);
-        String subject = "SU MEMBRESÍA VA A TERMINAR, ¡QUEDAN 30 DÍAS!";
+        String htmlBody=createBodyPaymentNotification(userName,businessName,services,"10");
+        String subject = "SU MEMBRESÍA VA A TERMINAR, ¡QUEDAN 10 DÍAS!";
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
     }
 
@@ -330,35 +316,10 @@ public class EmailService implements IEmailService{
 
 
     @Override
-    public void lastDayNotificationEmail(String email, String userName, String businessName, String merchatId) {
-        String mensage = "<p>\n"
-                + "  Esperamos que esta carta le encuentre bien Agradecemos sinceramente su confianza continua en RETAIL MANAGER PR LLC come proveedor de servicios de Ivu Control. El motivo de esta comunicación es recordarle que el plazo para la renovación de sus servicios con nosotros ha llegado a su término.\n"
-                + " <br><br>\n"
-                + " Valoramos su relación comercial y deseamos brindarle la mejor atención posible Es por eso que queremos informarle sobre la Importancia de renovar sus servicios a la brevedad posible. La renovación puntual no solo garantizará la continuidad de los beneficios que ha estado recibiendo, sino que también evitará posibles inconvenientes, como multas administrativas con las autoridades gubernamentales.\n"
-                + " <br><br>\n"
-                + " Si ya ha realizado el pago correspondiente para la renovación de sus servicios, le agradecemos y le pedimos disculpas por cualquier confusión. Puede ignorar este aviso sin ningún problema.\n"
-                + " <br><br>\n"
-                + " Sin embargo, si aún no ha realizado la renovación, le instamos\n"
-                + " amablemente a ponerse en contacto con nuestro equipo de atención al\n"
-                + " cliente lo antes posible. Estamos aqui para asistirio(a) en todo el\n"
-                + " proceso y responder a cualquier pregunta que pueda tener\n"
-                + " <br><br>\n"
-                + " Puede comunicarse con nosotros a través de los siguientes canales:\n"
-                + " <br>\n"
-                + " <ul>\n"
-                + "     <li>Número de teléfono: 787-466-2091</li>\n"
-                + "     <li>Correo electrónico: INFO@RETAILMANAGERPR.COM</li>\n"
-                + "     <li>Chat en WHATSAPP 787-466-2091</li>\n"
-                + " </ul>\n"
-                + " Agradecemos su atención a este asunto crucial y esperamos continuar siendo su elección preferida para sus necesidades de servicio. Su satisfacción es nuestra principal prioridad, y estamos comprometidos en brindarle una experiencia sin problemas.\n"
-                + " <br><br>\n"
-                + " Le extendemos nuestros mejores deseos y quedamos a su disposición para cualquier consulta adicional.\n"
-                + " <br><br>\n"
-                + " Atentamente,\n"
-                + "  </p>";
-List<String> toList = Arrays.asList(email);
-String htmlBody=createBodyPaymentNotification(mensage,userName,businessName,merchatId);
-String subject = "SU MEMBRESÍA VA A TERMINAR, ¡HOY ÚLTIMO DÍA!";
+    public void lastDayNotificationEmail(String email, String userName, String businessName,List<String> services) {
+        List<String> toList = Arrays.asList(email);
+        String htmlBody=createBodyPaymentNotification(userName,businessName,services,"5");
+        String subject = "SU MEMBRESÍA VA A TERMINAR, ¡QUEDAN 5 DÍAS!";
 sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
     }
 
@@ -366,22 +327,11 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
 
 
     @Override
-    public void beforeNotificationEmail(String email, String userName, String businessName, String merchatId, LocalDate expirationDate) {
-        String[] meses = {"", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"};
-        String mensage = "<p> Esperamos que se encuentre bien. Queremos informarle sobre un asunto Importante relacionado con su servicio de \"Ivu Control\" Lamentablemente, debemos comunicarle que su servicio fue suspendido el dia " + expirationDate.getDayOfMonth() + " del mes de " + meses[expirationDate.getMonthValue()] + " del " + expirationDate.getYear() + ".\n"
-                                    + " <br><br>\n"
-                                    + "La suspensión del servicio puede tener consecuencias significativas, ya que podría resultar en la pérdida de la exención para el 7% en sus transacciones gravadas. Entendemos la importancia de mantener esta exención para evitar multas y cargos adicionales que podrían afectar su situación financiera.\n"
-                                    + "<br><br>\n"
-                                    + "Deseamos recordarle que el \"Ivu Control\" es fundamental para garantizar el cumplimiento de las regulaciones fiscales y mantener sus actividades comerciales en orden. Para evitar problemas adicionales y asegurarse de que su exención se mantenga, le animamos encarecidamente a renovar su servicio de \"Ivu Control\" To antes posible.\n"
-                                    + "<br><br>\n"
-                                    + "Deseamos recordarle que el \"Ivu Control\" es fundamental para garantizar el cumplimiento de las regulaciones fiscales y mantener sus actividades comerciales en orden. Para evitar problemas adicionales y asegurarse de que su exención se mantenga, le animamos encarecidamente a renovar su servicio de \"Ivu Control\" lo antes posible.\n"
-                                    + "<br><br>\n"
-                                    + "Apreciamos su comprensión y cooperación en este asunto. Esperamos poder resolver esta situación de manera efectiva y continuar brindandole el mejor servicio posible.\n"
-                                    + "<br><br>\n"
-                                    + "Atentamente,</p>";
+    public void beforeNotificationEmail(String email, String userName, String businessName,List<String> services) {
+        
         List<String> toList = Arrays.asList(email);
-        String htmlBody=createBodyPaymentNotification(mensage,userName,businessName,merchatId);
-        String subject = "SU MEMBRESÍA VENCIÓ HACE 10 DÍAS!!!";
+        String htmlBody=createBodyPaymentNotification(userName,businessName,services,"1");
+        String subject = "SU MEMBRESÍA VA A TERMINAR, ¡HOY ÚLTIMO DÍA!";
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
     }
     /**
@@ -2029,8 +1979,8 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
     private String obtenerExtension(String nombreArchivo) {
         return nombreArchivo.substring(nombreArchivo.lastIndexOf(".") + 1);
     }
-    private String createBodyPaymentNotification(String mensaje, String userName, String businessName, String merchatId) {
-        return "<body style=\"font-family: Arial, sans-serif;\n"
+    private String createBodyPaymentNotification( String userName, String businessName, List<String> listServices, String diasRestantes) {
+        String msg = "<body style=\"font-family: Arial, sans-serif;\n"
                 + "margin: 0;\n"
                 + "padding: 0;\n"
                 + "background-color: #f4f4f4;\">\n"
@@ -2071,13 +2021,6 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
                 + "                                                            <div class=\"header\" style=\" display: flex;\n"
                 + "                                                            justify-content: space-between;\n"
                 + "                                                            align-items: center;\">\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 2;\n"
-                + "                                                                text-align: right;\">\n"
-                + "                                                                    <p>Estimado(a) " + userName + ",</p>\n"
-                + "                                                                    <p>" + businessName + ",</p>\n"
-                + "                                                                    <p>" + merchatId + ",</p>\n"
-                + "                                                                </div>\n"
-                + "                                                                \n"
                 + "                                                                <div class=\"logo-column\" style=\"flex: 1;\n"
                 + "                                                                text-align: center; text-align: right;\n"
                 + "                                                                margin-left: 10%;\">\n"
@@ -2088,33 +2031,55 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
                 + "                                                                </div>\n"
                 + "                                                            </div>\n"
                 + "                                                            <div class=\"content\" style=\" margin-top: 20px;\n"
-                + "                                                            text-align: justify;\">\n" + mensaje
+                + "                                                            text-align: center;\">\n" 
+                + " <h2>Asunto: Notificación de Vencimiento de Servicio - RMpay</h2>"
+        + " <p>Estimado/a "+userName+",</p> "
+        + " <p>Esperamos que este mensaje le encuentre bien. Nos dirigimos a usted para informarle que los siguientes servicios asociados a su(s) terminal(es) de RMpay están próximos a vencer en los próximos "+diasRestantes+" días:</p>" 
+        +" <ol style=\"list-style: none; padding: 0; counter-reset: li; text-align: center;\">";
+        int i=1;
+        for (String s : listServices) {
+           msg += " <li style=\"counter-increment: li; margin-bottom: 10px;\">";
+           msg +="     <span style=\"content: counter(li) '. '; display: inline-block; width: 1.5em; margin-left: -1.5em; text-align: right;\"></span>"+i+". "+s;
+           msg +=" </li>" ;
+           i++;
+        }
+    msg+=" </ol>"
+        + " <p>Para garantizar la continuidad de su servicio sin interrupciones, le ofrecemos dos opciones sencillas para efectuar la renovación:</p> "
                 + "                                                            </div>\n"
-                + "                                                            <div  style=\"display: flex;\n"
-                + "                                                            \n"
-                + "                                                            align-items: center;\n"
-                + "                                                            margin-top: 0px;\">\n"
-                + "                                                                \n"
-                + "                                                                <div class=\"logo-column\" style=\"flex: 1;\n"
-                + "                                                                text-align: center;\n"
-                + "                                                                 margin-left: 40%;\">\n"
-                + "                                                                    <img src=\""+emailConfigData.getRMLogo()+"\"\n"
-                + "                                                                        alt=\"Logo 1\" class=\"logo\" style=\" max-width: 170px;\n"
-                + "                                                                        height: auto;\n"
-                + "                                                                        margin: 0 auto;\">\n"
-                + "                                                                </div>\n"
-                + "                                                                <div class=\"info-column\" style=\" flex: 1;\n"
-                + "                                                                text-align: center; margin-left: 0;\">\n"
-                + "                                                                    <strong><p>787-466-2091 <br>\n"
-                + "                                                                        601 Ave. Andalucia<br>\n"
-                + "                                                                        San Juan PR 00920</p></strong>\n"
-                + "                                                                \n"
-                + "                                                                </div>\n"
+                +"                                                              <div class=\"content\" style=\" margin-top: 20px;\n"
+                + "                                                            text-align: left;\">\n" 
+                + "                                                     <ol>"
+                + "                                                    <li>"
+                + "                                                       <strong>A través de nuestra página web:</strong>"
+                + "                                                        <ul>"
+                + "                                                            <li>Visite <a href=\"https://rmpay.retailmanagerpr.com\">rmpay.retailmanagerpr.com</a>.</li>"
+                + "                                                            <li>Inicie sesión en su cuenta.</li>"
+                + "                                                            <li>Realice la renovación de su servicio desde su perfil de usuario.</li>"
+                + "                                                        </ul>"
+                + "                                                    </li>"
+                + "                                                    <li>"
+                + "                                                        <strong>Desde la aplicación RMpay:</strong>"
+                + "                                                        <ul>"
+                + "                                                            <li>Abra la aplicación RMpay en su dispositivo.</li>"
+                + "                                                            <li>Vaya al menú de configuración.</li>"
+                + "                                                            <li>Seleccione la opción de suscripción y siga las instrucciones para completar el pago.</li>"
+                + "                                                        </ul>"
+                + "                                                    </li>"
+                + "                                                </ol>"
+                + "                                                            </div>\n"
+                + " <div class=\"content\" style=\" margin-top: 20px;\n"
+                + "                                                            text-align: center;\">\n"
+        + " <p>Le recomendamos realizar la renovación a la mayor brevedad posible para evitar cualquier interrupción en el servicio. Si tiene alguna pregunta o necesita asistencia, no dude en ponerse en contacto con nuestro equipo de soporte al cliente.\r</p>\r"
+        + " <p>Agradecemos su preferencia y confianza en RMpay.\r</p>" 
+        +"<p>Atentamente,</p>"
+        + " <p>Retail Manager PR LLC</p> "
+        + " <p>601 Ave. Andalucia San Juan PR 00920</p> "
+        + " <p><a href=\"tel:7872462091\">787-246-2091</a></p> "
+        + " <p><a href=\"rmpay.retailmanagerpr.com\">rmpay.retailmanagerpr.com</a></p> "
+        + " <p><a href=\"mailto:info@retailmanagerpr.com\">info@retailmanagerpr.com</a></p> "
+                + "                                                            </div>\n"
                 + "                                                            </div>\n"
                 + "                                                        </div>\n"
-                + "\n"
-                + "\n"
-                + "\n"
                 + "                                                    </tr>\n"
                 + "                                                </tbody>\n"
                 + "                                            </table>\n"
@@ -2167,6 +2132,7 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
                 + "    </div>\n"
                 + "    \n"
                 + "</body>";
+                return msg;
     }
 
 

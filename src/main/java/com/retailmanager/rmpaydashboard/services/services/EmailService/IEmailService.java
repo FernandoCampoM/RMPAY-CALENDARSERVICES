@@ -16,7 +16,7 @@ public interface IEmailService {
     public void notifyErrorRegister(EmailBodyData emailData);
     public void notifyNewTerminal(EmailBodyData emailData);
 
-    public void priorNotificationEmail(String email,String userName, String businessName, String merchatId);
-    public void lastDayNotificationEmail(String email,String userName, String businessName, String merchatId);
-    public void beforeNotificationEmail(String email,String userName, String businessName, String merchatId, LocalDate expirationDate);
+    public void priorNotificationEmail(String email,String userName, String businessName, List<String> services);
+    public void lastDayNotificationEmail(String email,String userName, String businessName, List<String> services);
+    public void beforeNotificationEmail(String email,String userName, String businessName, List<String> services);
 }

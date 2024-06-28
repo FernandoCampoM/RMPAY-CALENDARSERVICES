@@ -15,7 +15,11 @@ import com.retailmanager.rmpaydashboard.security.AuthCredentials;
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
+import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.UsersBusinessService.IUsersBusinessService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/api")
@@ -24,6 +28,8 @@ public class UserBusinessController {
     
     @Autowired
     private IUsersBusinessService usersBusinessService;
+
+    @Autowired IEmailService emailService;
 
     /**
      * Save a user business.
@@ -164,4 +170,11 @@ public class UserBusinessController {
     public ResponseEntity<?> getActivity(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
         return usersBusinessService.getLastActivity(userBusinessId);
     }
+
+    /* @GetMapping("/emailtest")
+    public String eailtest() {
+        this.emailService.lastDayNotificationEmail("juancampo201509@gmail.com", "juancamm", "Evolución Imparable");
+        return new String("Email Enviado: ");
+    } */
+    
 }

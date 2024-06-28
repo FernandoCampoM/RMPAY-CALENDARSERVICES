@@ -44,10 +44,10 @@ public interface TerminalRepository extends CrudRepository<Terminal, Long> {
     @Query("UPDATE Terminal t SET t.enable= false where t.terminalId = :terminalId")
      int deactivateExpiredTerminals(Long terminalId);
 
-    @Query("Select t from Terminal t where t.business.priorNotification IS NULL and t.isPrincipal=true and t.expirationDate=:targetDate")
+    @Query("Select t from Terminal t where t.business.priorNotification IS NULL  and t.expirationDate=:targetDate")
      List<Terminal> getBusinessForPriorNotification(LocalDate targetDate);
-     @Query("Select t from Terminal t where t.business.lastDayNotification IS NULL and t.isPrincipal=true and t.expirationDate=:targetDate")
+     @Query("Select t from Terminal t where t.business.lastDayNotification IS NULL  and t.expirationDate=:targetDate")
      List<Terminal> getBusinessForLastDayNotification(LocalDate targetDate);
-     @Query("Select t from Terminal t where t.business.afterNotification IS NULL and t.isPrincipal=true and t.expirationDate=:targetDate")
+     @Query("Select t from Terminal t where t.business.afterNotification IS NULL and t.expirationDate=:targetDate")
      List<Terminal> getBusinessForAfterNotification(LocalDate targetDate);
 }
