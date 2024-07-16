@@ -11,8 +11,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
+import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private UserRepository usuarioRepository;
+    private UsersAppRepository usersAppRepository;
     
     /** 
      * @param request
@@ -35,7 +38,13 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         AuthCredentials authCredentials = new AuthCredentials();
         try {
             authCredentials= new ObjectMapper().readValue(request.getReader(), AuthCredentials.class);
-            
+            if(authCredentials.getEmployeeId()!=null){
+                if(!usersAppRepository.existsById(authCredentials.getEmployeeId())){
+                    throw new EntidadNoExisteException("El User con employeeId "+authCredentials.getEmployeeId()+" no existe en la Base de datos");
+                }else{
+                    usuarioRepository.updateTempAuthId(authCredentials.getUsername(), authCredentials.getEmployeeId());
+                }
+            }
         } catch (IOException e) {
             
         }
@@ -51,8 +60,9 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         if(userDetails.getUserObject().isEnable()==false){
             throw new UserDisabled("");
         }
-        usuarioRepository.updateLastLogin(userDetails.getUserObject().getUserID(),LocalDate.now());    
-        String token=TokenUtils.createToken(userDetails.getUserObject());
+        usuarioRepository.updateLastLogin(userDetails.getUserObject().getUserID(),LocalDate.now());
+        String token=TokenUtils.createTokenWithClaims(userDetails.getUserObject());
+        usuarioRepository.updateTempAuthId(userDetails.getUserObject().getUsername(), null);
         
         Token fullToken=new Token();
         fullToken.setAuthorization("Bearer "+token);
@@ -66,5 +76,8 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
     }
     public void setUsuarioRepository(UserRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
+    }
+    public void setUsersAppRepository(UsersAppRepository usersAppRepository) {
+        this.usersAppRepository = usersAppRepository;
     }
 }

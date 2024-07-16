@@ -10,11 +10,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.retailmanager.rmpaydashboard.models.User;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
+@AllArgsConstructor  
 public class UserDetailsImpl implements UserDetails{
     private final User usuario;
-
 
     
     
@@ -66,4 +66,5 @@ public class UserDetailsImpl implements UserDetails{
     public User getUserObject(){
         return this.usuario;
     }
+    
 }

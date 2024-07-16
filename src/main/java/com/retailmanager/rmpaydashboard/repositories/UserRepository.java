@@ -35,6 +35,10 @@ public interface UserRepository extends  CrudRepository<User,Long>{
     @Modifying
     @Query("UPDATE User u SET u.lastLogin = :localDate WHERE u.userID = :userID")
     void updateLastLogin(Long userID, LocalDate localDate);
+    @Transactional
+    @Modifying
+    @Query("UPDATE User u SET u.tempAuthId = :tempAuthId WHERE u.username = :username")
+    void updateTempAuthId(String username, Long tempAuthId);
     
     Optional<User> findOneByEmail(String username);
     @Query("SELECT u FROM User u WHERE u.enable = true and ELEMENT(u.business).additionalTerminals  > 0")

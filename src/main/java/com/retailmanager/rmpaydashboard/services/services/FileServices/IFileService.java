@@ -7,5 +7,6 @@ public interface IFileService {
     public ResponseEntity<?> save(MultipartFile file);
 
     public ResponseEntity<?> saveImage(MultipartFile file);
-    public ResponseEntity<?> downloadImage(String nombreArchivo);
+    public ResponseEntity<?> downloadImage(Long fileId);
+    public ResponseEntity<?> deleteImage(Long fileId);
 }

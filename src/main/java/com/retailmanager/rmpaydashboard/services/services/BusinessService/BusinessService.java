@@ -39,6 +39,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.FileServices.IFileService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
@@ -63,6 +64,8 @@ public class BusinessService implements IBusinessService {
     private IEmailService emailService;
     @Autowired 
     private InvoiceRepository serviceDBInvoice;
+    @Autowired
+    private IFileService fileService;
     Gson gson = new Gson();
     DecimalFormat formato = new DecimalFormat("#.##");
     /**
@@ -626,11 +629,22 @@ public class BusinessService implements IBusinessService {
              objBusiness.getAddress().setCountry(prmBusiness.getAddress().getCountry());
              objBusiness.getAddress().setZipcode(prmBusiness.getAddress().getZipcode());
              objBusiness.setComment(prmBusiness.getComment());
-             objBusiness.setLogo(prmBusiness.getLogo());
-             objBusiness.setLogoAth(prmBusiness.getLogoAth());
+            
              objBusiness.setDiscount(prmBusiness.getDiscount());
              objBusiness.setName(prmBusiness.getName());
              objBusiness.setServiceId(serviceId);
+             if(objBusiness.getLogo()!=prmBusiness.getLogo()){
+                if(objBusiness.getLogo()!=null){
+                    this.fileService.deleteImage(objBusiness.getLogo());
+                }
+                objBusiness.setLogo(prmBusiness.getLogo());
+             }
+             if(objBusiness.getLogoAth()!=prmBusiness.getLogoAth()){
+                if(objBusiness.getLogoAth()!=null){
+                    this.fileService.deleteImage(objBusiness.getLogoAth());
+                }
+                objBusiness.setLogoAth(prmBusiness.getLogoAth());
+             }
              if(objBusiness!=null){
                 objBusiness=this.serviceDBBusiness.save(objBusiness);
              }
@@ -855,6 +869,61 @@ public class BusinessService implements IBusinessService {
     public ResponseEntity<?> getMonthActivations() {
         // TODO: FALTA IMPLEMENTAR
         throw new UnsupportedOperationException("Unimplemented method 'getMonthActivations'");
+    }
+    /**
+     * Deletes the logo of a business and returns the updated business DTO.
+     *
+     * @param  businessId  the ID of the business whose logo is to be deleted
+     * @return              a ResponseEntity containing the updated business DTO
+     * @throws EntidadNoExisteException  if the business with the given ID does not exist in the database
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> deleteLogo(Long businessId) {
+        Business business = serviceDBBusiness.findById(businessId).orElse(null);
+        if(business==null){
+                throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        if(business.getLogo()!=null){
+            try{
+                fileService.deleteImage(business.getLogo());
+            }catch(EntidadNoExisteException    e){
+    
+            }
+            
+            business.setLogo(null);
+            business=serviceDBBusiness.save(business);
+        }
+        
+        business.getUser().setBusiness(null);
+            BusinessDTO businessDTO=this.mapper.map(business, BusinessDTO.class);
+        return new ResponseEntity<BusinessDTO>(businessDTO,HttpStatus.OK);
+    }   
+
+    
+    /**
+     * Deletes the logo of a business with the given business ID.
+     *
+     * @param  businessId   the ID of the business
+     * @return              a ResponseEntity containing the updated BusinessDTO and HTTP status OK
+     * @throws EntidadNoExisteException if the business with the given ID does not exist in the database
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> deleteLogoATH(Long businessId) {
+        Business business = serviceDBBusiness.findById(businessId).orElse(null);
+        if(business==null){
+                throw new EntidadNoExisteException("El Business con businessId "+businessId+" no existe en la Base de datos");
+        }
+        if(business.getLogoAth()!=null){
+            fileService.deleteImage(business.getLogoAth());
+            business.setLogoAth(null);
+            business=serviceDBBusiness.save(business);
+        }
+        
+        business.getUser().setBusiness(null);
+            BusinessDTO businessDTO=this.mapper.map(business, BusinessDTO.class);
+        return new ResponseEntity<BusinessDTO>(businessDTO,HttpStatus.OK);
     }
     
 }

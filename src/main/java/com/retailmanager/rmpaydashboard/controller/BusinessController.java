@@ -157,4 +157,24 @@ public class BusinessController {
     public ResponseEntity<?> activationsByMonth(@RequestParam(name ="startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam(name ="endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
         return businessService.getActivations(startDate, endDate);
     }
+    /**
+     * Deletes the logo of a business entity.
+     *
+     * @param  businessId   the ID of the business entity
+     * @return              a ResponseEntity with the result of the logo deletion
+     */
+    @DeleteMapping("/business/{businessId}/logo")
+    public ResponseEntity<?> deleteLogo(@PathVariable Long businessId){
+        return businessService.deleteLogo(businessId);
+    }
+    /**
+     * Deletes the logo of a business by its ID.
+     *
+     * @param  businessId   the ID of the business
+     * @return              a ResponseEntity with the result of the deletion
+     */
+    @DeleteMapping("/business/{businessId}/logoAth")
+    public ResponseEntity<?> deleteLogoAth(@PathVariable Long businessId){
+        return businessService.deleteLogoATH(businessId);
+    }
 }

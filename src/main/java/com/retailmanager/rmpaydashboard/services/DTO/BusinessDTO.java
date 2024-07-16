@@ -37,8 +37,8 @@ public class BusinessDTO {
     private boolean terms=false;
     private LocalDate lastPayment;
     private String comment;
-    private String logo;
-    private String logoAth;
+    private Long logo;
+    private Long logoAth;
     private LocalDate registerDate;
     private LocalDate priorNotification;
     private LocalDate lastDayNotification;

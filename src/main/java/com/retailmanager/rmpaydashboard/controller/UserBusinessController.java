@@ -17,8 +17,6 @@ import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.UsersBusinessService.IUsersBusinessService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
@@ -167,8 +165,9 @@ public class UserBusinessController {
      * @return                 a ResponseEntity containing the last activity or an error message
      */
     @GetMapping("/userBusiness/activity/last/{userBusinessId}")
-    public ResponseEntity<?> getActivity(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
-        return usersBusinessService.getLastActivity(userBusinessId);
+    public ResponseEntity<?> getActivity(@RequestHeader("Authorization") String authToken,@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
+        
+        return usersBusinessService.getLastActivity(authToken.replace("Bearer ", ""),userBusinessId);
     }
 
     /* @GetMapping("/emailtest")

@@ -46,9 +46,9 @@ public class Business {
     @Column(nullable = true)
     private String comment;
 
-    private String logo;
-    private String logoAth;
-
+    private Long logo;
+    private Long logoAth;
+    
     @Column(nullable = true)
     private LocalDate priorNotification;
     @Column(nullable = true)

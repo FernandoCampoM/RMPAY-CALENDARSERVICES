@@ -21,6 +21,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Configur
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ErrorUtils;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidToken;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
@@ -144,6 +145,18 @@ public class RestApiExceptionHandler {
                                                 HttpStatus.UNAUTHORIZED.value())
                                 .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
                 return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+        }
+        @ExceptionHandler(InvalidToken.class)
+        public ResponseEntity<Error> handleUserDisabledException(final HttpServletRequest req,
+                        final InvalidToken ex, final Locale locale) {
+                final Error error = ErrorUtils
+                                .crearError(CodigoError.INVALID_TOKEN.getCodigo(),
+                                                String.format("%s, %s",
+                                                                CodigoError.INVALID_TOKEN.getLlaveMensaje(),
+                                                                ex.getMessage()),
+                                                HttpStatus.BAD_REQUEST.value())
+                                .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
+                return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
         }
         /**
          * Atiende las Exepciones MethodArgumentNotValidException y crea una rspuesta

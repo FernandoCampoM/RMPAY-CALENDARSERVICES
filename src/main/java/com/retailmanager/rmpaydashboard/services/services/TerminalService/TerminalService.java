@@ -272,6 +272,7 @@ public class TerminalService implements ITerminalService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> buyTerminal(BuyTerminalDTO prmTerminal) {
 
         Double amount = 0.0;

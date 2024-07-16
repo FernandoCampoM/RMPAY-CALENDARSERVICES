@@ -3,6 +3,7 @@ package com.retailmanager.rmpaydashboard.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,14 +41,25 @@ public class FileController {
         return fileService.saveImage(file);
     }
     /**
-     * Downloads an image file with the given fileName.
+     * Downloads an image file with the given fileId.
      *
-     * @param  fileName  the name of the image file to be downloaded
+     * @param  fileId  the id of the image file to be downloaded
      * @return           the response entity representing the downloaded image file
      */
-    @GetMapping("/file/image/{fileName}")
-    public ResponseEntity<?> downloadImage(@PathVariable String fileName) {
-        System.out.println("fileName: " + fileName);
-        return fileService.downloadImage(fileName);
+    @GetMapping("/file/image/{fileId}")
+    public ResponseEntity<?> downloadImage(@PathVariable Long fileId) {
+        
+        return fileService.downloadImage(fileId);
+    }
+    /**
+     * Deletes an image file with the given fileId.
+     *
+     * @param  fileId   the ID of the image file to be deleted
+     * @return          the response entity representing the result of the delete operation
+     */
+    @DeleteMapping("/file/image/{fileId}")
+    public ResponseEntity<?> deleteImage(@PathVariable Long fileId) {
+        
+        return fileService.deleteImage(fileId);
     }
 }

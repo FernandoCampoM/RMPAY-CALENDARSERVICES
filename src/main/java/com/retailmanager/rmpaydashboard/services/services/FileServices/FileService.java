@@ -11,9 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
+import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.FileModel;
+import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 
 @Service
@@ -24,6 +28,9 @@ public class FileService implements IFileService {
 
     @Autowired
     private FileRepository fileRepository;
+
+    @Autowired
+    private BusinessRepository businessRepository;
     /**
      * Saves the provided file to the database.
      *
@@ -65,6 +72,7 @@ public class FileService implements IFileService {
      * @return       the response entity representing the status of the save operation
      */
     @Override
+    @Transactional
     public ResponseEntity<?> saveImage(MultipartFile file) {
 
         if (file.isEmpty()) {
@@ -77,17 +85,20 @@ public class FileService implements IFileService {
             FileModel archivo = new FileModel();
             archivo.setNombre(generateSafeFileName(file.getOriginalFilename()));
             archivo.setExtension(obtenerExtension(file.getOriginalFilename()));
-            archivo.setContenido(file.getBytes());
+            archivo=fileRepository.save(archivo);
+            archivo.setNombre(archivo.getNombre().substring(0, archivo.getNombre().lastIndexOf('.'))+"_"+archivo.getId()+"."+archivo.getExtension());
+            
             
 
             File objFile = new File(directorioImagenes + archivo.getNombre());
             FileOutputStream fos = new FileOutputStream(objFile);
-            fos.write(archivo.getContenido());
+            fos.write(file.getBytes());
             fos.close();
-
+            archivo=fileRepository.save(archivo);
+            
 
             HashMap<String, String> map = new HashMap<String, String>();
-            map.put("fileName", archivo.getNombre());
+            map.put("fileId", String.valueOf(archivo.getId()));
             map.put("message", "Archivo guardado correctamente");
             return new ResponseEntity<HashMap<String, String>>(map,HttpStatus.CREATED);
         } catch (IOException e) {
@@ -104,11 +115,16 @@ public class FileService implements IFileService {
      * @return                  a ResponseEntity containing the image data or error message
      */
     @Override
-    public ResponseEntity<?> downloadImage(String nombreArchivo) {
+    @Transactional
+    public ResponseEntity<?> downloadImage(Long fileId) {
         try{        
-            String format = nombreArchivo.substring(nombreArchivo.indexOf(".")+1,nombreArchivo.length());
-            System.out.println("Path: " + directorioImagenes+ nombreArchivo);
-            File file = new File(directorioImagenes+ nombreArchivo);
+            FileModel archivo = fileRepository.findById(fileId).orElse(null);
+            if(archivo==null){
+                throw new EntidadNoExisteException("El archivo con fileId "+fileId+" no existe en la Base de datos");
+            }
+            
+            System.out.println("Path: " + directorioImagenes+ archivo.getNombre());
+            File file = new File(directorioImagenes+ archivo.getNombre());
 
             if(!file.exists()){
                 HashMap<String, String> map = new HashMap<String, String>();
@@ -116,7 +132,7 @@ public class FileService implements IFileService {
                 return new ResponseEntity<>(map,HttpStatus.NOT_FOUND);
             }
             ResponseEntity<?> response = ResponseEntity.ok().headers(headers -> {
-                headers.set("content-type", "image/" + format);
+                headers.set("content-type", "image/" + archivo.getExtension());
                 headers.setContentLength(file.length());
             }).body(fileToByteArray(file));
             
@@ -177,4 +193,32 @@ public class FileService implements IFileService {
         
         return normalizedFileName;
     }
+    /**
+     * Deletes an image file with the given fileId from the file repository and disk.
+     *
+     * @param  fileId  the ID of the file to be deleted
+     * @return         a ResponseEntity with a boolean value indicating success or failure,
+     *                 and an HTTP status code indicating the result of the operation
+     * @throws EntidadNoExisteException  if the file with the given fileId does not exist in the database
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> deleteImage(Long fileId) {
+        FileModel archivo = fileRepository.findById(fileId).orElse(null);
+            if(archivo==null){
+                throw new EntidadNoExisteException("El archivo con fileId "+fileId+" no existe en la Base de datos");
+            }
+        try{
+            
+            // Eliminar el archivo del disco
+            File file = new File(directorioImagenes+ archivo.getNombre());
+            file.delete();
+
+            fileRepository.delete(archivo);
+            return new ResponseEntity<>(true,HttpStatus.OK);
+        }catch(Exception e){
+            return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
 }

@@ -44,6 +44,8 @@ public class User {
     private LocalDate registerDate;
     @Column(nullable = true)
     private LocalDate lastLogin;
+    @Column(nullable = true)
+    private Long tempAuthId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,columnDefinition = "VARCHAR(14)")

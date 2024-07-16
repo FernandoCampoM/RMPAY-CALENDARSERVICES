@@ -21,6 +21,6 @@ public class FileModel {
     @Column(nullable = false)
     private String extension;
     @Lob // Indica que es un tipo de objeto grande
-    @Column(nullable = false, columnDefinition = "VARBINARY(MAX)") // Utiliza VARBINARY(MAX) para SQL Server
+    @Column(nullable = true, columnDefinition = "VARBINARY(MAX)") // Utiliza VARBINARY(MAX) para SQL Server
     private byte[] contenido;
 }

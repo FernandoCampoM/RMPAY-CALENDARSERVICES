@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidToken;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.EntryExit;
@@ -32,8 +33,10 @@ import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.security.AuthCredentials;
+import com.retailmanager.rmpaydashboard.security.TokenUtils;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
@@ -60,6 +63,8 @@ public class UsersBusinesService implements IUsersBusinessService{
     private PermisionRepository serviceDBUPermission;
     @Autowired
     private UserPermissionRepository serviceDBUserPermission;
+    @Autowired
+    private UserRepository serviceDBUser;
     /**
      * Save the UsersBusinessDTO to the database.
      *
@@ -532,7 +537,14 @@ public class UsersBusinesService implements IUsersBusinessService{
      *                            or an EntidadNoExisteException if the user business or activity does not exist
      */
 @Override
-public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
+public ResponseEntity<?> getLastActivity(String token,Long prmUserBusinessId) {
+    System.out.println("token antes de parsear "+token);
+    Long employeeId=TokenUtils.getEmployeeId(token);
+    System.out.println("employeeId "+employeeId);
+    if(employeeId==null){
+        throw new InvalidToken("El token es invalido");
+    }
+    prmUserBusinessId=employeeId;
     UsersBusiness objUser=this.usersAppDBService.findById(prmUserBusinessId).orElse(null);
         if(objUser==null){
             throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no existe en la Base de datos");
@@ -544,6 +556,7 @@ public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
         }
         EntryExitDTO objEntryExitDTO=this.mapper.map(objEntryExit.get(0), EntryExitDTO.class);
         objEntryExitDTO.setUserId(objUser.getUserBusinessId());
+        objEntryExitDTO.setName(objUser.getUsername());
         return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
 }
 

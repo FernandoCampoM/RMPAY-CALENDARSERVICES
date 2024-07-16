@@ -18,7 +18,9 @@ public enum CodigoError {
         MAX_TERMINALS_REACHED("GC-0009", "Se alcanzó el máximo de terminales permitido para su membresía, por favor compruebe sus terminales disponibles y de ser necesario adicione terminales a su membresía"),
         TERMINAL_DISABLED("GC-0010", "El terminal seleccionado está deshabilitado"),
         USUARIO_DESACTIVADO("GC-0011",
-                        "El usuario se encuentra Desactivado, por favor contacte al administrador");
-        private final String codigo;
+                        "El usuario se encuentra Desactivado, por favor contacte al administrador"),
+        INVALID_TOKEN("GC-0012",
+                        "Token no valido, el token no pertenece a ningun empleado"),;
+                        private final String codigo;
         private final String llaveMensaje;
 }
