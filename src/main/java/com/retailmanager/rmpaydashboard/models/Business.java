@@ -62,6 +62,12 @@ public class Business {
     @JoinColumn( name="addressId",nullable = true)
     private Address address;
 
+    @OneToOne(cascade=CascadeType.ALL,optional = true)
+    @JoinColumn( name="paymentId",nullable = true)
+    private PaymentData paymentData;
+
+    
+
     @ManyToOne(optional = false)
     @JoinColumn( name="userId",nullable = false)
     private User user;

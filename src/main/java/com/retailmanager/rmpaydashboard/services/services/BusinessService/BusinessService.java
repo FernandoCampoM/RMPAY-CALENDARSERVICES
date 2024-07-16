@@ -23,6 +23,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
+import com.retailmanager.rmpaydashboard.models.PaymentData;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
@@ -39,6 +40,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 
 @org.springframework.stereotype.Service
@@ -191,6 +193,7 @@ public class BusinessService implements IBusinessService {
         Double amount=0.0;
         ResponsePayment respPayment;
         String serviceReferenceNumber=null;
+        PaymentData objPaymentData=null;
         EmailBodyData objEmailBodyData=mapper.map(prmBusiness, EmailBodyData.class);
         objEmailBodyData.setDiscount(0.0);
         objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
@@ -238,6 +241,28 @@ public class BusinessService implements IBusinessService {
                             HashMap <String, String> objError=new HashMap<String, String>();
                             objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
                             return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
+                        }
+                        if(prmBusiness.isAutomaticPayments()){
+                            try{
+                                ResponseJSON objToken=blackStoneService.getToken(prmBusiness.getAddress().getZipcode(),
+                                prmBusiness.getCreditcarnumber().replaceAll("-", ""),
+                                prmBusiness.getExpDateMonth() + prmBusiness.getExpDateYear(),
+                                prmBusiness.getNameoncard(),
+                                prmBusiness.getSecuritycode(), null, userTransactionNumber);
+                                if(objToken.getResponseCode()==200){
+                                    objPaymentData=new PaymentData();
+                                    objPaymentData.setToken(objToken.getToken());
+                                    objPaymentData.setExpDate(prmBusiness.getExpDateMonth() + prmBusiness.getExpDateYear());
+                                    objPaymentData.setNameOnCard(prmBusiness.getNameoncard());
+                                    objPaymentData.setCvn(prmBusiness.getSecuritycode());
+                                    objPaymentData.setLast4Digits(prmBusiness.getCreditcarnumber().replaceAll("-", "").substring(prmBusiness.getCreditcarnumber().length()-4));
+                                    objBusiness.setPaymentData(objPaymentData);
+                                }
+                            
+                            } catch (Exception e) {
+                                System.out.println("Error: No se pudo obtener el token para guardar el token de pago automatico: "+e.getMessage());
+                            }
+                            
                         }
                         serviceReferenceNumber=respPayment.getServiceReferenceNumber();
                         objEmailBodyData.setReferenceNumber(serviceReferenceNumber);

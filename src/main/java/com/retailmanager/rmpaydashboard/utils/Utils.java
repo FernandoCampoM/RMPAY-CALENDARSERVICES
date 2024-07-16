@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.utils;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.Normalizer;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -7,7 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 public class Utils {
     public static void main(String[] args){
         String texto="ejemploUsuario";
-
+        System.out.println(texto.substring(texto.length()-4));
         String textoCodificado=new BCryptPasswordEncoder().encode(texto);
         System.out.println(textoCodificado);
         System.out.println(new BCryptPasswordEncoder().matches("ejemploUsuario", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));
@@ -16,6 +18,13 @@ public class Utils {
         String originalFileName = "archivo con caracteres : no permitidos.txt";
         String safeFileName = generateSafeFileName(originalFileName);
         System.out.println("Nombre seguro para el archivo: " + safeFileName);
+
+        try {
+            InetAddress ip = InetAddress.getLocalHost();
+            System.out.println("IP address of my PC: " + ip.getHostAddress());
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
     
     }
     public static String generateSafeFileName(String originalFileName) {

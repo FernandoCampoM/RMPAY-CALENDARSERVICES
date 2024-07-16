@@ -35,4 +35,8 @@ public class InvoiceController {
     public ResponseEntity<?> doPayment(@Valid @RequestBody doPaymentDTO prmPaymentInfo){
         return this.invoiceService.doPayment(prmPaymentInfo);
     }
+    @PostMapping("/invoices/test")
+    public ResponseEntity<?> test(@Valid @RequestBody doPaymentDTO prmPaymentInfo){
+        return this.invoiceService.testPayment(prmPaymentInfo);
+    }
 }

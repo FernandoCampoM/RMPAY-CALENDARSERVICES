@@ -50,4 +50,7 @@ public interface TerminalRepository extends CrudRepository<Terminal, Long> {
      List<Terminal> getBusinessForLastDayNotification(LocalDate targetDate);
      @Query("Select t from Terminal t where t.business.afterNotification IS NULL and t.expirationDate=:targetDate")
      List<Terminal> getBusinessForAfterNotification(LocalDate targetDate);
+    
+     @Query("Select t from Terminal t where t.automaticPayments=True  and t.expirationDate=:targetDate")
+     List<Terminal> findTerminalsForPayment(LocalDate targetDate);
 }

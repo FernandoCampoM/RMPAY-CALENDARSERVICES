@@ -10,28 +10,37 @@ INSERT [dbo].[paymentMethods] ([code], [name], [enable], [Notes]) VALUES (N'CRED
 
 
 SET IDENTITY_INSERT [dbo].[Sys_general_config] ON 
+GO
 INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (1, N'config.blackstone.AppKey', N'AppKey', N'12345')
--- Insertar la URL
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (2, N'config.blackstone.URL', N'URL', N'https://services.bmspay.com/testing/api/Transactions/sale');
--- Insertar AppType
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (3, N'config.blackstone.AppType', N'AppType', N'1');
--- Insertar MID
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (4, N'config.blackstone.MID', N'MID', N'76074');
--- Insertar CID
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (5, N'config.blackstone.CID', N'CID', N'260');
--- Insertar Username
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (6, N'config.blackstone.Username', N'Username', N'nicolas');
--- Insertar Password
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (7, N'config.blackstone.Password', N'Password', N'password1');
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (2, N'config.blackstone.URL', N'URL', N'https://services.bmspay.com/testing/api/Transactions/sale')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (3, N'config.blackstone.AppType', N'AppType', N'1')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (4, N'config.blackstone.MID', N'MID', N'76074')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (5, N'config.blackstone.CID', N'CID', N'260')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (6, N'config.blackstone.Username', N'Username', N'nicolas')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (7, N'config.blackstone.Password', N'Password', N'password1')
+GO
 INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (9, N'config.email.AppKey', N'key', N'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')
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (13, N'config.email.RMPAYLogo', N'RMPAYLogo', N'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXX17nBPV6-vxGb76mX2ZX9VuOQYhpxY4GrtFHLlV2t_U3YQ97al8PuL2LV2UokzTQHVjlnbBquTHJ4cJaHhxlgfFLVHM8ysV8pMUFouYQGqefsiZVNvew_H-hFftmwZHaV_D-558h4RVm75zl7Wz3EpJ5vvg-QfeFRAmUaHWfD0AuRFZ0iF9cmXdtg2c/s320/color-horizontal.png')
-INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (14, N'config.email.RMLogo', N'RMLogo', N'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQzgvrEua-ipCOuXQDFnTxPxKiwokiDdRVIlviH5ed1K_kjl_uOQ5l_ziLacJvzWtUAY-2NMArTIupxdNEmKH0dvOs9NMiBSASS0TSDAQSoUaIxJW8ssW2Arlj6zcp1NOLg4ymp6a8AYij0hm05DlvWWdld2Ft9HxRLYLQonuOeg_M0CD86M5_3MU9zKE/s320/icono.png')
-
+GO
 INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (10, N'config.email.emailFrom', N'emailFrom', N'brayam.otero@somos.biz')
-
+GO
 INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (11, N'config.email.emailTo', N'emailTo', N'juancampo201509@gmail.com')
-
+GO
 INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (12, N'config.email.emailCCO', N'emailCCO', N'juancamm@unicauca.edu.co')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (13, N'config.email.RMPAYLogo', N'RMPAYLogo', N'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXX17nBPV6-vxGb76mX2ZX9VuOQYhpxY4GrtFHLlV2t_U3YQ97al8PuL2LV2UokzTQHVjlnbBquTHJ4cJaHhxlgfFLVHM8ysV8pMUFouYQGqefsiZVNvew_H-hFftmwZHaV_D-558h4RVm75zl7Wz3EpJ5vvg-QfeFRAmUaHWfD0AuRFZ0iF9cmXdtg2c/s320/color-horizontal.png')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (14, N'config.email.RMLogo', N'RMLogo', N'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQzgvrEua-ipCOuXQDFnTxPxKiwokiDdRVIlviH5ed1K_kjl_uOQ5l_ziLacJvzWtUAY-2NMArTIupxdNEmKH0dvOs9NMiBSASS0TSDAQSoUaIxJW8ssW2Arlj6zcp1NOLg4ymp6a8AYij0hm05DlvWWdld2Ft9HxRLYLQonuOeg_M0CD86M5_3MU9zKE/s320/icono.png')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (18, N'config.blackstone.UrlForToken', N'URL FOR TOKEN', N'https://services.bmspay.com/testing/api/MonetraAdmin/GetTokenForCard')
+GO
+INSERT [dbo].[Sys_general_config] ([idconfig], [configlabel], [configname], [configvalue]) VALUES (20, N'config.blackstone.UrlPaymentWithToken', N'URL PAYMENT WITH TOKEN', N'https://services.bmspay.com/testing/api/Transactions/SaleWithToken')
+GO
 SET IDENTITY_INSERT [dbo].[Sys_general_config] OFF
 
 SET IDENTITY_INSERT [dbo].[Service] ON 

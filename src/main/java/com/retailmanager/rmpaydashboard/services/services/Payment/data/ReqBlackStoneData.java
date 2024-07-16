@@ -9,6 +9,8 @@ import lombok.Setter;
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor
 public class ReqBlackStoneData {
     private  String url;
+    private  String urlForToken;
+    private  String urlForPymentWithToken;
     private  String  AppKey;
     private  String  AppType;
     private  String  mid;

@@ -28,6 +28,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadY
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.FileModel;
 import com.retailmanager.rmpaydashboard.models.Invoice;
+import com.retailmanager.rmpaydashboard.models.PaymentData;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
@@ -45,6 +46,7 @@ import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusin
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 
 
@@ -298,6 +300,7 @@ public class UserService implements IUserService{
         ResponsePayment respPayment;
         Double aditionalTerminalsValue=0.0;
         String serviceReferenceNumber=null;
+        PaymentData objPaymentData=null;
         EmailBodyData objEmailBodyData=mapper.map(prmRegistry, EmailBodyData.class);
         objEmailBodyData.setDiscount(0.0);
         objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
@@ -371,6 +374,28 @@ public class UserService implements IUserService{
                             objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
                             return new ResponseEntity<HashMap<String, String>>(objError,HttpStatus.NOT_ACCEPTABLE);
                         }
+                        if(prmRegistry.isAutomaticPayments()){
+                            try{
+                            ResponseJSON objToken=blackStoneService.getToken(prmRegistry.getAddress().getZipcode(),
+                            prmRegistry.getCreditcarnumber().replaceAll("-", ""),
+                            prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear(),
+                            prmRegistry.getNameoncard(),
+                            prmRegistry.getSecuritycode(), null, userTransactionNumber);
+                            if(objToken.getResponseCode()==200){
+                                objPaymentData=new PaymentData();
+                                objPaymentData.setToken(objToken.getToken());
+                                objPaymentData.setExpDate(prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear());
+                                objPaymentData.setNameOnCard(prmRegistry.getNameoncard());
+                                objPaymentData.setCvn(prmRegistry.getSecuritycode());
+                                objPaymentData.setLast4Digits(prmRegistry.getCreditcarnumber().replaceAll("-", "").substring(prmRegistry.getCreditcarnumber().length()-4));
+
+                            }
+                            
+                            } catch (Exception e) {
+                                System.out.println("Error: No se pudo obtener el token para guardar el token de pago automatico: "+e.getMessage());
+                            }
+                            
+                        }
                         serviceReferenceNumber=respPayment.getServiceReferenceNumber();
                         objEmailBodyData.setReferenceNumber(serviceReferenceNumber);
                     break;
@@ -417,6 +442,10 @@ public class UserService implements IUserService{
                         objBusinessDTO=(BusinessDTO)objResponseB.getBody();
                         if(prmRegistry.getAdditionalTerminals()!=null && prmRegistry.getAdditionalTerminals()!=0 && objBusinessDTO!=null){
                             Business objBusiness=serviceDBBusiness.findById(objBusinessDTO.getBusinessId()).get();
+                            if(objPaymentData!=null){
+                                objBusiness.setPaymentData(objPaymentData);
+                                objBusiness=serviceDBBusiness.save(objBusiness);
+                            }
                             Service objService=serviceDBService.findById(prmRegistry.getServiceId()).get();
                             Invoice objInvoice=new Invoice();
                             objInvoice.setSubTotal(objEmailBodyData.getSubTotal());

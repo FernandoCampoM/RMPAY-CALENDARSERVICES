@@ -38,6 +38,7 @@ import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusin
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 
 @org.springframework.stereotype.Service
@@ -219,6 +220,23 @@ public class InvoiceServices implements IInvoiceServices {
                     objEmailBodyData
                             .setReferenceNumber(serviceReferenceNumber );
                     break;
+                case "TOKEN":
+                respPayment = blackStoneService.paymentWithToken(String.valueOf(formato.format(totalAmount)),
+                            objBusiness.getAddress().getZipcode(),
+                            objBusiness.getPaymentData().getToken(),
+                            objBusiness.getPaymentData().getExpDate(),
+                            objBusiness.getPaymentData().getNameOnCard(),
+                            objBusiness.getPaymentData().getCvn(), null, userTransactionNumber);
+                    if (respPayment.getResponseCode() != 200) {
+                        emailService.notifyErrorRegister(objEmailBodyData);
+                        HashMap<String, String> objError = new HashMap<String, String>();
+                        objError.put("msg", "No se pudo registrar el pago con la tokrn de la tarjeta de credito");
+                        return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
+                    }
+                    serviceReferenceNumber = respPayment.getServiceReferenceNumber()+" - "+objEmailBodyData.getReferenceNumber();
+                    objEmailBodyData
+                            .setReferenceNumber(serviceReferenceNumber );
+                    break;
             }
             Invoice objInvoice = new Invoice();
             objInvoice.setTotalAmount(totalAmount);
@@ -271,6 +289,49 @@ public class InvoiceServices implements IInvoiceServices {
                     objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
                     emailService.notifyPaymentCreditCard(objEmailBodyData);
                     break;
+                case "TOKEN":
+                objBusiness.setLastPayment(LocalDate.now());
+
+                for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
+                    Service service = listService.get(objTerminal.getIdService());
+                    Terminal objTer = this.serviceDBTerminal.findById(objTerminal.getTerminalId()).orElse(null);
+                    objTer.setEnable(true);
+                    // se incrementa la fecha de expiración del terminal de acuerdo a la duración
+                    // del servicio
+                    if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
+                        if(objTer.getExpirationDate().isBefore(LocalDate.now())){
+                            objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                        }else{
+                            objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
+                        }
+                        //TODO: revisar esta parte de pago con token, esta sin revisar
+                    } else {
+                        objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                    }
+                    objTer.setLastPaymentValue(objTerminal.getAmount());
+                    objTer.setPayment(true);
+                    objTer.setService(service);
+                    objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
+                    objTer = this.serviceDBTerminal.save(objTer);
+                    listTerminalIds.add(objTerminal.getTerminalId());
+                }
+
+                objInvoice.setDate(LocalDate.now());
+                objInvoice.setTime(LocalTime.now());
+                
+                objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
+                objInvoice.setBusinessId(objBusiness.getBusinessId());
+                objInvoice.setReferenceNumber(serviceReferenceNumber);
+                objInvoice.setServiceId(objBusiness.getServiceId());
+                objInvoice.setInProcess(false);
+                objInvoice.setTerminalIds(
+                        listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
+                
+                objInvoice = serviceDBInvoice.save(objInvoice);
+                objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
+                emailService.notifyPaymentCreditCard(objEmailBodyData);
+                break;
                 case "ATHMOVIL":
                     for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
                         Service service = listService.get(objTerminal.getIdService());
@@ -513,8 +574,77 @@ public class InvoiceServices implements IInvoiceServices {
                 return null;
             }
 
+        }else if(prmRegistry.getPaymethod() != null && prmRegistry.getPaymethod().compareTo("TOKEN") == 0){
+            if (prmRegistry.getCreditcarnumber() != null) {
+                if (!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
+                    msgError = "Letters are not allowed in the TOKEN card ";
+                    return null;
+                }
+            } else {
+                msgError = "The TOKEN card  is required";
+                return null;
+            }
+            if (prmRegistry.getNameoncard() != null) {
+                prmRegistry.setNameoncard(prmRegistry.getNameoncard().toUpperCase().trim());
+            } else {
+                msgError = "The name on card is required";
+                return null;
+            }
+            if (prmRegistry.getSecuritycode() != null) {
+                if (!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
+                    msgError = "Letters are not allowed in the security code";
+                    return null;
+                }
+            } else {
+                msgError = "The security code is required";
+                return null;
+            }
+            
+            
         }
         return prmRegistry;
+    }
+    
+
+    @Override
+    public ResponseEntity<?> testPayment(doPaymentDTO prmPaymentInfo) {
+        ResponsePayment respPayment;
+        String userTransactionNumber = uniqueString();
+        switch (prmPaymentInfo.getPaymethod()) {
+            case "CREDIT-CARD":
+            try {
+                ResponseJSON token=blackStoneService.getToken("190001",
+                        prmPaymentInfo.getCreditcarnumber().replaceAll("-", ""),
+                        prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
+                        prmPaymentInfo.getNameoncard(),
+                        prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
+                /*respPayment = blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(100)),
+                        "190001",
+                        prmPaymentInfo.getCreditcarnumber().replaceAll("-", ""),
+                        prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
+                        prmPaymentInfo.getNameoncard(),
+                        prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);*/
+                        respPayment = blackStoneService.paymentWithToken(String.valueOf(formato.format(100)),
+                        "190001",
+                        token.getToken(),
+                        prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
+                        prmPaymentInfo.getNameoncard(),
+                        prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
+            }
+                if (respPayment.getResponseCode() != 200) {
+                    //emailService.notifyErrorRegister(objEmailBodyData);
+                    HashMap<String, String> objError = new HashMap<String, String>();
+                    objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
+                    return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
+                }
+                System.out.println("PAGO EXITOSO ");
+                String serviceReferenceNumber = respPayment.getServiceReferenceNumber();
+                return new ResponseEntity<String>(serviceReferenceNumber, HttpStatus.OK);
+        }
+        return null;
     }
 
 }

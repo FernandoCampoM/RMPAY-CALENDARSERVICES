@@ -1,6 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.Payment;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 
 public interface IBlackStoneService {
@@ -19,4 +20,8 @@ public interface IBlackStoneService {
      */
     public ResponsePayment paymentWithCreditCard(String Amount, String ZipCode, String CardNumber, String ExpDate, String NameOnCard, 
             String CVN, String Track2, String UserTransactionNumber)throws ConsumeAPIException;
+    public ResponsePayment paymentWithToken(String Amount, String ZipCode, String token, String ExpDate, String NameOnCard, 
+            String CVN, String Track2, String UserTransactionNumber)throws ConsumeAPIException;
+    public ResponseJSON getToken(String ZipCode, String CardNumber, String ExpDate, String NameOnCard, 
+    String CVN, String Track2, String UserTransactionNumber);
 }

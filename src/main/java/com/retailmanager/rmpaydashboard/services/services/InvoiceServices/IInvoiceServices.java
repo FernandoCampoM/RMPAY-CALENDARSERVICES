@@ -9,4 +9,5 @@ import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
 public interface IInvoiceServices {
     public ResponseEntity<?> doPayment(doPaymentDTO prmPaymentInfo);
     public ResponseEntity<?> getPaymentHistoryByBusiness(Long businessId, LocalDate startDate, LocalDate endDate);
+    public ResponseEntity<?> testPayment(doPaymentDTO prmPaymentInfo);
 }

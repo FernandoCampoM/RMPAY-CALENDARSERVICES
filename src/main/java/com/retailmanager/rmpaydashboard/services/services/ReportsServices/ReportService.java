@@ -1,7 +1,10 @@
 package com.retailmanager.rmpaydashboard.services.services.ReportsServices;
 
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
@@ -13,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -22,14 +26,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.EntryExit;
 import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Product;
 import com.retailmanager.rmpaydashboard.models.Sale;
 import com.retailmanager.rmpaydashboard.models.Transactions;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.EntryExitRepository;
 import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
 import com.retailmanager.rmpaydashboard.repositories.TransactionsRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TransactionDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ReportsDTO.DailySummaryDTO;
@@ -49,6 +56,9 @@ public class ReportService implements IReportService {
     private SaleRepository serviceDBSale;
     @Autowired
     private TransactionsRepository serviceDBTransactions;
+
+    @Autowired
+    private EntryExitRepository serviceDBEntryExit;
 
     /**
      * Retrieves the daily summary for a given business ID.
@@ -608,5 +618,59 @@ public class ReportService implements IReportService {
         }
         dailySummaryDTO.put("bestSellingProducts", dailySummaryBestSellingProducts);
         return new ResponseEntity<>(dailySummaryDTO,HttpStatus.OK);
+    }
+public static Duration calculateDuration(LocalDate startDate, LocalTime startTime, LocalDate endDate, LocalTime endTime) {
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, startTime);
+        LocalDateTime endDateTime = LocalDateTime.of(endDate, endTime);
+        return Duration.between(startDateTime, endDateTime);
+    }
+    @Override
+    public ResponseEntity<?> getReportPonches(Long businessId, LocalDate startDate, LocalDate endDate, Long filter) {
+        List<EntryExitDTO> entryExitDTOs=new ArrayList<>();
+        List<EntryExit> entryExits=new ArrayList<>();
+        HashMap<Long,Object> empleados=new HashMap<>();
+
+        if(filter!=null && filter>0){
+            entryExits=serviceDBEntryExit.findByUserBusinessIdAndDate(businessId, startDate, endDate, filter);
+        }else{
+            entryExits=serviceDBEntryExit.findByUserBusinessIdAndDate(businessId, startDate, endDate);
+        }
+        for(EntryExit entryExit:entryExits){
+            if(empleados.containsKey(entryExit.getUserBusiness().getUserBusinessId())){
+                HashMap<String,Object> info=(HashMap<String,Object>)empleados.get(entryExit.getUserBusiness().getUserBusinessId());
+                List<EntryExit> ponchesList=(List<EntryExit>)info.get("ponches");
+                ponchesList.add(entryExit);
+                info.put("ponches",ponchesList);
+                empleados.put(entryExit.getUserBusiness().getUserBusinessId(),info);
+            }else{
+                HashMap<String,Object> info=new HashMap<>();
+                List<EntryExit> ponchesList=new ArrayList<>();
+                ponchesList.add(entryExit);
+                info.put("ponches",ponchesList);
+                info.put("userBusinessId",entryExit.getUserBusiness().getUserBusinessId());
+                info.put("userName",entryExit.getUserBusiness().getUsername());
+                empleados.put(entryExit.getUserBusiness().getUserBusinessId(),info);
+            }
+        }
+
+        for(Long userBusinessId:empleados.keySet()){
+            HashMap<String,Object> info=(HashMap<String,Object>)empleados.get(userBusinessId);
+            List<EntryExit> ponchesList=(List<EntryExit>)info.get("ponches");
+            entryExitDTOs=this.mapper.map(ponchesList, new TypeToken<List<EntryExitDTO>>(){}.getType());
+            for(int i=0;i<entryExitDTOs.size();i++){
+                if(!entryExitDTOs.get(i).getEntry() && i!=0){
+                    entryExitDTOs.get(i).setHoursWorked(calculateDuration(entryExitDTOs.get(i-1).getDate(), entryExitDTOs.get(i-1).getHour(), entryExitDTOs.get(i).getDate(), entryExitDTOs.get(i).getHour()).toHours());
+                }
+            }
+            info.put("ponches",entryExitDTOs);
+            empleados.put(userBusinessId,info);
+        }
+        List<HashMap<String,Object>> list=new ArrayList<>();
+        for(Long userBusinessId:empleados.keySet()){
+            HashMap<String,Object> info=(HashMap<String,Object>)empleados.get(userBusinessId);
+            list.add(info);
+        }
+        return new ResponseEntity<>(list,HttpStatus.OK);
+
     }
 }

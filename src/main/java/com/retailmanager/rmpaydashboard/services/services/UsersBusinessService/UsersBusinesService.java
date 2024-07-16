@@ -10,6 +10,8 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -499,12 +501,23 @@ public class UsersBusinesService implements IUsersBusinessService{
         if(objUser.get(0).getEnable()==false){
             throw new UserDisabled("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" esta deshabilitado");
         }
-        //TODO: PENDIENTE IDENTIFICAR EL NEGOCO AL QUE PERTENECE EL USUARIO
         EntryExit objEntryExit=new EntryExit();
-        objEntryExit.setEntry(true);
         objEntryExit.setDate(LocalDate.now());
         objEntryExit.setHour(LocalTime.now());
         objEntryExit.setUserBusiness(objUser.get(0));
+        //TODO: PENDIENTE IDENTIFICAR EL NEGOCO AL QUE PERTENECE EL USUARIO
+        Pageable pageable = PageRequest.of(0, 10);
+        List<EntryExit> listActivity=this.entryExitDBService.getLastActivity(objUser.get(0).getUserBusinessId(),pageable);
+        if(listActivity==null || listActivity.isEmpty()){
+            objEntryExit.setEntry(true);
+        }else{
+            if(listActivity.get(0).getEntry()){
+                objEntryExit.setEntry(false);
+            }else{
+                objEntryExit.setEntry(true);
+            }
+        }
+        
         objEntryExit=this.entryExitDBService.save(objEntryExit);
         EntryExitDTO EntryExitDTO=this.mapper.map(objEntryExit, EntryExitDTO.class);
         EntryExitDTO.setUserId(objUser.get(0).getUserBusinessId());
@@ -524,7 +537,8 @@ public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
         if(objUser==null){
             throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no existe en la Base de datos");
         }
-        List<EntryExit> objEntryExit=this.entryExitDBService.findByUserBusinessId(prmUserBusinessId);
+        Pageable pageable = PageRequest.of(0, 10);
+        List<EntryExit> objEntryExit=this.entryExitDBService.getLastActivity(prmUserBusinessId,pageable);
         if(objEntryExit==null || objEntryExit.isEmpty()){
             throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no tiene actividad registrada");
         }

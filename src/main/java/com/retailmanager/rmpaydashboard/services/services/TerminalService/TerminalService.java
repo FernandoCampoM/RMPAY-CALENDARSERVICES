@@ -24,6 +24,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTermi
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
+import com.retailmanager.rmpaydashboard.models.PaymentData;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
@@ -36,6 +37,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 
 @org.springframework.stereotype.Service
@@ -377,6 +379,28 @@ public class TerminalService implements ITerminalService {
                             HashMap<String, String> objError = new HashMap<String, String>();
                             objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
                             return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
+                        }
+                        if(prmTerminal.isAutomaticPayments()){
+                            try{
+                                ResponseJSON objToken=blackStoneService.getToken(objBusiness.getAddress().getZipcode(),
+                                prmTerminal.getCreditcarnumber().replaceAll("-", ""),
+                                prmTerminal.getExpDateMonth() + prmTerminal.getExpDateYear(),
+                                prmTerminal.getNameoncard(),
+                                prmTerminal.getSecuritycode(), null, userTransactionNumber);
+                                if(objToken.getResponseCode()==200){
+                                    PaymentData objPaymentData=new PaymentData();
+                                    objPaymentData.setToken(objToken.getToken());
+                                    objPaymentData.setExpDate(prmTerminal.getExpDateMonth() + prmTerminal.getExpDateYear());
+                                    objPaymentData.setNameOnCard(prmTerminal.getNameoncard());
+                                    objPaymentData.setCvn(prmTerminal.getSecuritycode());
+                                    objPaymentData.setLast4Digits(prmTerminal.getCreditcarnumber().replaceAll("-", "").substring(prmTerminal.getCreditcarnumber().length()-4));
+                                    objBusiness.setPaymentData(objPaymentData);
+                                }
+                            
+                            } catch (Exception e) {
+                                System.out.println("Error: No se pudo obtener el token para guardar el token de pago automatico: "+e.getMessage());
+                            }
+                            
                         }
                         existBusiness.get().setLastPayment(LocalDate.now());
                         this.serviceDBBusiness.save(existBusiness.get());

@@ -28,5 +28,6 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> registerExit(EmployeeAuthentication prmEmployeeAuthentication);
     public ResponseEntity<?> getLastActivity(Long prmUserBusinessId);
 
+    
 
 }

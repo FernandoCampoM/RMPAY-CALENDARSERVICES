@@ -1,0 +1,35 @@
+package com.retailmanager.rmpaydashboard.models;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter @NoArgsConstructor @Setter @AllArgsConstructor
+public class PaymentData {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int paymentId;
+    @Column(nullable = false)
+    private String token;
+    @Column(nullable = false)
+    private String expDate;
+    @Column(nullable = false)
+    private String nameOnCard;
+    @Column(nullable = false)
+    private String cvn;
+    @Column(nullable = false)
+    private String last4Digits;
+
+    
+    
+}

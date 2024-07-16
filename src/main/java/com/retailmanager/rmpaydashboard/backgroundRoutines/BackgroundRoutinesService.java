@@ -126,4 +126,10 @@ public class BackgroundRoutinesService {
         }
          terminalRepository.saveAll(terminals);
     }
+
+    public void automaticPayments() {
+        LocalDate date = LocalDate.now();
+        List<Terminal> terminals = terminalRepository.findTerminalsForPayment(date);
+    }
+
 }
