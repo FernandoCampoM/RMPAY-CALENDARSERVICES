@@ -114,6 +114,7 @@ public class UsersBusinesService implements IUsersBusinessService{
                 usersBusiness.setUsername(prmUsersBusiness.getUsername());
                 usersBusiness.setPassword(prmUsersBusiness.getPassword());
                 usersBusiness.setEnable(prmUsersBusiness.getEnable());
+                usersBusiness.setCostHour(prmUsersBusiness.getCostHour());
                 usersBusiness.getUserPermissions().clear();
                 for(Long idPermission:prmUsersBusiness.getActivesPermissions()){
                     
@@ -558,6 +559,28 @@ public ResponseEntity<?> getLastActivity(String token,Long prmUserBusinessId) {
         objEntryExitDTO.setUserId(objUser.getUserBusinessId());
         objEntryExitDTO.setName(objUser.getUsername());
         return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
+}
+
+/**
+ * Updates the entry and exit details for a specific activity.
+ *
+ * @param  activityId   the ID of the activity to update
+ * @param  prmPonche    the EntryExitDTO object containing the updated details
+ * @return              a ResponseEntity containing the updated entry and exit details
+ */
+@Override
+@Transactional
+public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche) {
+    EntryExit objPonche = this.entryExitDBService.findById(activityId).orElse(null);
+    if(objPonche==null){
+        throw new EntidadNoExisteException("La actividad con activityId "+activityId+" no existe en la Base de datos");
+    }
+    objPonche.setDate(prmPonche.getDate());
+    objPonche.setHour(prmPonche.getHour());
+    objPonche=this.entryExitDBService.save(objPonche);
+    EntryExitDTO objEntryExitDTO=this.mapper.map(objPonche, EntryExitDTO.class);
+    objEntryExitDTO.setName(objPonche.getUserBusiness().getUsername());
+    return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
 }
 
     

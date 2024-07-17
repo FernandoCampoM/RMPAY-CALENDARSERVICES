@@ -27,6 +27,7 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> registerEntry(EmployeeAuthentication prmEmployeeAuthentication);
     public ResponseEntity<?> registerExit(EmployeeAuthentication prmEmployeeAuthentication);
     public ResponseEntity<?> getLastActivity(String token, Long prmUserBusinessId);
+    public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche);
 
     
 

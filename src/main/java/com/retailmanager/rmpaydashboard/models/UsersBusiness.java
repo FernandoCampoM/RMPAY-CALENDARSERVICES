@@ -40,7 +40,8 @@ public class UsersBusiness {
     private Business business;
 
     private Boolean download=false;
-
+    @Column(nullable = true)
+    private Double costHour;
     
 
 }

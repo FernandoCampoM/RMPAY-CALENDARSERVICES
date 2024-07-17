@@ -33,6 +33,6 @@ public class UsersBusinessDTO {
     @Positive(message = "{usersbusiness.idBusiness.positive}")
     private Long idBusines;
     List<Long> activesPermissions;
-
+    private Double costHour;
     //List<UserPermissionDTO> userPermissions;
 }

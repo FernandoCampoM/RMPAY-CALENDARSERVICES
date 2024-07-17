@@ -169,7 +169,11 @@ public class UserBusinessController {
         
         return usersBusinessService.getLastActivity(authToken.replace("Bearer ", ""),userBusinessId);
     }
-
+    @PutMapping("/userBusiness/activity/{activityId}")
+    public ResponseEntity<?> editPonche(@Valid @PathVariable @Positive(message = "activityId.positive") Long activityId,
+    @RequestBody EntryExitDTO prmEntryExit) {
+        return usersBusinessService.updatePonche(activityId, prmEntryExit);
+    }
     /* @GetMapping("/emailtest")
     public String eailtest() {
         this.emailService.lastDayNotificationEmail("juancampo201509@gmail.com", "juancamm", "Evolución Imparable");
