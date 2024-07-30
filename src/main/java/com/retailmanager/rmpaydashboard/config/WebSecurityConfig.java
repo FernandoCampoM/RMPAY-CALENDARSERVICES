@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.security.JWTAthenticationFilter;
@@ -28,7 +29,7 @@ public class WebSecurityConfig {
     @Autowired
     private UserRepository usuarioRepository;
     @Autowired
-    private UsersAppRepository usersAppRepository;
+    private TerminalRepository terminalRepository;
     private final JWTAuthorizationFilter jwtAuthorizationFilter;
 
     
@@ -40,7 +41,7 @@ public class WebSecurityConfig {
         jwtAthenticationFilter.setAuthenticationManager(authenticationManager);
         jwtAthenticationFilter.setFilterProcessesUrl("/login");
         jwtAthenticationFilter.setUsuarioRepository(usuarioRepository);
-        jwtAthenticationFilter.setUsersAppRepository(usersAppRepository);
+        jwtAthenticationFilter.setTerminalRepository(terminalRepository);
 
         return http.csrf(csrf->csrf.disable())
                 .authorizeHttpRequests(authRequest->authRequest

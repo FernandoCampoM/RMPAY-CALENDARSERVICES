@@ -13,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
+import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 
@@ -24,7 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private UserRepository usuarioRepository;
-    private UsersAppRepository usersAppRepository;
+    private TerminalRepository terminalRepository; 
     
     /** 
      * @param request
@@ -38,11 +39,11 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         AuthCredentials authCredentials = new AuthCredentials();
         try {
             authCredentials= new ObjectMapper().readValue(request.getReader(), AuthCredentials.class);
-            if(authCredentials.getEmployeeId()!=null){
-                if(!usersAppRepository.existsById(authCredentials.getEmployeeId())){
-                    throw new EntidadNoExisteException("El User con employeeId "+authCredentials.getEmployeeId()+" no existe en la Base de datos");
+            if(authCredentials.getTerminalId()!=null){
+                if(!terminalRepository.existsById(authCredentials.getTerminalId())){
+                    throw new EntidadNoExisteException("El Terminal con ID "+authCredentials.getTerminalId()+" no existe en la Base de datos");
                 }else{
-                    usuarioRepository.updateTempAuthId(authCredentials.getUsername(), authCredentials.getEmployeeId());
+                    usuarioRepository.updateTempAuthId(authCredentials.getUsername(), authCredentials.getTerminalId());
                 }
             }
         } catch (IOException e) {
@@ -77,7 +78,7 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
     public void setUsuarioRepository(UserRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
-    public void setUsersAppRepository(UsersAppRepository usersAppRepository) {
-        this.usersAppRepository = usersAppRepository;
+    public void setTerminalRepository(TerminalRepository terminalRepository) {
+        this.terminalRepository = terminalRepository;
     }
 }

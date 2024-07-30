@@ -8,5 +8,5 @@ public class AuthCredentials {
     private String username;
     private String password;
 
-    private Long employeeId;
+    private Long terminalId;
 }

@@ -48,7 +48,7 @@ public class TokenUtils {
         extra.put("nombre", user.getName());
         extra.put("roles", user.getRol().toString());
         if(user.getTempAuthId()!=null){
-            extra.put("employeeId", user.getTempAuthId());
+            extra.put("terminalId", user.getTempAuthId());
         }
         
         
@@ -61,7 +61,7 @@ public class TokenUtils {
     }
 
     public static UsernamePasswordAuthenticationToken getAuthentication(String token, UserRepository usuarioRepository){
-        Long employeeIdLong=null;
+        Long terminalIdLong=null;
         try {
             System.out.println("TOKEN EN UTILS: "+token);
             Claims claims = Jwts.parserBuilder()
@@ -72,14 +72,14 @@ public class TokenUtils {
         String username=claims.getSubject();
         System.out.println("username en UTILS: "+username);
         System.out.println("claims: "+claims.keySet());
-        if(claims.keySet().contains("employeeId")){
-            employeeIdLong=claims.get("employeeId", Long.class);
+        if(claims.keySet().contains("terminalId")){
+            terminalIdLong=claims.get("terminalId", Long.class);
         }
         
         
         User usuario= usuarioRepository.findOneByUsername(username).orElseThrow(()-> new UsernameNotFoundException("El usuario con user "+username+" no existe"));
         UserDetailsImpl objUser=new UserDetailsImpl(usuario);
-        if(employeeIdLong!=null){usuario.setTempAuthId(employeeIdLong);}
+        if(terminalIdLong!=null){usuario.setTempAuthId(terminalIdLong);}
         usuarioRepository.updateLastLogin(usuario.getUserID(),LocalDate.now());
         return new UsernamePasswordAuthenticationToken(username,null,objUser.getAuthorities());
         } catch (JwtException  e) {
@@ -91,7 +91,7 @@ public class TokenUtils {
         }
         
     }
-    public static Long getEmployeeId(String token){
+    public static Long getTerminalId(String token){
         try {
             Claims claims = Jwts.parserBuilder()
                             .setSigningKey(ACCESS_TOKEN_SECRET.getBytes())
@@ -99,9 +99,9 @@ public class TokenUtils {
                             .parseClaimsJws(token)
                             .getBody();
         String username=claims.getSubject();
-        Long employeeId=claims.get("employeeId", Long.class);
-        if(employeeId!=null){
-            return employeeId;
+        Long terminalId=claims.get("terminalId", Long.class);
+        if(terminalId!=null){
+            return terminalId;
         }
     } catch (JwtException  e) {
         return null;

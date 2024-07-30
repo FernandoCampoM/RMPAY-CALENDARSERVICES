@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import com.retailmanager.rmpaydashboard.security.AuthCredentials;
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.ShiftDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.ShiftService.IShiftService;
 import com.retailmanager.rmpaydashboard.services.services.UsersBusinessService.IUsersBusinessService;
 
 
@@ -26,6 +28,9 @@ public class UserBusinessController {
     
     @Autowired
     private IUsersBusinessService usersBusinessService;
+
+    @Autowired
+    private IShiftService shiftService;
 
     @Autowired IEmailService emailService;
 
@@ -155,8 +160,8 @@ public class UserBusinessController {
      * @return               a ResponseEntity containing the result of the operation
      */
     @PostMapping("/userBusiness/activity/entry")
-    public ResponseEntity<?> saveEntry(@Valid @RequestBody EmployeeAuthentication prmEmployeeAuthentication) {
-        return usersBusinessService.registerEntry(prmEmployeeAuthentication);
+    public ResponseEntity<?> saveEntry(@RequestHeader("Authorization") String authToken,@Valid @RequestBody EmployeeAuthentication prmEmployeeAuthentication) {
+        return usersBusinessService.registerEntry( authToken.replace("Bearer ", ""),prmEmployeeAuthentication);
     }
     /**
      * Retrieves the last activity for a given user business.
@@ -165,14 +170,19 @@ public class UserBusinessController {
      * @return                 a ResponseEntity containing the last activity or an error message
      */
     @GetMapping("/userBusiness/activity/last/{userBusinessId}")
-    public ResponseEntity<?> getActivity(@RequestHeader("Authorization") String authToken,@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
+    public ResponseEntity<?> getActivity(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
         
-        return usersBusinessService.getLastActivity(authToken.replace("Bearer ", ""),userBusinessId);
+        return usersBusinessService.getLastActivity(userBusinessId);
     }
     @PutMapping("/userBusiness/activity/{activityId}")
     public ResponseEntity<?> editPonche(@Valid @PathVariable @Positive(message = "activityId.positive") Long activityId,
     @RequestBody EntryExitDTO prmEntryExit) {
         return usersBusinessService.updatePonche(activityId, prmEntryExit);
+    }
+
+    @PostMapping("/userBusiness/activity/shift")
+    public ResponseEntity<?> openShift(@RequestHeader("Authorization") String authToken,@Valid @RequestBody ShiftDTO prmShiftDTO) {
+        return shiftService.openShift( authToken.replace("Bearer ", ""),prmShiftDTO);
     }
     /* @GetMapping("/emailtest")
     public String eailtest() {

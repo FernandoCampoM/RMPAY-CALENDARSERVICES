@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.ObjDoubleConsumer;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -23,6 +25,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisa
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.EntryExit;
 import com.retailmanager.rmpaydashboard.models.Permission;
+import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UserPermission;
@@ -30,6 +33,7 @@ import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.EntryExitRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
+import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
@@ -49,6 +53,9 @@ public class UsersBusinesService implements IUsersBusinessService{
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
+    @Autowired
+    private TerminalRepository serviceDBTerminal;
+
     @Autowired
     private UsersAppRepository usersAppDBService;
     @Autowired
@@ -499,8 +506,30 @@ public class UsersBusinesService implements IUsersBusinessService{
     }
     @Override
     @Transactional
-    public ResponseEntity<?> registerEntry(EmployeeAuthentication prmEmployeeAuthentication) {
-        List<UsersBusiness> objUser=this.usersAppDBService.findByPassword(String.valueOf(prmEmployeeAuthentication.getPassword()));
+    public ResponseEntity<?> registerEntry(String authToken,EmployeeAuthentication prmEmployeeAuthentication) {
+        Terminal objTerminal=null;
+        Business objBusiness=null;
+        Long terminalId=TokenUtils.getTerminalId(authToken);
+        if(terminalId!=null){
+            objTerminal=this.serviceDBTerminal.findById(terminalId).orElse(null);
+            if(objTerminal!=null){
+                objBusiness=objTerminal.getBusiness();
+            }else{
+                throw new EntidadNoExisteException("Terminal con ID "+terminalId+" no existe en la Base de datos");
+            }
+            
+        }else{
+            if(prmEmployeeAuthentication.getBusinessId()==null){
+                HashMap<String,String> extra = new HashMap<>();
+                extra.put("businessId", "businessId: No puede ser null o generen un toeken que incluya el terminalId");
+                return new ResponseEntity<>(extra,HttpStatus.BAD_REQUEST);
+            }
+            objBusiness=this.serviceDBBusiness.findById(prmEmployeeAuthentication.getBusinessId()).orElse(null);
+            if(objBusiness==null ){
+                throw new EntidadNoExisteException("El Negocio con businessId "+prmEmployeeAuthentication.getBusinessId()+" no existe en la Base de datos");
+            }
+        }
+        List<UsersBusiness> objUser=this.usersAppDBService.findByPasswordAndBusinessId(String.valueOf(prmEmployeeAuthentication.getPassword()), objBusiness.getBusinessId());
         if(objUser==null || objUser.isEmpty()){
             throw new EntidadNoExisteException("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" no existe en la Base de datos");
         }
@@ -511,7 +540,6 @@ public class UsersBusinesService implements IUsersBusinessService{
         objEntryExit.setDate(LocalDate.now());
         objEntryExit.setHour(LocalTime.now());
         objEntryExit.setUserBusiness(objUser.get(0));
-        //TODO: PENDIENTE IDENTIFICAR EL NEGOCO AL QUE PERTENECE EL USUARIO
         Pageable pageable = PageRequest.of(0, 10);
         List<EntryExit> listActivity=this.entryExitDBService.getLastActivity(objUser.get(0).getUserBusinessId(),pageable);
         if(listActivity==null || listActivity.isEmpty()){
@@ -538,14 +566,8 @@ public class UsersBusinesService implements IUsersBusinessService{
      *                            or an EntidadNoExisteException if the user business or activity does not exist
      */
 @Override
-public ResponseEntity<?> getLastActivity(String token,Long prmUserBusinessId) {
-    System.out.println("token antes de parsear "+token);
-    Long employeeId=TokenUtils.getEmployeeId(token);
-    System.out.println("employeeId "+employeeId);
-    if(employeeId==null){
-        throw new InvalidToken("El token es invalido");
-    }
-    prmUserBusinessId=employeeId;
+public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
+   
     UsersBusiness objUser=this.usersAppDBService.findById(prmUserBusinessId).orElse(null);
         if(objUser==null){
             throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no existe en la Base de datos");
