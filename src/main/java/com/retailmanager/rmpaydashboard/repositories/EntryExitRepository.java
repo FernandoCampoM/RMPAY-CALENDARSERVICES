@@ -24,4 +24,7 @@ public interface EntryExitRepository extends CrudRepository<EntryExit, Long>,  P
 
     @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.business.businessId = :businessId AND e.date >= :startDate AND e.date <= :endDate AND e.userBusiness.userBusinessId =:filter ORDER BY e.date , e.hour ")
     public List<EntryExit> findByUserBusinessIdAndDate(Long businessId, LocalDate startDate, LocalDate endDate, Long filter);
+
+    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.userBusinessId = :userBusinessId AND e.id<:id ORDER BY e.id DESC")
+    public List<EntryExit> getPreviousEntry(Long id,Long userBusinessId,  Pageable pageable);
 }

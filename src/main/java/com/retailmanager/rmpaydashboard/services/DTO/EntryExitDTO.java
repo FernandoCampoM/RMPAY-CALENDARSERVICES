@@ -28,6 +28,9 @@ public class EntryExitDTO {
 
     @NotNull(message = "{entryexit.entry.notNull}")
     private Boolean entry;
+    private Double totalWorkCost;
 
+    
     private float hoursWorked;
+    
 }

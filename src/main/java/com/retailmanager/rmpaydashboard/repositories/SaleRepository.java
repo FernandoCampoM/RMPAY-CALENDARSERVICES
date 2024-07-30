@@ -81,6 +81,31 @@ public interface SaleRepository extends CrudRepository<Sale, Long>  {
                 " (SELECT  SUM(it.grossProfit) AS profit FROM [RMPAY].[dbo].[ItemForSale] it JOIN [RMPAY].[dbo].[Sale] s ON it.saleID = s.saleID WHERE s.saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' AND s.businessId = :businessId) as  grossBenefit, "+
                 " (SELECT  SUM(s.tipAmount) from [RMPAY].[dbo].[Sale] s  WHERE s.saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' AND s.businessId = :businessId) as totalTips ", nativeQuery = true)
     public Object[] dailySummary(Long businessId,LocalDate startDate, LocalDate endDate);
+    @Query(value=" SELECT \r\n" + 
+                "  (SELECT sum(saleTotalAmount) \r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as totalSales,\r\n" + 
+                "  \r\n" + 
+                "  (SELECT sum(saleToRefund) \r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType IN ('REFUND','PARTIAL_REFUND') AND saleStatus IN ('REFUNDED','PARTIAL_REFUNDED') and businessId=:businessId )as totalRefund,\r\n" + 
+                "\r\n" + 
+                "  (SELECT sum(saleStateTaxAmount)\r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as stateTax,\r\n" + 
+                "\r\n" + 
+                "  (SELECT sum(saleCityTaxAmount) \r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId )  as cityTax,\r\n" + 
+                "\r\n" + 
+                "  (SELECT sum(saleReduceTax) \r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as redTax, "+
+                " (SELECT sum(saleSubtotal) " + 
+                "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId  ) as subTotalSales, "+
+                " (SELECT  SUM(it.grossProfit) AS profit FROM [RMPAY].[dbo].[ItemForSale] it JOIN [RMPAY].[dbo].[Sale] s ON it.saleID = s.saleID WHERE YEAR(s.saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' AND s.businessId = :businessId) as  grossBenefit, "+
+                " (SELECT  SUM(s.tipAmount) from [RMPAY].[dbo].[Sale] s  WHERE year(s.saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' AND s.businessId = :businessId) as totalTips, "+
+                " ( SELECT sum(e.totalWorkCost) FROM [RMPAY].[dbo].[EntryExit] e inner join [RMPAY].[dbo].[UsersBusiness] ub on e.userBusinessId=ub.userBusinessId where year(e.date) = :year and ub.businessId=:businessId) as totalWorkCost", nativeQuery = true)
+    public Object[] annualSummary(Long businessId,int year);
+    @Query(value=" SELECT \r\n" + 
+                "  (SELECT sum(saleTotalAmount) \r\n" + 
+                "  FROM [RMPAY].[dbo].[Sale] where saleEndDate = :fecha AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as totalSales", nativeQuery = true)
+    public Object[] monthlySummary(Long businessId,LocalDate fecha);
 
     /**
      * Generate daily summary for a specific category.

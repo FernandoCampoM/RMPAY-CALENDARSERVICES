@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.services.UsersBusinessService;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -547,6 +548,8 @@ public class UsersBusinesService implements IUsersBusinessService{
         }else{
             if(listActivity.get(0).getEntry()){
                 objEntryExit.setEntry(false);
+                float hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
+                objEntryExit.setTotalWorkCost(hoursWorket*objUser.get(0).getCostHour());
             }else{
                 objEntryExit.setEntry(true);
             }
@@ -599,11 +602,21 @@ public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche) {
     }
     objPonche.setDate(prmPonche.getDate());
     objPonche.setHour(prmPonche.getHour());
+    if(!prmPonche.getEntry()){
+        Pageable pageable = PageRequest.of(0, 10);
+        List<EntryExit> listActivity=this.entryExitDBService.getPreviousEntry(objPonche.getId(),objPonche.getUserBusiness().getUserBusinessId(),pageable);
+        float hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objPonche.getDate(), objPonche.getHour()).toHours();
+        objPonche.setTotalWorkCost(hoursWorket*objPonche.getUserBusiness().getCostHour());
+    }
     objPonche=this.entryExitDBService.save(objPonche);
     EntryExitDTO objEntryExitDTO=this.mapper.map(objPonche, EntryExitDTO.class);
     objEntryExitDTO.setName(objPonche.getUserBusiness().getUsername());
     return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
 }
-
+public static Duration calculateDuration(LocalDate startDate, LocalTime startTime, LocalDate endDate, LocalTime endTime) {
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, startTime);
+        LocalDateTime endDateTime = LocalDateTime.of(endDate, endTime);
+        return Duration.between(startDateTime, endDateTime);
+    }
     
 }

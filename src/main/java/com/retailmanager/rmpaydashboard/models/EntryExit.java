@@ -34,4 +34,7 @@ public class EntryExit {
 
     @Column( nullable = false)
     private Boolean entry;
+
+    @Column( nullable = true)
+    private Double totalWorkCost;   
 }
