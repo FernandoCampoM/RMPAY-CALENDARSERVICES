@@ -25,8 +25,9 @@ public interface IUsersBusinessService {
     public ResponseEntity<?> updateDownloadCategory(Long userBusinessId,List<Long> category_ids);
     public ResponseEntity<?> updateDownloadUserBusiness(Long userBusinessId);
     public ResponseEntity<?> registerEntry(String authToken, EmployeeAuthentication prmEmployeeAuthentication);
-    public ResponseEntity<?> registerExit(EmployeeAuthentication prmEmployeeAuthentication);
+    public ResponseEntity<?> registerExit(String authToken,EmployeeAuthentication prmEmployeeAuthentication);
     public ResponseEntity<?> getLastActivity(Long prmUserBusinessId);
+    public ResponseEntity<?> deleteLastActivity(Long prmUserBusinessId);
     public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche);
 
     

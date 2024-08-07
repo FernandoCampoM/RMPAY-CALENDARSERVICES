@@ -150,8 +150,8 @@ public class UserBusinessController {
      * @return               a ResponseEntity containing the result of the operation
      */
     @PostMapping("/userBusiness/activity/exit")
-    public ResponseEntity<?> saveExit(@Valid @RequestBody EmployeeAuthentication prmEmployeeAuthentication ) {
-        return usersBusinessService.registerExit(prmEmployeeAuthentication);
+    public ResponseEntity<?> saveExit(@RequestHeader("Authorization") String authToken,@Valid @RequestBody EmployeeAuthentication prmEmployeeAuthentication ) {
+        return usersBusinessService.registerExit(authToken.replace("Bearer ", ""),prmEmployeeAuthentication);
     }
     /**
      * Saves an activity entry for a user business.
@@ -178,6 +178,11 @@ public class UserBusinessController {
     public ResponseEntity<?> editPonche(@Valid @PathVariable @Positive(message = "activityId.positive") Long activityId,
     @RequestBody EntryExitDTO prmEntryExit) {
         return usersBusinessService.updatePonche(activityId, prmEntryExit);
+    }
+    @DeleteMapping("/userBusiness/activity/last/{userBusinessId}")
+    public ResponseEntity<?> deleteLastActivity(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) { 
+        
+        return usersBusinessService.deleteLastActivity(userBusinessId);
     }
 
     @PostMapping("/userBusiness/activity/shift")

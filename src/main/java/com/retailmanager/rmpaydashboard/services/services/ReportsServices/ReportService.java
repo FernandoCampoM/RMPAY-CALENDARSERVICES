@@ -607,13 +607,33 @@ public class ReportService implements IReportService {
         if(annualSummary!=null && annualSummary[0]!=null){
             annualSummaryV=(Object[]) annualSummary[0];
         }
+        Object [] annualSummarybefore=this.serviceDBSale.annualSummary(businessId,startDate.getYear()-1);
+        Object [] annualSummaryVbefore=null;
+        if(annualSummarybefore!=null && annualSummarybefore[0]!=null){
+            annualSummaryVbefore=(Object[]) annualSummarybefore[0];
+        }
         HashMap<String,Object> annualSummaryDTO=new HashMap<>();
         if(annualSummaryV!=null){
             if(annualSummaryV[0]!=null){
-                annualSummaryDTO.put("totalSales", Double.parseDouble(annualSummaryV[0].toString()));
+                Double totalSales=Double.parseDouble(annualSummaryV[0].toString());
+                annualSummaryDTO.put("totalSales", totalSales);
+                Double totalSalesBefore=0.0;
+                if(annualSummaryVbefore!=null && annualSummaryVbefore[0]!=null){
+                    totalSalesBefore=Double.parseDouble(annualSummaryVbefore[0].toString());
+                    
+                    
+                }
+                if(totalSales>totalSalesBefore){
+                    annualSummaryDTO.put("totalSalesStatus",1);
+                }else if(totalSales<totalSalesBefore){
+                    annualSummaryDTO.put("totalSalesStatus",-1);
+                }else{
+                    annualSummaryDTO.put("totalSalesStatus",0);
+                }
             }
             Double totalTaxAnnual=0.0;
             if(annualSummaryV[2]!=null){
+                
                 totalTaxAnnual=totalTaxAnnual+Double.parseDouble(annualSummaryV[2].toString());
             }
             if(annualSummaryV[3]!=null){
@@ -622,14 +642,58 @@ public class ReportService implements IReportService {
             if(annualSummaryV[4]!=null){
                 totalTaxAnnual=totalTaxAnnual+Double.parseDouble(annualSummaryV[4].toString());
             }
-            if(annualSummaryV[2]!=null){
-                annualSummaryDTO.put("totalTax", totalTaxAnnual);
+            Double totalTaxAnnualBefore=0.0;
+            if(annualSummaryVbefore!=null && annualSummaryVbefore[2]!=null){
+                
+                totalTaxAnnualBefore=totalTaxAnnualBefore+Double.parseDouble(annualSummaryVbefore[2].toString());
             }
+            if(annualSummaryVbefore!=null && annualSummaryVbefore[3]!=null){
+                totalTaxAnnualBefore=totalTaxAnnualBefore+Double.parseDouble(annualSummaryVbefore[3].toString());
+            }
+            if(annualSummaryVbefore!=null && annualSummaryVbefore[4]!=null){
+                totalTaxAnnualBefore=totalTaxAnnualBefore+Double.parseDouble(annualSummaryVbefore[4].toString());
+            }
+            annualSummaryDTO.put("totalTax", totalTaxAnnual);
+            if(totalTaxAnnual>totalTaxAnnualBefore){
+                annualSummaryDTO.put("totalTaxStatus",1);
+            }else if(totalTaxAnnual<totalTaxAnnualBefore){
+                annualSummaryDTO.put("totalTaxStatus",-1);
+            }else{
+                annualSummaryDTO.put("totalTaxStatus",0);
+            }
+            
             if(annualSummaryV[6]!=null){
-                annualSummaryDTO.put("grossProfit", Double.parseDouble(annualSummaryV[6].toString()));
+                Double grossProfit=Double.parseDouble(annualSummaryV[6].toString());
+                annualSummaryDTO.put("grossProfit", grossProfit);
+                Double grossProfitBefore=0.0;
+                if(annualSummaryVbefore!=null && annualSummaryVbefore[6]!=null){
+                    grossProfitBefore=Double.parseDouble(annualSummaryVbefore[6].toString());
+                    
+                }
+                if(grossProfit>grossProfitBefore){
+                    annualSummaryDTO.put("grossProfitStatus",1);
+                }else if(grossProfit<grossProfitBefore){
+                    annualSummaryDTO.put("grossProfitStatus",-1);
+                }else{
+                    annualSummaryDTO.put("grossProfitStatus",0);
+                }
+            
             }
             if(annualSummaryV[8]!=null){
-                annualSummaryDTO.put("totalWorkCost", Double.parseDouble(annualSummaryV[8].toString()));
+                Double totalWorkCost=Double.parseDouble(annualSummaryV[8].toString());
+                annualSummaryDTO.put("totalWorkCost", totalWorkCost);
+                Double totalWorkCostBefore=0.0;
+                if(annualSummaryVbefore!=null && annualSummaryVbefore[8]!=null){
+                    totalWorkCostBefore=Double.parseDouble(annualSummaryVbefore[8].toString());
+                    
+                }
+                if(totalWorkCost>totalWorkCostBefore){
+                    annualSummaryDTO.put("totalWorkCostStatus",1);
+                }else if(totalWorkCost<totalWorkCostBefore){
+                    annualSummaryDTO.put("totalWorkCostStatus",-1);
+                }else{
+                    annualSummaryDTO.put("totalWorkCostStatus",0);
+                }
             }
         }
         
@@ -651,6 +715,21 @@ public class ReportService implements IReportService {
             }
         }
         dailySummaryDTO.put("monthlySales", monthlySales);
+        //ACTIVIDAD DE VENTA MENSUAL del mes previo
+        yearMonth = YearMonth.of(startDate.getYear(), startDate.getMonth().minus(1));
+        diasEnMes = yearMonth.lengthOfMonth();
+        List<Double> previusMonthlySales=new ArrayList<>();
+        for(int i=0;i<diasEnMes;i++){
+            LocalDate date=LocalDate.of(startDate.getYear(),startDate.getMonth().minus(1),i+1);
+            Object [] monthlySummary=this.serviceDBSale.monthlySummary(businessId,date);
+            
+            if(monthlySummary!=null && monthlySummary[0]!=null){
+                previusMonthlySales.add(Double.parseDouble(monthlySummary[0].toString()));
+            }else{
+                previusMonthlySales.add(0.0);
+            }
+        }
+        dailySummaryDTO.put("previusMonthlySales", previusMonthlySales);
 
         /////////////Info para el reporte de LOS 10 PODUCTOS MAS VENDIDOS DEL DIA
         List<HashMap<String,String>> dailySummaryBestSellingProducts=new ArrayList<>();

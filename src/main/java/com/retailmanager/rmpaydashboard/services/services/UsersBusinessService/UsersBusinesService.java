@@ -487,13 +487,37 @@ public class UsersBusinesService implements IUsersBusinessService{
      */       
      @Override
     @Transactional
-    public ResponseEntity<?> registerExit(EmployeeAuthentication prmEmployeeAuthentication) {
-        List<UsersBusiness> objUser=this.usersAppDBService.findByPassword(String.valueOf(prmEmployeeAuthentication.getPassword()));
+    public ResponseEntity<?> registerExit(String authToken,EmployeeAuthentication prmEmployeeAuthentication) {
+        Terminal objTerminal=null;
+        Business objBusiness=null;
+        Long terminalId=TokenUtils.getTerminalId(authToken);
+        if(terminalId!=null){
+            objTerminal=this.serviceDBTerminal.findById(terminalId).orElse(null);
+            if(objTerminal!=null){
+                objBusiness=objTerminal.getBusiness();
+            }else{
+                throw new EntidadNoExisteException("Terminal con ID "+terminalId+" no existe en la Base de datos");
+            }
+            
+        }else{
+            if(prmEmployeeAuthentication.getBusinessId()==null){
+                HashMap<String,String> extra = new HashMap<>();
+                extra.put("businessId", "businessId: No puede ser null o generen un toeken que incluya el terminalId");
+                return new ResponseEntity<>(extra,HttpStatus.BAD_REQUEST);
+            }
+            objBusiness=this.serviceDBBusiness.findById(prmEmployeeAuthentication.getBusinessId()).orElse(null);
+            if(objBusiness==null ){
+                throw new EntidadNoExisteException("El Negocio con businessId "+prmEmployeeAuthentication.getBusinessId()+" no existe en la Base de datos");
+            }
+        }
+        List<UsersBusiness> objUser=this.usersAppDBService.findByPasswordAndBusinessId(String.valueOf(prmEmployeeAuthentication.getPassword()), objBusiness.getBusinessId());
         if(objUser==null || objUser.isEmpty()){
             throw new EntidadNoExisteException("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" no existe en la Base de datos");
         }
+        if(objUser.get(0).getEnable()==false){
+            throw new UserDisabled("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" esta deshabilitado");
+        }
         
-        //TODO: PENDIENTE IDENTIFICAR EL NEGOCO AL QUE PERTENECE EL USUARIO
         EntryExit objEntryExit=new EntryExit();
         objEntryExit.setEntry(false);
         objEntryExit.setDate(LocalDate.now());
@@ -503,6 +527,7 @@ public class UsersBusinesService implements IUsersBusinessService{
         EntryExitDTO prmEntryExit=this.mapper.map(objEntryExit, EntryExitDTO.class);
         prmEntryExit.setUserId(objUser.get(0).getUserBusinessId());
         prmEntryExit.setName(objUser.get(0).getUsername());
+        prmEntryExit.setHour(prmEntryExit.getHour().withNano(0));
         return new ResponseEntity<>(prmEntryExit,HttpStatus.CREATED);
     }
     @Override
@@ -559,6 +584,7 @@ public class UsersBusinesService implements IUsersBusinessService{
         EntryExitDTO EntryExitDTO=this.mapper.map(objEntryExit, EntryExitDTO.class);
         EntryExitDTO.setUserId(objUser.get(0).getUserBusinessId());
         EntryExitDTO.setName(objUser.get(0).getUsername());
+        EntryExitDTO.setHour(EntryExitDTO.getHour().withNano(0));
         return new ResponseEntity<>(EntryExitDTO,HttpStatus.CREATED);
     }
 /**
@@ -569,6 +595,7 @@ public class UsersBusinesService implements IUsersBusinessService{
      *                            or an EntidadNoExisteException if the user business or activity does not exist
      */
 @Override
+@Transactional
 public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
    
     UsersBusiness objUser=this.usersAppDBService.findById(prmUserBusinessId).orElse(null);
@@ -583,7 +610,25 @@ public ResponseEntity<?> getLastActivity(Long prmUserBusinessId) {
         EntryExitDTO objEntryExitDTO=this.mapper.map(objEntryExit.get(0), EntryExitDTO.class);
         objEntryExitDTO.setUserId(objUser.getUserBusinessId());
         objEntryExitDTO.setName(objUser.getUsername());
+        objEntryExitDTO.setHour(objEntryExitDTO.getHour().withNano(0));
         return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
+}
+@Override
+@Transactional
+public ResponseEntity<?> deleteLastActivity(Long prmUserBusinessId) {
+   
+    UsersBusiness objUser=this.usersAppDBService.findById(prmUserBusinessId).orElse(null);
+        if(objUser==null){
+            throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no existe en la Base de datos");
+        }
+        Pageable pageable = PageRequest.of(0, 10);
+        List<EntryExit> objEntryExit=this.entryExitDBService.getLastActivity(prmUserBusinessId,pageable);
+        if(objEntryExit==null || objEntryExit.isEmpty()){
+            throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+prmUserBusinessId+" no tiene actividad registrada");
+        }
+        this.entryExitDBService.delete(objEntryExit.get(0));
+        
+        return new ResponseEntity<>(true,HttpStatus.OK);
 }
 
 /**
@@ -611,6 +656,7 @@ public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche) {
     objPonche=this.entryExitDBService.save(objPonche);
     EntryExitDTO objEntryExitDTO=this.mapper.map(objPonche, EntryExitDTO.class);
     objEntryExitDTO.setName(objPonche.getUserBusiness().getUsername());
+    objEntryExitDTO.setHour(objEntryExitDTO.getHour().withNano(0));
     return new ResponseEntity<>(objEntryExitDTO,HttpStatus.OK);
 }
 public static Duration calculateDuration(LocalDate startDate, LocalTime startTime, LocalDate endDate, LocalTime endTime) {
