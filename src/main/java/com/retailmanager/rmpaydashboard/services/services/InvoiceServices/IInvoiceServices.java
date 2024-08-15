@@ -10,4 +10,5 @@ public interface IInvoiceServices {
     public ResponseEntity<?> doPayment(doPaymentDTO prmPaymentInfo);
     public ResponseEntity<?> getPaymentHistoryByBusiness(Long businessId, LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> testPayment(doPaymentDTO prmPaymentInfo);
+    public ResponseEntity<?> getPaymentHistor(LocalDate startDate, LocalDate endDate, String filter);
 }

@@ -1,8 +1,10 @@
 package com.retailmanager.rmpaydashboard.services.services.InvoiceServices;
 
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +34,7 @@ import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.InvoiceDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.PaymentHistoryReport;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
@@ -46,6 +49,8 @@ public class InvoiceServices implements IInvoiceServices {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
+    @Autowired
+    private BusinessRepository businessRepository;
     @Autowired
     private ServiceRepository serviceDBService;
     @Autowired
@@ -645,6 +650,58 @@ public class InvoiceServices implements IInvoiceServices {
                 return new ResponseEntity<String>(serviceReferenceNumber, HttpStatus.OK);
         }
         return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getPaymentHistor(LocalDate startDate, LocalDate endDate,String filter) {
+        if(filter!=null && filter.compareTo("")>0){
+            filter.toUpperCase();
+            if(filter.compareTo("CURRENT_MONTH")!=0){
+                // Obtener el primer dia del mes
+                LocalDate firstDayOfMonth = startDate.with(TemporalAdjusters.firstDayOfMonth());
+                startDate=firstDayOfMonth;
+                // Obtener el último día del mes
+                LocalDate lastDayOfMonth = startDate.with(TemporalAdjusters.lastDayOfMonth());
+                endDate=lastDayOfMonth;
+            }
+            if(filter.compareTo("PREVIOUS_MONTH")!=0){
+                // Obtener el primer dia del mes
+                LocalDate temporalDate=LocalDate.of(startDate.getYear(),startDate.getMonth().minus(1),startDate.getDayOfMonth());
+                LocalDate firstDayOfMonth = temporalDate.with(TemporalAdjusters.firstDayOfMonth()); 
+                startDate=firstDayOfMonth;
+                // Obtener el último día del mes
+                LocalDate lastDayOfMonth = startDate.with(TemporalAdjusters.lastDayOfMonth());
+                endDate=lastDayOfMonth;
+            }
+        }else{
+            if(endDate==null){  
+                endDate=startDate;
+            }
+        }
+        List<Invoice> facturas=this.invoiceRepository.getPaymentReports(startDate, endDate);
+        List<PaymentHistoryReport> report=new ArrayList<>();
+        for (Invoice i : facturas) {
+            PaymentHistoryReport phr=new PaymentHistoryReport();
+            Business objBusiness=this.businessRepository.findById(i.getBusinessId()).orElse(null);
+            if(objBusiness!=null){
+                phr.setName(objBusiness.getUser().getName());
+                phr.setBusinessName(objBusiness.getName());
+                phr.setMerchantId(objBusiness.getMerchantId());
+                
+            }
+            phr.setInvoiceId(i.getInvoiceNumber());
+            phr.setDate(i.getDate());
+            phr.setTime(i.getTime().withNano(0));
+            phr.setPayMethod(i.getPaymentMethod());
+            phr.setNumberTerminals(i.getTerminals());
+            phr.setTotal(i.getTotalAmount());
+            phr.setReference(i.getReferenceNumber());
+            report.add(phr);
+            }
+            
+        
+        return new ResponseEntity<>(report,HttpStatus.OK);
     }
 
 }

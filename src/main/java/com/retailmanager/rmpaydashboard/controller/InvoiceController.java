@@ -31,6 +31,11 @@ public class InvoiceController {
     public ResponseEntity<?> getMethodName(@PathVariable Long businessId, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
         return this.invoiceService.getPaymentHistoryByBusiness(businessId, startDate, endDate);
     }
+    
+    @GetMapping("/invoices/history")
+    public ResponseEntity<?> getMethodName(@RequestParam LocalDate startDate, @RequestParam(required = false) LocalDate endDate,@RequestParam(required = false) String filter) {
+        return this.invoiceService.getPaymentHistor(startDate, endDate, filter);
+    }
     @PostMapping("/invoices/doPayment")
     public ResponseEntity<?> doPayment(@Valid @RequestBody doPaymentDTO prmPaymentInfo){
         return this.invoiceService.doPayment(prmPaymentInfo);

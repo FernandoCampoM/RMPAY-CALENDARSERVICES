@@ -7,7 +7,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.ObjDoubleConsumer;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
-import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidToken;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.EntryExit;
@@ -40,7 +38,6 @@ import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductReposit
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
-import com.retailmanager.rmpaydashboard.security.AuthCredentials;
 import com.retailmanager.rmpaydashboard.security.TokenUtils;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
