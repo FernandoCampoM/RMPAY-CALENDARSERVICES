@@ -20,8 +20,8 @@ public interface Sys_general_configRepository extends CrudRepository<Sys_general
                 "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.MID') AS mid, " + 
                 "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.CID') AS cid, " + 
                 "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.Username') AS Username, " +
-                "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.Password') AS Password;"+
-                " (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.UrlForToken') AS UrlForToken;"+
+                "    (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.Password') AS Password,"+
+                " (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.UrlForToken') AS UrlForToken,"+
                 " (SELECT configvalue FROM RMPAY.dbo.Sys_general_config WHERE configlabel = 'config.blackstone.UrlPaymentWithToken') AS UrlPaymentWithToken;", nativeQuery = true)
     public Object[] getBlackStoneConfig();
     /**

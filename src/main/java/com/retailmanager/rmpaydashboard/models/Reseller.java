@@ -37,4 +37,7 @@ public class Reseller {
     private Double commissionsBalance=0.0;
     private String email1;
     private String email2;
+
+    @OneToMany(mappedBy = "reseller",fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+    public List<ResellerSales> sales = new ArrayList<>();
 }

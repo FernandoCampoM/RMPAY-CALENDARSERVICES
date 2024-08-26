@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.services.services.ResellerServices;
 
 import org.springframework.http.ResponseEntity;
 
+import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.services.DTO.ResellerDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ResellerPaymentDTO;
 
@@ -81,7 +82,7 @@ public interface IResellerService {
      * @param prmResellerId El identificador del reseller.
      * @return Un objeto ResponseEntity que contiene la lista de cuentas vendidas.
      */
-    public ResponseEntity<?> getAccountsSold(String prmResellerId);
+    public ResponseEntity<?> getAccountsSold(Long prmResellerId);
 
     /**
      * Obtiene el código QR de un reseller.
@@ -121,4 +122,8 @@ public interface IResellerService {
      * @return ResponseEntity con Objeto ResellerPaymentDTO actualizado con la información del pago realizado.
      */
     public ResponseEntity<?> doPayment(ResellerPaymentDTO prmPayment);
+
+    public ResponseEntity<?> getPaymentHistory(Long prmResellerId);
+
+    public ResponseEntity<?> addResellerSales(Long prmResellerId, String prmMerchantId, Double prmTotalValue,Double prmCommission, Invoice prmInvoice, String prmServiceDescription); 
 }

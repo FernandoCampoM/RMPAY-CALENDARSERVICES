@@ -43,6 +43,7 @@ public class BusinessDTO {
     private LocalDate priorNotification;
     private LocalDate lastDayNotification;
     private LocalDate afterNotification;
+    public Float percentageProfit;
     @Valid
     private AddressDTO address;
     private UserDTO user;

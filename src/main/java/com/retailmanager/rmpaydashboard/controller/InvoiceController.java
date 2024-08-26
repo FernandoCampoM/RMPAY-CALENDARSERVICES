@@ -8,6 +8,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.retailmanager.rmpaydashboard.services.DTO.ConfirmPaymentDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.PaymentDataDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.InvoiceServices.IInvoiceServices;
 
@@ -33,12 +35,20 @@ public class InvoiceController {
     }
     
     @GetMapping("/invoices/history")
-    public ResponseEntity<?> getMethodName(@RequestParam LocalDate startDate, @RequestParam(required = false) LocalDate endDate,@RequestParam(required = false) String filter) {
+    public ResponseEntity<?> getMethodName(@RequestParam(required = false) LocalDate startDate, @RequestParam(required = false) LocalDate endDate,@RequestParam(required = false) String filter) {
         return this.invoiceService.getPaymentHistor(startDate, endDate, filter);
+    }
+    @PostMapping("/invoices/token")
+    public ResponseEntity<?> createToken(@Valid @RequestBody PaymentDataDTO prmPaymentInfo){
+        return this.invoiceService.createToken(prmPaymentInfo);
     }
     @PostMapping("/invoices/doPayment")
     public ResponseEntity<?> doPayment(@Valid @RequestBody doPaymentDTO prmPaymentInfo){
         return this.invoiceService.doPayment(prmPaymentInfo);
+    }
+    @PostMapping("/invoices/{invoiceNumber}/confirmOrReject")
+    public ResponseEntity<?> confirmOrReject(@PathVariable Long invoiceNumber,@Valid @RequestBody ConfirmPaymentDTO prmPaymentInfo){
+        return this.invoiceService.confirmOrRejectPaymnt(invoiceNumber,prmPaymentInfo);
     }
     @PostMapping("/invoices/test")
     public ResponseEntity<?> test(@Valid @RequestBody doPaymentDTO prmPaymentInfo){

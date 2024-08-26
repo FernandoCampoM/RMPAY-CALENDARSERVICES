@@ -62,5 +62,6 @@ public interface UserRepository extends  CrudRepository<User,Long>{
     @Query("SELECT DISTINCT u FROM User u  WHERE u.rol=:rol" )
     public Page<User> findyAllClientsPageable(Pageable pageable, Rol rol);
     
-
+    @Query("SELECT b FROM User b WHERE b.rol IN :rol order by b.username asc")
+    List<User> findAllUsersManagers(List<Rol> rol);
 }

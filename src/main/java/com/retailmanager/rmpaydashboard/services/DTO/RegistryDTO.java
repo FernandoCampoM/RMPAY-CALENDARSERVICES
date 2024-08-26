@@ -47,6 +47,9 @@ public class RegistryDTO {
     @NotNull(message = "{registry.automaticPayments.null}")
     private boolean automaticPayments;
 
+    
+    private Long idReseller=-1L;
+
     @Valid
     private AddressDTO address;
     private boolean terms;

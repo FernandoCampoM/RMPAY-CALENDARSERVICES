@@ -22,4 +22,6 @@ public interface IBusinessService {
     public ResponseEntity<?> getMonthActivations();
     public ResponseEntity<?> deleteLogo(Long businessId);
     public ResponseEntity<?> deleteLogoATH(Long businessId);
+
+    
 }

@@ -155,4 +155,13 @@ public class UserController {
     }
 
 
+    /**
+     * Retrieves a list of users with manager roles.
+     *
+     * @return  a ResponseEntity containing the list of UserDTO objects representing the users with manager roles
+     */
+    @GetMapping("/users/managers")
+    public ResponseEntity<?> getManagers(){
+        return this.userService.getAllUsersManagers();
+    }
 }

@@ -27,6 +27,7 @@ public interface IUserService {
     public ResponseEntity<?> findAll(Pageable pageable);
     public ResponseEntity<?> getActivesClients();
     public ResponseEntity<?> getUnregisteredClients();
+    public ResponseEntity<?> getAllUsersManagers();
     
 
     

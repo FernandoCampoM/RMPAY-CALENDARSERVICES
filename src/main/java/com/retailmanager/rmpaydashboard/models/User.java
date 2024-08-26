@@ -34,7 +34,7 @@ public class User {
     
     @Column(nullable = false, unique = true)
     private String username;
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String email;
     @Column(nullable = false)
     private String password;
@@ -48,7 +48,7 @@ public class User {
     private Long tempAuthId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false,columnDefinition = "VARCHAR(14)")
+    @Column(nullable = false,columnDefinition = "VARCHAR(50) default 'ROLE_USER'")
     private Rol rol;
     @OneToMany(mappedBy = "user",fetch = FetchType.LAZY)
     private List<Business> business;

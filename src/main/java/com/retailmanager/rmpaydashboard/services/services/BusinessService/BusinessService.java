@@ -629,7 +629,7 @@ public class BusinessService implements IBusinessService {
              objBusiness.getAddress().setCountry(prmBusiness.getAddress().getCountry());
              objBusiness.getAddress().setZipcode(prmBusiness.getAddress().getZipcode());
              objBusiness.setComment(prmBusiness.getComment());
-            
+             objBusiness.setPercentageProfit(prmBusiness.getPercentageProfit());
              objBusiness.setDiscount(prmBusiness.getDiscount());
              objBusiness.setName(prmBusiness.getName());
              objBusiness.setServiceId(serviceId);

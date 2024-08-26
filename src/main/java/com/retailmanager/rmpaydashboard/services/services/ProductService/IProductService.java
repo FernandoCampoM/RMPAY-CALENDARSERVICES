@@ -40,12 +40,12 @@ public interface IProductService {
      */
     public ResponseEntity<?> findById(Long productId);
     public ResponseEntity<?> updateEnable(Long productId, boolean enable);
-    
     public ResponseEntity<?> findByCategory(Long categoryId,Pageable pageable);
     public ResponseEntity<?> findByCategory(List<Long> categoryIds,Pageable pageable);
-    
     public ResponseEntity<?> findAllAndFilter(Long businessId,String filter,Pageable pageable);
     public ResponseEntity<?> findAllByBusinessId(Long businessId,Pageable pageable);
     public ResponseEntity<?> findAllByBusinessIdCSV(Long businessId);
     public ResponseEntity<?> getQuantity(Long productId);
+
+    public ResponseEntity<?> receiveInventory();
 }

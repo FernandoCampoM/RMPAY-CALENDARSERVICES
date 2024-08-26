@@ -1,6 +1,8 @@
 package com.retailmanager.rmpaydashboard.repositories;
 
+import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.User;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,4 +29,5 @@ public interface BusinessRepository extends CrudRepository<Business,Long> {
 
     @Query("SELECT b FROM Business b WHERE b.registerDate BETWEEN :startDate AND :endDate")
     List<Business> findAllByRegistrations(LocalDate startDate, LocalDate endDate);
+    
 }

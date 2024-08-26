@@ -26,14 +26,14 @@ public class UserDTO {
     private String username;
     @NotEmpty(message = "{user.name.empty}")
     private String name;
-    @NotEmpty(message = "{user.email.empty}")
+    //@NotEmpty(message = "{user.email.empty}")
     @Email(message = "{user.email.format}")
     private String email;
     @NotEmpty(message = "{user.password.empty}")
     private String password;
     private Rol rol;
     private boolean enable;
-    @NotEmpty(message = "{user.phone.empty}")
+    //@NotEmpty(message = "{user.phone.empty}")
     private String phone;
     
     private LocalDate registerDate;

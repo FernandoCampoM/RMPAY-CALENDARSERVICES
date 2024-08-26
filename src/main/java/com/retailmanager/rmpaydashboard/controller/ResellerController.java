@@ -1,6 +1,6 @@
 package com.retailmanager.rmpaydashboard.controller;
 
-import java.util.List;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +49,7 @@ public class ResellerController {
 
     @GetMapping("/resellers/{id}/exists")
     public ResponseEntity<?> resellerExists(@PathVariable Long id) {
+        System.out.println("id--------------------------: " + id);
         return resellerServices.exist(id);
     }
 
@@ -57,9 +58,15 @@ public class ResellerController {
         return resellerServices.findByUsername(username);
     }
 
-    @GetMapping("/resellers/{id}/accounts-sold")
-    public ResponseEntity<?> getAccountsSold(@PathVariable String id) {
-        return resellerServices.getAccountsSold(id);
+    /**
+     * Retrieves the accounts sold by a specific reseller.
+     *
+     * @param prmResellerId The ID of the reseller.
+     * @return The accounts sold by the reseller.
+     */
+    @GetMapping("/resellers/{prmResellerId}/accounts-sold")
+    public ResponseEntity<?> getAccountsSold(@PathVariable Long prmResellerId) {
+        return resellerServices.getAccountsSold(prmResellerId);
     }
 
     @GetMapping("/resellers/{id}/qrcode")
@@ -85,6 +92,10 @@ public class ResellerController {
     @PostMapping("/resellers/payments")
     public ResponseEntity<?> doPayment(@RequestBody ResellerPaymentDTO prmPayment) {
         return resellerServices.doPayment(prmPayment);
+    }
+    @GetMapping("/resellers/{prmResellerId}/payments")
+    public ResponseEntity<?> getPaymentHistory(@PathVariable Long prmResellerId) {
+        return resellerServices.getPaymentHistory(prmResellerId);
     }
 }
 

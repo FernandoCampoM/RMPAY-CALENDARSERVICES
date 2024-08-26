@@ -57,6 +57,8 @@ public class Business {
     private LocalDate afterNotification;
     @Column(nullable = true)
     private LocalDate registerDate;
+    @Column(nullable = true)
+    public Float percentageProfit;
     /**Objeto que encapsula la información de la dirección */
     @OneToOne(cascade=CascadeType.ALL,optional = true)
     @JoinColumn( name="addressId",nullable = true)

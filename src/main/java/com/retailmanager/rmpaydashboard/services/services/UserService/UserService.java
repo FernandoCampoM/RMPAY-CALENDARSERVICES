@@ -48,6 +48,7 @@ import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailSer
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
+import com.retailmanager.rmpaydashboard.services.services.ResellerServices.IResellerService;
 
 
 
@@ -65,6 +66,9 @@ public class UserService implements IUserService{
     private InvoiceRepository serviceDBInvoice;
     @Autowired
     private FileRepository fileRepository;
+
+    @Autowired
+    private IResellerService resellerService;
 
     DecimalFormat formato = new DecimalFormat("#.##");
     @Autowired
@@ -99,11 +103,13 @@ public class UserService implements IUserService{
                 prmUser.setUserID(0L);
             }
         }
-        Optional<User> exist2 = this.serviceDBUser.findOneByEmail(prmUser.getEmail());
+        if(prmUser.getEmail()!=null){
+            Optional<User> exist2 = this.serviceDBUser.findOneByEmail(prmUser.getEmail());
             if(exist2.isPresent()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con email "+prmUser.getEmail()+" ya existe en la Base de datos");
                 throw objExeption;
             }
+        }
         Optional<User> exist = this.serviceDBUser.findOneByUsername(prmUser.getUsername());
             if(exist.isPresent()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmUser.getUsername()+" ya existe en la Base de datos");
@@ -113,7 +119,7 @@ public class UserService implements IUserService{
         System.out.println("password: "+prmUser.getPassword());
         prmUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
         System.out.println("password encode: "+prmUser.getPassword());
-        ResponseEntity<?> rta;
+        
          User objUser= this.mapper.map(prmUser, User.class);
          if(objUser.getRol()==null){
              objUser.setRol(Rol.ROLE_USER);
@@ -124,6 +130,7 @@ public class UserService implements IUserService{
             objUserRTA.setBusiness(null);
          }
         UserDTO userDTO=this.mapper.map(objUserRTA, UserDTO.class);
+        ResponseEntity<?> rta;
         if(userDTO!=null){
             rta=new ResponseEntity<UserDTO>(userDTO, HttpStatus.CREATED);
         }else{
@@ -155,9 +162,18 @@ public class UserService implements IUserService{
                 if(prmUser.getPassword()!=null && prmUser.getPassword().compareTo("unchanged")!=0){
                     objUser.setPassword(new BCryptPasswordEncoder().encode(prmUser.getPassword()));
                 }
-                
+                if(objUser.getUsername().compareTo(prmUser.getUsername())!=0){
+                    Optional<User> exist = this.serviceDBUser.findOneByUsername(prmUser.getUsername());
+                    if(exist.isPresent()){
+                        EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmUser.getUsername()+" ya existe en la Base de datos");
+                        throw objExeption;
+                    }else{
+                        objUser.setUsername(prmUser.getUsername());
+                    }
+                }
                 objUser.setEmail(prmUser.getEmail());
                 objUser.setPhone(prmUser.getPhone());
+                objUser.setRol(prmUser.getRol());
                 User objUserRTA=this.serviceDBUser.save(objUser);
                 objUserRTA.setBusiness(null);
                 UserDTO userDTO=this.mapper.map(objUserRTA, UserDTO.class);
@@ -293,17 +309,21 @@ public class UserService implements IUserService{
      * @return         		the response entity with the result of the registration process
      */
     @Override
+    @Transactional
     public ResponseEntity<?> registryWithBusiness(RegistryDTO prmRegistry) {
         String msg="No se pudo registrar el usuario";
         Double amount=0.0;
+        Double comisiones=0.0;
         Double stateTax=0.0;
         ResponsePayment respPayment;
         Double aditionalTerminalsValue=0.0;
         String serviceReferenceNumber=null;
         PaymentData objPaymentData=null;
+        String descripcion="";
         EmailBodyData objEmailBodyData=mapper.map(prmRegistry, EmailBodyData.class);
         objEmailBodyData.setDiscount(0.0);
         objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
+        
         Optional<User> exist = this.serviceDBUser.findOneByUsername(prmRegistry.getUsername());
             if(exist.isPresent()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmRegistry.getUsername()+" ya existe en la Base de datos");
@@ -332,29 +352,35 @@ public class UserService implements IUserService{
                 }
                 String userTransactionNumber = uniqueString();
                 Service objService=optional.get();
-                String descripcion=objService.getServiceDescription();
+                descripcion=objService.getServiceDescription();
                 descripcion+=": $"+String.valueOf(formato.format(objService.getServiceValue()))+"\n";
                 amount=objService.getServiceValue();
+                comisiones=objService.getReferralPayment();
                 //Calculo del valor de los terminales
                 if(prmRegistry.getAdditionalTerminals()<=5){
                     aditionalTerminalsValue=objService.getTerminals2to5();
                     descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals2to5()))+"\n";
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals2to5();
+                    comisiones+=(prmRegistry.getAdditionalTerminals()-1)*objService.getReferralPayment2to5();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
                 }else if(prmRegistry.getAdditionalTerminals()>5 && prmRegistry.getAdditionalTerminals()<10){
+                    descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals2to5()))+"\n";
                     aditionalTerminalsValue=objService.getTerminals6to9();
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals6to9();
+                    comisiones+=(prmRegistry.getAdditionalTerminals()-1)*objService.getReferralPayment6to9();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
                 }else{
+                    descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals10()))+"\n";
                     aditionalTerminalsValue=objService.getTerminals10();
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals10();
+                    comisiones+=(prmRegistry.getAdditionalTerminals()-1)*objService.getReferralPayment10();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
                 }
                 stateTax=amount*0.04;
                 objEmailBodyData.setSubTotal(amount);
                 objEmailBodyData.setStateTax(stateTax);
                 amount=amount+stateTax;
-                objEmailBodyData.setAmount(amount);
+                objEmailBodyData.setAmount(amount); 
                 
                 objEmailBodyData.setServiceDescription(objService.getServiceDescription());
                 objEmailBodyData.setServiceValue(formato.format(objService.getServiceValue()));
@@ -453,6 +479,7 @@ public class UserService implements IUserService{
                             objInvoice.setTotalAmount(amount);
                             List<Long> listTerminalIds=new ArrayList<Long>();
                             List<String> paymentDescription=new ArrayList<>();
+                            paymentDescription.add( descripcion);
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
@@ -499,6 +526,7 @@ public class UserService implements IUserService{
                                     objInvoice.setInProcess(false);
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
+                                    this.resellerService.addResellerSales(prmRegistry.getIdReseller(), prmRegistry.getMerchantId(),amount , comisiones, objInvoice, descripcion);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                                     emailService.notifyPaymentCreditCard(objEmailBodyData);
                                 break;
@@ -548,6 +576,7 @@ public class UserService implements IUserService{
                                     objInvoice.setInProcess(true);
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
+                                    this.resellerService.addResellerSales(prmRegistry.getIdReseller(), prmRegistry.getMerchantId(),amount , comisiones, objInvoice, descripcion);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
 
                                     emailService.notifyPaymentATHMovil(objEmailBodyData);
@@ -598,11 +627,13 @@ public class UserService implements IUserService{
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
 
                                     objInvoice=serviceDBInvoice.save(objInvoice);
+                                    this.resellerService.addResellerSales(prmRegistry.getIdReseller(), prmRegistry.getMerchantId(),amount , comisiones, objInvoice, descripcion);
                                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                                     emailService.notifyPaymentBankAccount(objEmailBodyData);
                                 break;
                             }
                         }
+                        
                         emailService.notifyNewRegister(objEmailBodyData);
                         return new ResponseEntity<RegistryDTO>(prmRegistry,HttpStatus.CREATED);
                     }else{
@@ -621,6 +652,7 @@ public class UserService implements IUserService{
                 map.put("msg", "Por favor comuniquese con el administrador de la página.");
                 return new ResponseEntity<HashMap<String,String>>(map,HttpStatus.BAD_REQUEST);
         }catch (Exception e){
+            System.out.println("Error en com.retailmanager.rmpaydashboard.services.services.UserService.UserService:RegistryWithBusiness: "+e.getMessage());
             return new ResponseEntity<String>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
         
@@ -845,6 +877,24 @@ public class UserService implements IUserService{
             objBusinessDTO.getUser().setBusiness(null);
         });
         return new ResponseEntity<Page<Business>>(listBusiness,HttpStatus.OK);
+    }
+
+    /**
+     * Retrieves a list of users with manager roles.
+     *
+     * @return  a ResponseEntity containing the list of UserDTO objects representing the users with manager roles
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAllUsersManagers() {
+        List<Rol> listRol=new ArrayList<>();
+        listRol.add(Rol.ROLE_MANAGER_VIEW);
+        listRol.add(Rol.ROLE_MANAGER);
+
+        List<User> listBusiness=this.serviceDBUser.findAllUsersManagers(listRol);
+        List<UserDTO> listUserDTO=this.mapper.map(listBusiness, new TypeToken<List<UserDTO>>() {}.getType());
+        return new ResponseEntity<List<UserDTO>>(listUserDTO,HttpStatus.OK);
+
     }
 
    
