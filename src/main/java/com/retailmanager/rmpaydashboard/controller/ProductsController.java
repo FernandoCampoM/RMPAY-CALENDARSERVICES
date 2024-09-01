@@ -1,12 +1,15 @@
 package com.retailmanager.rmpaydashboard.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.retailmanager.rmpaydashboard.services.DTO.InventoryReceiptDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.services.ProductService.IProductService;
 
@@ -115,7 +119,23 @@ public class ProductsController {
     public ResponseEntity<?> findByCategory(@PageableDefault(size = 200,page = 0) Pageable pageable,@Valid @RequestBody List<Long> categoryIds){
         return productService.findByCategory(categoryIds, pageable);
     }
-    
+    @PostMapping("/products/inventory")
+    public ResponseEntity<?> receiveInventory(@Valid @RequestBody InventoryReceiptDTO prmInventoryReceipt){
+        return productService.receiveInventory(prmInventoryReceipt);
+    }
+    @GetMapping("/products/inventory/generatedId")
+    public ResponseEntity<?> generatedId(){
+        Random random = new Random();
+        long currentTimeMillis = System.currentTimeMillis();
+        int randomInt = random.nextInt(1000); // Agrega una aleatoriedad para reducir colisiones
+        long generatedId = currentTimeMillis + randomInt;
+        HashMap<String, Long> rta = new HashMap<>();
+        rta.put("generatedId", generatedId);
+        return new ResponseEntity<>(rta,HttpStatus.OK);
+    }@GetMapping("/products/inventory/{businessId}")
+    public ResponseEntity<?> getInventoryHistory(@PathVariable Long businessId){
+        return productService.getInventoryHistory(businessId);
+    }
     
     
     

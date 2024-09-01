@@ -3,6 +3,8 @@ package com.retailmanager.rmpaydashboard.utils;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.Normalizer;
+import java.util.Random;
+import java.util.UUID;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -25,7 +27,15 @@ public class Utils {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-    
+        System.out.println("ID unico: " + generateUniqueId());
+        System.out.println("ID unico: " + generateUniqueId());
+        System.out.println("ID unico: " + generateUniqueId());
+    }
+    public static long generateUniqueId() {
+         Random random = new Random();
+        long currentTimeMillis = System.currentTimeMillis();
+        int randomInt = random.nextInt(1000); // Agrega una aleatoriedad para reducir colisiones
+        return currentTimeMillis + randomInt; // Combina el tiempo y el número aleatorio
     }
     public static String generateSafeFileName(String originalFileName) {
         // Normalizar el nombre de archivo para eliminar caracteres especiales o no ASCII

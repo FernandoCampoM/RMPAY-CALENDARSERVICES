@@ -7,12 +7,16 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamResource;
@@ -22,22 +26,28 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.gson.Gson;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Category;
+import com.retailmanager.rmpaydashboard.models.InventoryReceipt;
 import com.retailmanager.rmpaydashboard.models.Product;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.CategoryRepository;
+import com.retailmanager.rmpaydashboard.repositories.InventoryReceiptRepository;
 import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.InventoryItemDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.InventoryReceiptDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 
 
@@ -58,6 +68,12 @@ public class ProductService implements IProductService {
     private UserBusiness_ProductRepository ubpServices;
     @Autowired
     private UserBusiness_CategoryRepository ubcServices;
+
+    @Autowired 
+    private InventoryReceiptRepository serviceDBInventoryReceipt;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     
     /**
      * Save a product and handle exceptions.
@@ -549,5 +565,74 @@ public class ProductService implements IProductService {
         }else{
             throw new EntidadNoExisteException("El producto con productId "+productId+" no existe en la base de datos");
         }
+    }
+    /**
+     * Recibe un inventario de productos y lo registra en la base de datos.
+     * Actualiza la cantidad y el costo de los productos existentes y 
+     * registra un nuevo recibo de inventario.
+     * @param prmInventoryReceipt Inventario de productos a recibir
+     * @return El inventario recibido
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> receiveInventory(InventoryReceiptDTO prmInventoryReceipt) {
+        Gson gson = new Gson();
+        InventoryReceipt objInventoryReceipt = null;
+        if(prmInventoryReceipt.getReceiptId()!=null){
+            objInventoryReceipt = this.serviceDBInventoryReceipt.findById(prmInventoryReceipt.getReceiptId()).orElse(null);
+            if(objInventoryReceipt!=null){
+                throw new EntidadYaExisteException("El recibo de inventario con ID "+prmInventoryReceipt.getReceiptId()+" ya existe en la base de datos");
+            }
+        }
+        objInventoryReceipt = new InventoryReceipt();
+        objInventoryReceipt.setRegisterDate(LocalDateTime.now());
+        objInventoryReceipt.setReceiptId(prmInventoryReceipt.getReceiptId());
+        objInventoryReceipt.setComments(prmInventoryReceipt.getComments());
+        objInventoryReceipt.setInventoryEntered(gson.toJson(prmInventoryReceipt.getInventoryItems()));
+        Business objBusiness = this.serviceDBBusiness.findById(prmInventoryReceipt.getBusinessId()).orElse(null);
+        if(objBusiness==null){
+            throw new EntidadNoExisteException("El negocio con ID "+prmInventoryReceipt.getBusinessId()+" no existe en la base de datos");
+        }
+        objInventoryReceipt.setObjBusiness(objBusiness);
+        for(InventoryItemDTO prmInventoryItem : prmInventoryReceipt.getInventoryItems()){
+            Product objProduct = this.serviceDBProducts.findById(prmInventoryItem.getProductId()).orElse(null);
+            if(objProduct!=null){
+                objProduct.setQuantity(objProduct.getQuantity()+prmInventoryItem.getQuantity());
+                objProduct.setCost(prmInventoryItem.getUnitaryCost());
+                objProduct.setPrice(prmInventoryItem.getPrice());
+                this.serviceDBProducts.save(objProduct);    
+            }
+        }
+        if(objInventoryReceipt.getReceiptId()==null){
+            objInventoryReceipt.setReceiptId(generateUniqueReceiptId()); 
+        }
+        this.serviceDBInventoryReceipt.save(objInventoryReceipt);
+        prmInventoryReceipt.setReceiptId(objInventoryReceipt.getReceiptId());
+        prmInventoryReceipt.setInventoryEntered(objInventoryReceipt.getInventoryEntered()); 
+        return new ResponseEntity<>(prmInventoryReceipt,HttpStatus.CREATED);
+    }
+    private Long generateUniqueReceiptId() {
+        // Implementa tu lógica para generar un ID único aquí, por ejemplo:
+        // Puede ser una combinación de la fecha actual, un contador, o cualquier lógica que asegure unicidad.
+        // Ejemplo simple:
+        Random random = new Random();
+        long currentTimeMillis = System.currentTimeMillis();
+        int randomInt = random.nextInt(1000); // Agrega una aleatoriedad para reducir colisiones
+        return currentTimeMillis + randomInt; // Esto generará un timestamp como ID
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getInventoryHistory(Long businessId) {
+        Business objBusiness = this.serviceDBBusiness.findById(businessId).orElse(null);
+        if(objBusiness==null){
+            throw new EntidadNoExisteException("El negocio con ID "+businessId+" no existe en la base de datos");
+        }
+        Iterable<InventoryReceipt> objInventoryReceipts = this.serviceDBInventoryReceipt.findByBusiness(businessId);
+        List<InventoryReceiptDTO> objInventoryReceiptsDTO = new ArrayList<>();
+        for(InventoryReceipt objInventoryReceipt : objInventoryReceipts){
+            objInventoryReceiptsDTO.add(objInventoryReceipt.toInventoryReceiptDTO());
+        }
+        
+        return new ResponseEntity<>(objInventoryReceiptsDTO,HttpStatus.OK);
     }
 }

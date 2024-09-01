@@ -10,6 +10,7 @@ public class InventoryItemDTO {
     private Long productId;
     private String description;
     private int quantity;
-    private Double cost;
+    private Double totalCost;
+    private Double unitaryCost;
     private Double price;
 }

@@ -16,4 +16,5 @@ public class ConverterJson {
     public static ResponseJSON convertStr2RespJson(String json){
         return new Gson().fromJson(json, ResponseJSON.class);
     }
+    
 }

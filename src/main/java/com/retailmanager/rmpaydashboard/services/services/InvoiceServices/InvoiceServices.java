@@ -645,7 +645,7 @@ public class InvoiceServices implements IInvoiceServices {
     public ResponseEntity<?> getPaymentHistor(LocalDate startDate, LocalDate endDate,String filter) {
         if(filter!=null && filter.compareTo("")!=0){
             filter.toUpperCase();
-            if(filter.compareTo("CURRENT_MONTH")!=0){
+            if(filter.compareTo("CURRENT_MONTH")==0){
                 startDate=LocalDate.now();
                 // Obtener el primer dia del mes
                 LocalDate firstDayOfMonth = startDate.with(TemporalAdjusters.firstDayOfMonth());
@@ -654,7 +654,7 @@ public class InvoiceServices implements IInvoiceServices {
                 LocalDate lastDayOfMonth = startDate.with(TemporalAdjusters.lastDayOfMonth());
                 endDate=lastDayOfMonth;
             }
-            if(filter.compareTo("PREVIOUS_MONTH")!=0){
+            if(filter.compareTo("PREVIOUS_MONTH")==0){
                 startDate=LocalDate.now().minusMonths(1);
                 // Obtener el primer dia del mes
                 LocalDate temporalDate=LocalDate.of(startDate.getYear(),startDate.getMonth(),startDate.getDayOfMonth());

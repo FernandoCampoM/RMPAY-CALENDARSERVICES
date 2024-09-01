@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
+import com.retailmanager.rmpaydashboard.services.DTO.InventoryReceiptDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 
 
@@ -47,5 +48,6 @@ public interface IProductService {
     public ResponseEntity<?> findAllByBusinessIdCSV(Long businessId);
     public ResponseEntity<?> getQuantity(Long productId);
 
-    public ResponseEntity<?> receiveInventory();
+    public ResponseEntity<?> receiveInventory(InventoryReceiptDTO prmInventoryReceipt);
+    public ResponseEntity<?> getInventoryHistory(Long businessId);
 }

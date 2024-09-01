@@ -1,8 +1,8 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,6 +14,8 @@ public class InventoryReceiptDTO {
     private String comments;
     
     private String inventoryEntered;
+    private LocalDateTime registerDate;
+    private Long businessId;
 
     private List<InventoryItemDTO> inventoryItems;
 }
