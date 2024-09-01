@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  RMPAYsqlserver19:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: always
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: Colombia@602
+    ports:
+      - "14334:1434"
+    volumes:
+      - sql_data:/var/opt/mssql/data
+  spring-boot-app:
+    container_name: RMPAYSDASHBOARDService
+    image: rmpaydashboardImg
+    restart: always
+    environment:
+      SQL_URL: jdbc:sqlserver://RMPAYsqlserver19:1434;database=RMPAY;TrustServerCertificate=True
+      SQL_USER: SA
+      SQL_PASSWORD: Colombia@602
+      spring_profiles_active: docker
+    ports:
+      - "9094:9092"
+volumes:
+  sql_data:

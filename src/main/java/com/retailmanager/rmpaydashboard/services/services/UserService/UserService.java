@@ -395,6 +395,8 @@ public class UserService implements IUserService{
                         prmRegistry.getNameoncard(), 
                         prmRegistry.getSecuritycode(), null, userTransactionNumber);
                         if(respPayment.getResponseCode()!=200){
+                            objEmailBodyData.setReferenceNumber(respPayment.getServiceReferenceNumber());
+                            objEmailBodyData.setErrorMessage(respPayment.getMsg().toString());
                             emailService.notifyErrorRegister(objEmailBodyData);
                             HashMap <String, String> objError=new HashMap<String, String>();
                             objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");

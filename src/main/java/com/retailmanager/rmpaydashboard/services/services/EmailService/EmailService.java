@@ -264,6 +264,20 @@ public class EmailService implements IEmailService{
         htmlBody=htmlBody.replace("-paymethod-", emailData.getPaymethod());
         sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
     }
+    @Override
+    public void notifyErrorPayment(EmailBodyData emailData) {
+        List<String> toList = Arrays.asList(emailConfigData.getEmailTo());
+        List<String> cc = new ArrayList<String>();
+        cc.add(emailConfigData.getEmailCCO());
+        String subject = "OCURRIÓ UN ERROR EN RMPAYAL PROCESAR EL PAGO DEL CLIENTE: "+emailData.getBusinessName().toUpperCase();
+        if(emailData.isBuyTerminal()){
+            subject = "CLIENTE "+emailData.getBusinessName().toUpperCase()+" HA INTENTADO COMPRAR UNA TERMINAL EN RMPAY PERO FALLÓ";
+        }
+        emailData.setSubject(subject);
+        String htmlBody = createBodyRegistrationError(emailData);
+        htmlBody=htmlBody.replace("-paymethod-", emailData.getPaymethod());
+        sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, cc, null, null);
+    }
 
     /**
      * Notify payment via credit card.
@@ -1630,6 +1644,45 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
      */
     private String createBodyRegistrationError(EmailBodyData emailData){
         LocalDate fechaActual = LocalDate.now();
+        String mes = "";
+        switch (emailData.getExpDateMonth()) {
+            case "1":
+                mes = "Enero";
+                break;
+            case "2":
+                mes = "Febrero";
+                break;
+            case "3":
+                mes = "Marzo";
+                break;
+            case "4":
+                mes = "Abril";
+                break;
+            case "5":
+                mes = "Mayo";
+                break;
+            case "6":
+                mes = "Junio";
+                break;
+            case "7":
+                mes = "Julio";
+                break;
+            case "8":
+                mes = "Agosto";
+                break;
+            case "9":
+                mes = "Septiembre";
+                break;
+            case "10":
+                mes = "Octubre";
+                break;
+            case "11":
+                mes = "Noviembre";
+                break;
+            case "12":
+                mes = "Diciembre";
+                break;
+        }
         String msg="<!DOCTYPE html>" +
 "<html>" +
 "" +
@@ -1736,8 +1789,31 @@ sendHtmlEmailWithAttachmentAndCCO(toList, subject, htmlBody, null, null, null);
 "                                                   " + emailData.getAdditionalTerminals() +",</p>" +
 "                                             </div> <br>" +
 "                                             <u>Información de Pago:</u> <br><br>" +
-"                                             -paymethod-" +
-"                                             <p>Cordilmente, <br> Equipo de Soporte de RMPAY</p>" +
+"                                             -paymethod-";
+if(emailData.getPaymethod()!=null){
+    if(emailData.getPaymethod().compareTo("TOKEN")==0 || emailData.getPaymethod().compareTo("CREDIT-CARD")==0){
+        msg=msg+"<div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\">  "
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Nombre de la tarjeta:</strong></p>"
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getNameoncard() + "</p>"
+        + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Número de Tarjeta de Crédito:</strong></p>"
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getCreditcarnumber() + "</p>"
+        + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Fecha de Expiración:</strong></p>"
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + mes + " " + emailData.getExpDateYear() + "</p>"
+        + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Referencia de Pago:</strong></p>"
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">" + emailData.getReferenceNumber() + "</p>"
+        + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Total pagado:</strong></p>"
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">$" + emailData.getAmount() + "</p>"
+        + "                                                            </div><div style=\" width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap;\"> "
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:right; margin:0px;width:41.66667%;\"><strong>Error:</strong></p>"
+        + "                                                                <p style=\"flex: 0 0 41.66667%; max-width: 41.66667%; text-align:left; margin:0 0 0 10px;width:41.66667%;\">$" + emailData.getErrorMessage() + "</p>"
+        + "                                                            </div>";
+    }
+}
+msg=msg+"                                             <p>Cordilmente, <br> Equipo de Soporte de RMPAY</p>" +
 "                                             <div" +
 "                                                style=\"width:100%;margin-right: 0px;margin-left: -15px; display: flex;flex-wrap: wrap; \">" +
 "                                                <div" +

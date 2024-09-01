@@ -18,8 +18,8 @@ public class BackgroundRoutines extends Thread{
         //Obtener fecha y hora actual
          Calendar now = Calendar.getInstance();
          // Establece la hora y el minuto en que deseas que se dispare el evento
-        int hour = 1;   // Hora en formato de 24 horas
-        int minute = 54; // Minutos
+        int hour = 15;   // Hora en formato de 24 horas
+        int minute = 47; // Minutos
         // Calcula la próxima fecha en que se debe disparar el evento
         Calendar nextExecutionTime = Calendar.getInstance();
         nextExecutionTime.set(Calendar.HOUR_OF_DAY, hour);
@@ -43,6 +43,7 @@ public class BackgroundRoutines extends Thread{
                 backgroundRoutinesService.priorNotificaionEmail();
                 backgroundRoutinesService.lastDayNotificaionEmail();
                 backgroundRoutinesService.afterNotificaionEmail();
+                backgroundRoutinesService.automaticPayments();
                 //AQUI LAS RUTINAS
             }
         };

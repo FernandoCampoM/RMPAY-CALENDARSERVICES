@@ -78,8 +78,8 @@ public class InvoiceServices implements IInvoiceServices {
     String msgError = "";
     @Autowired
     private TerminalRepository serviceDBTerminal;
-     Gson gson = new Gson();
-     
+    Gson gson = new Gson();
+
     /**
      * Retrieves the payment history for a given business within a specified date
      * range.
@@ -94,7 +94,8 @@ public class InvoiceServices implements IInvoiceServices {
     public ResponseEntity<?> getPaymentHistoryByBusiness(Long businessId, LocalDate startDate, LocalDate endDate) {
         if (businessId != null && startDate != null && endDate != null) {
             List<Invoice> listInvoice = this.invoiceRepository
-                    .findByBusinessIdAndDateGreaterThanEqualAndDateLessThanEqualOrderByInvoiceNumberDesc(businessId, startDate, endDate);
+                    .findByBusinessIdAndDateGreaterThanEqualAndDateLessThanEqualOrderByInvoiceNumberDesc(businessId,
+                            startDate, endDate);
             List<InvoiceDTO> listInvoiceDTO = this.mapper.map(listInvoice, new TypeToken<List<InvoiceDTO>>() {
             }.getType());
             return new ResponseEntity<>(listInvoiceDTO, HttpStatus.OK);
@@ -117,9 +118,9 @@ public class InvoiceServices implements IInvoiceServices {
         String serviceReferenceNumber = null;
         String userTransactionNumber = uniqueString();
         Long serviceIdPrincipal = -1L;
-        Double stateTax=0.0;
+        Double stateTax = 0.0;
         EmailBodyData objEmailBodyData = mapper.map(prmPaymentInfo, EmailBodyData.class);
-        List<String> paymentDescription=new ArrayList<>();
+        List<String> paymentDescription = new ArrayList<>();
         Business objBusiness = this.serviceDBBusiness.findById(prmPaymentInfo.getBusinessId()).orElse(null);
         if (objBusiness == null) {
             EntidadNoExisteException objExeption = new EntidadNoExisteException(
@@ -195,7 +196,7 @@ public class InvoiceServices implements IInvoiceServices {
                 objEmailBodyData.setReferenceNumber(
                         "DESCUENTO APLICADO:$" + String.valueOf(formato.format(objBusiness.getDiscount())));
                 objEmailBodyData.setDiscount(objBusiness.getDiscount());
-                
+
                 if (objBusiness.getDiscount() < totalAmount) {
                     totalAmount = totalAmount - objBusiness.getDiscount();
                     objBusiness.setDiscount(0.0);
@@ -205,15 +206,17 @@ public class InvoiceServices implements IInvoiceServices {
                     totalAmount = 0.0;
                 }
             }
-            stateTax=totalAmount*0.04;
+            stateTax = totalAmount * 0.04;
             objEmailBodyData.setSubTotal(totalAmount);
             objEmailBodyData.setStateTax(stateTax);
-            objEmailBodyData.setAmount(totalAmount+stateTax);
+            objEmailBodyData.setAmount(totalAmount + stateTax);
             totalAmount = totalAmount + stateTax;
             objBusiness.setAdditionalTerminals((Integer) prmPaymentInfo.getTerminalsNumber());
             if (serviceIdPrincipal != -1L) {
                 objBusiness.setServiceId(serviceIdPrincipal);
             }
+            objEmailBodyData.setServiceDescription(gson.toJson(paymentDescription));
+            objEmailBodyData.setAdditionalTerminals((Integer) prmPaymentInfo.getTerminalsNumber());
             switch (prmPaymentInfo.getPaymethod()) {
                 case "CREDIT-CARD":
                     respPayment = blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(totalAmount)),
@@ -223,35 +226,46 @@ public class InvoiceServices implements IInvoiceServices {
                             prmPaymentInfo.getNameoncard(),
                             prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
                     if (respPayment.getResponseCode() != 200) {
-                        emailService.notifyErrorRegister(objEmailBodyData);
+                        objEmailBodyData.setReferenceNumber(respPayment.getServiceReferenceNumber());
+                        objEmailBodyData.setErrorMessage(respPayment.getMsg().toString());
+                        emailService.notifyErrorPayment(objEmailBodyData);
                         HashMap<String, String> objError = new HashMap<String, String>();
                         objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
                         return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
                     }
-                    serviceReferenceNumber = respPayment.getServiceReferenceNumber()+" - "+objEmailBodyData.getReferenceNumber();
+                    serviceReferenceNumber = respPayment.getServiceReferenceNumber() + " - "
+                            + objEmailBodyData.getReferenceNumber();
                     objEmailBodyData
-                            .setReferenceNumber(serviceReferenceNumber );
+                            .setReferenceNumber(serviceReferenceNumber);
                     break;
                 case "TOKEN":
-                objEmailBodyData.setNameoncard(objBusiness.getPaymentData().getNameOnCard());
-                objEmailBodyData.setCreditcarnumber("XXXX-XXXX-XXXX-" + objBusiness.getPaymentData().getLast4Digits());
-                objEmailBodyData.setExpDateMonth(objBusiness.getPaymentData().getExpDate().substring(0, 2));
-                objEmailBodyData.setExpDateYear(objBusiness.getPaymentData().getExpDate().substring(2, 4));
-                respPayment = blackStoneService.paymentWithToken(String.valueOf(formato.format(totalAmount)),
+                    if (objBusiness.getPaymentData() == null) {
+                        throw new EntidadNoExisteException("El business con businessId " + objBusiness.getBusinessId()
+                                + " no tiene creado un token de pago");
+                    }
+                    objEmailBodyData.setNameoncard(objBusiness.getPaymentData().getNameOnCard());
+                    objEmailBodyData
+                            .setCreditcarnumber("XXXX-XXXX-XXXX-" + objBusiness.getPaymentData().getLast4Digits());
+                    objEmailBodyData.setExpDateMonth(objBusiness.getPaymentData().getExpDate().substring(0, 2));
+                    objEmailBodyData.setExpDateYear(objBusiness.getPaymentData().getExpDate().substring(2, 4));
+                    respPayment = blackStoneService.paymentWithToken(String.valueOf(formato.format(totalAmount)),
                             objBusiness.getAddress().getZipcode(),
                             objBusiness.getPaymentData().getToken(),
                             objBusiness.getPaymentData().getExpDate(),
                             objBusiness.getPaymentData().getNameOnCard(),
                             objBusiness.getPaymentData().getCvn(), null, userTransactionNumber);
                     if (respPayment.getResponseCode() != 200) {
-                        emailService.notifyErrorRegister(objEmailBodyData);
+                        objEmailBodyData.setErrorMessage(respPayment.getMsg().toString());
+                        objEmailBodyData.setReferenceNumber(respPayment.getServiceReferenceNumber());
+                        emailService.notifyErrorPayment(objEmailBodyData);
                         HashMap<String, String> objError = new HashMap<String, String>();
-                        objError.put("msg", "No se pudo registrar el pago con la tokrn de la tarjeta de credito");
+                        objError.put("msg", "No se pudo registrar el pago con EL TOKEN de la tarjeta de credito");
                         return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
                     }
-                    serviceReferenceNumber = respPayment.getServiceReferenceNumber()+" - "+objEmailBodyData.getReferenceNumber();
+                    serviceReferenceNumber = respPayment.getServiceReferenceNumber() + " - "
+                            + objEmailBodyData.getReferenceNumber();
                     objEmailBodyData
-                            .setReferenceNumber(serviceReferenceNumber );
+                            .setReferenceNumber(serviceReferenceNumber);
                     break;
             }
             Invoice objInvoice = new Invoice();
@@ -259,6 +273,7 @@ public class InvoiceServices implements IInvoiceServices {
             objInvoice.setSubTotal(objEmailBodyData.getSubTotal());
             objInvoice.setStateTax(stateTax);
             objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
+
             objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
             List<Long> listTerminalIds = new ArrayList<Long>();
             switch (prmPaymentInfo.getPaymethod()) {
@@ -272,14 +287,20 @@ public class InvoiceServices implements IInvoiceServices {
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
                         if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
-                            if(objTer.getExpirationDate().isBefore(LocalDate.now())){
+                            if (objTer.getExpirationDate().isBefore(LocalDate.now())) {
                                 objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                            }else{
+                            } else {
                                 objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
                             }
-                            
+
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                        }
+                        if(objTer.isPrincipal()){
+                            objBusiness.setPriorNotification(null);
+                            objBusiness.setAfterNotification(null);
+                            objBusiness.setLastDayNotification(null);
+
                         }
                         objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setPayment(true);
@@ -291,7 +312,7 @@ public class InvoiceServices implements IInvoiceServices {
 
                     objInvoice.setDate(LocalDate.now());
                     objInvoice.setTime(LocalTime.now());
-                    
+
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
                     objInvoice.setReferenceNumber(serviceReferenceNumber);
@@ -299,55 +320,61 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setInProcess(false);
                     objInvoice.setTerminalIds(
                             listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
-                    
+
                     objInvoice = serviceDBInvoice.save(objInvoice);
                     objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                     objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
                     emailService.notifyPaymentCreditCard(objEmailBodyData);
                     break;
                 case "TOKEN":
-                objBusiness.setLastPayment(LocalDate.now());
+                    objBusiness.setLastPayment(LocalDate.now());
 
-                for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
-                    Service service = listService.get(objTerminal.getIdService());
-                    Terminal objTer = this.serviceDBTerminal.findById(objTerminal.getTerminalId()).orElse(null);
-                    objTer.setEnable(true);
-                    // se incrementa la fecha de expiración del terminal de acuerdo a la duración
-                    // del servicio
-                    if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
-                        if(objTer.getExpirationDate().isBefore(LocalDate.now())){
+                    for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
+                        Service service = listService.get(objTerminal.getIdService());
+                        Terminal objTer = this.serviceDBTerminal.findById(objTerminal.getTerminalId()).orElse(null);
+                        objTer.setEnable(true);
+                        // se incrementa la fecha de expiración del terminal de acuerdo a la duración
+                        // del servicio
+                        if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
+                            if (objTer.getExpirationDate().isBefore(LocalDate.now())) {
+                                objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                            } else {
+                                objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
+                            }
+                            // TODO: revisar esta parte de pago con token, esta sin revisar
+                        } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                        }else{
-                            objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
                         }
-                        //TODO: revisar esta parte de pago con token, esta sin revisar
-                    } else {
-                        objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                    }
-                    objTer.setLastPaymentValue(objTerminal.getAmount());
-                    objTer.setPayment(true);
-                    objTer.setService(service);
-                    objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
-                    objTer = this.serviceDBTerminal.save(objTer);
-                    listTerminalIds.add(objTerminal.getTerminalId());
-                }
+                        if(objTer.isPrincipal()){
+                            objBusiness.setPriorNotification(null);
+                            objBusiness.setAfterNotification(null);
+                            objBusiness.setLastDayNotification(null);
 
-                objInvoice.setDate(LocalDate.now());
-                objInvoice.setTime(LocalTime.now());
-                
-                objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
-                objInvoice.setBusinessId(objBusiness.getBusinessId());
-                objInvoice.setReferenceNumber(serviceReferenceNumber);
-                objInvoice.setServiceId(objBusiness.getServiceId());
-                objInvoice.setInProcess(false);
-                objInvoice.setTerminalIds(
-                        listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
-                
-                objInvoice = serviceDBInvoice.save(objInvoice);
-                objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
-                objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
-                emailService.notifyPaymentToken(objEmailBodyData);
-                break;
+                        }
+                        objTer.setLastPaymentValue(objTerminal.getAmount());
+                        objTer.setPayment(true);
+                        objTer.setService(service);
+                        objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
+                        objTer = this.serviceDBTerminal.save(objTer);
+                        listTerminalIds.add(objTerminal.getTerminalId());
+                    }
+
+                    objInvoice.setDate(LocalDate.now());
+                    objInvoice.setTime(LocalTime.now());
+
+                    objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
+                    objInvoice.setBusinessId(objBusiness.getBusinessId());
+                    objInvoice.setReferenceNumber(serviceReferenceNumber);
+                    objInvoice.setServiceId(objBusiness.getServiceId());
+                    objInvoice.setInProcess(false);
+                    objInvoice.setTerminalIds(
+                            listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
+
+                    objInvoice = serviceDBInvoice.save(objInvoice);
+                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                    objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
+                    emailService.notifyPaymentToken(objEmailBodyData);
+                    break;
                 case "ATHMOVIL":
                     for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
                         Service service = listService.get(objTerminal.getIdService());
@@ -355,12 +382,16 @@ public class InvoiceServices implements IInvoiceServices {
                         objTer.setEnable(true);
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
-                        /* if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
-                            objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
-                        } else {
-                            objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                        } */
-                        //objTer.setPayment(false);
+                        /*
+                         * if (objTer.getExpirationDate() != null && objTer.isEnable() &&
+                         * objTer.isPayment()) {
+                         * objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.
+                         * getDuration()));
+                         * } else {
+                         * objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                         * }
+                         */
+                        // objTer.setPayment(false);
                         objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setService(service);
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
@@ -390,13 +421,17 @@ public class InvoiceServices implements IInvoiceServices {
                         objTer.setEnable(true);
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
-                        /* if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
-                            objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
-                        } else {
-                            objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
-                        } */
+                        /*
+                         * if (objTer.getExpirationDate() != null && objTer.isEnable() &&
+                         * objTer.isPayment()) {
+                         * objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.
+                         * getDuration()));
+                         * } else {
+                         * objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
+                         * }
+                         */
 
-                        //objTer.setPayment(false);
+                        // objTer.setPayment(false);
                         objTer.setService(service);
                         objTer.setLastPaymentValue(objTerminal.getAmount());
                         objTer.setAutomaticPayments(prmPaymentInfo.isAutomaticPayments());
@@ -428,9 +463,9 @@ public class InvoiceServices implements IInvoiceServices {
                         // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
                         if (objTer.getExpirationDate() != null && objTer.isEnable() && objTer.isPayment()) {
-                            if(!objTer.getExpirationDate().isBefore(LocalDate.now())){
+                            if (!objTer.getExpirationDate().isBefore(LocalDate.now())) {
                                 objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
-                            }else{
+                            } else {
                                 objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                             }
                         } else {
@@ -450,7 +485,7 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
                     objInvoice.setTerminals(prmPaymentInfo.getTerminalsNumber());
                     objInvoice.setBusinessId(objBusiness.getBusinessId());
-                    objInvoice.setReferenceNumber(" DESCUENTO APLICADO: $"+objEmailBodyData.getDiscount());
+                    objInvoice.setReferenceNumber(" DESCUENTO APLICADO: $" + objEmailBodyData.getDiscount());
                     objInvoice.setServiceId(objBusiness.getServiceId());
                     objInvoice.setInProcess(false);
                     objInvoice.setTerminalIds(
@@ -476,7 +511,6 @@ public class InvoiceServices implements IInvoiceServices {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
     /**
      * Generates a unique string using UUID.
@@ -597,7 +631,6 @@ public class InvoiceServices implements IInvoiceServices {
         }
         return prmRegistry;
     }
-    
 
     @Override
     public ResponseEntity<?> testPayment(doPaymentDTO prmPaymentInfo) {
@@ -605,30 +638,33 @@ public class InvoiceServices implements IInvoiceServices {
         String userTransactionNumber = uniqueString();
         switch (prmPaymentInfo.getPaymethod()) {
             case "CREDIT-CARD":
-            try {
-                ResponseJSON token=blackStoneService.getToken("190001",
-                        prmPaymentInfo.getCreditcarnumber().replaceAll("-", ""),
-                        prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
-                        prmPaymentInfo.getNameoncard(),
-                        prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
-                /*respPayment = blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(100)),
-                        "190001",
-                        prmPaymentInfo.getCreditcarnumber().replaceAll("-", ""),
-                        prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
-                        prmPaymentInfo.getNameoncard(),
-                        prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);*/
-                        respPayment = blackStoneService.paymentWithToken(String.valueOf(formato.format(100)),
-                        "190001",
-                        token.getToken(),
-                        prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
-                        prmPaymentInfo.getNameoncard(),
-                        prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-                return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
-            }
+                try {
+                    ResponseJSON token = blackStoneService.getToken("190001",
+                            prmPaymentInfo.getCreditcarnumber().replaceAll("-", ""),
+                            prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
+                            prmPaymentInfo.getNameoncard(),
+                            prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
+                    /*
+                     * respPayment =
+                     * blackStoneService.paymentWithCreditCard(String.valueOf(formato.format(100)),
+                     * "190001",
+                     * prmPaymentInfo.getCreditcarnumber().replaceAll("-", ""),
+                     * prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
+                     * prmPaymentInfo.getNameoncard(),
+                     * prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
+                     */
+                    respPayment = blackStoneService.paymentWithToken(String.valueOf(formato.format(100)),
+                            "190001",
+                            token.getToken(),
+                            prmPaymentInfo.getExpDateMonth() + prmPaymentInfo.getExpDateYear(),
+                            prmPaymentInfo.getNameoncard(),
+                            prmPaymentInfo.getSecuritycode(), null, userTransactionNumber);
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                    return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
+                }
                 if (respPayment.getResponseCode() != 200) {
-                    //emailService.notifyErrorRegister(objEmailBodyData);
+                    // emailService.notifyErrorRegister(objEmailBodyData);
                     HashMap<String, String> objError = new HashMap<String, String>();
                     objError.put("msg", "No se pudo registrar el pago con la tarjeta de credito");
                     return new ResponseEntity<HashMap<String, String>>(objError, HttpStatus.NOT_ACCEPTABLE);
@@ -642,43 +678,44 @@ public class InvoiceServices implements IInvoiceServices {
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getPaymentHistor(LocalDate startDate, LocalDate endDate,String filter) {
-        if(filter!=null && filter.compareTo("")!=0){
+    public ResponseEntity<?> getPaymentHistor(LocalDate startDate, LocalDate endDate, String filter) {
+        if (filter != null && filter.compareTo("") != 0) {
             filter.toUpperCase();
-            if(filter.compareTo("CURRENT_MONTH")==0){
-                startDate=LocalDate.now();
+            if (filter.compareTo("CURRENT_MONTH") == 0) {
+                startDate = LocalDate.now();
                 // Obtener el primer dia del mes
                 LocalDate firstDayOfMonth = startDate.with(TemporalAdjusters.firstDayOfMonth());
-                startDate=firstDayOfMonth;
+                startDate = firstDayOfMonth;
                 // Obtener el último día del mes
                 LocalDate lastDayOfMonth = startDate.with(TemporalAdjusters.lastDayOfMonth());
-                endDate=lastDayOfMonth;
+                endDate = lastDayOfMonth;
             }
-            if(filter.compareTo("PREVIOUS_MONTH")==0){
-                startDate=LocalDate.now().minusMonths(1);
+            if (filter.compareTo("PREVIOUS_MONTH") == 0) {
+                startDate = LocalDate.now().minusMonths(1);
                 // Obtener el primer dia del mes
-                LocalDate temporalDate=LocalDate.of(startDate.getYear(),startDate.getMonth(),startDate.getDayOfMonth());
-                LocalDate firstDayOfMonth = temporalDate.with(TemporalAdjusters.firstDayOfMonth()); 
-                startDate=firstDayOfMonth;
+                LocalDate temporalDate = LocalDate.of(startDate.getYear(), startDate.getMonth(),
+                        startDate.getDayOfMonth());
+                LocalDate firstDayOfMonth = temporalDate.with(TemporalAdjusters.firstDayOfMonth());
+                startDate = firstDayOfMonth;
                 // Obtener el último día del mes
                 LocalDate lastDayOfMonth = startDate.with(TemporalAdjusters.lastDayOfMonth());
-                endDate=lastDayOfMonth;
+                endDate = lastDayOfMonth;
             }
-        }else{
-            if(endDate==null){  
-                endDate=startDate;
+        } else {
+            if (endDate == null) {
+                endDate = startDate;
             }
         }
-        List<Invoice> facturas=this.invoiceRepository.getPaymentReports(startDate, endDate);
-        List<PaymentHistoryReport> report=new ArrayList<>();
+        List<Invoice> facturas = this.invoiceRepository.getPaymentReports(startDate, endDate);
+        List<PaymentHistoryReport> report = new ArrayList<>();
         for (Invoice i : facturas) {
-            PaymentHistoryReport phr=new PaymentHistoryReport();
-            Business objBusiness=this.businessRepository.findById(i.getBusinessId()).orElse(null);
-            if(objBusiness!=null){
+            PaymentHistoryReport phr = new PaymentHistoryReport();
+            Business objBusiness = this.businessRepository.findById(i.getBusinessId()).orElse(null);
+            if (objBusiness != null) {
                 phr.setName(objBusiness.getUser().getName());
                 phr.setBusinessName(objBusiness.getName());
                 phr.setMerchantId(objBusiness.getMerchantId());
-                
+
             }
             phr.setInvoiceId(i.getInvoiceNumber());
             phr.setDate(i.getDate());
@@ -688,184 +725,201 @@ public class InvoiceServices implements IInvoiceServices {
             phr.setTotal(i.getTotalAmount());
             phr.setReference(i.getReferenceNumber());
             report.add(phr);
-            }
-        return new ResponseEntity<>(report,HttpStatus.OK);
+        }
+        return new ResponseEntity<>(report, HttpStatus.OK);
     }
 
     /**
-     * Confirms or rejects a payment based on the given invoice number and payment information.
+     * Confirms or rejects a payment based on the given invoice number and payment
+     * information.
      *
-     * @param  invoiceNumber    the invoice number to confirm or reject
-     * @param  prmPaymentInfo   the payment information containing the confirmation status and observation
-     * @return                   a ResponseEntity containing the updated invoice information or an error message
-     * @throws EntidadNoExisteException if the invoice with the given invoice number does not exist in the database
+     * @param invoiceNumber  the invoice number to confirm or reject
+     * @param prmPaymentInfo the payment information containing the confirmation
+     *                       status and observation
+     * @return a ResponseEntity containing the updated invoice information or an
+     *         error message
+     * @throws EntidadNoExisteException if the invoice with the given invoice number
+     *                                  does not exist in the database
      */
     @Override
     @Transactional
     public ResponseEntity<?> confirmOrRejectPaymnt(Long invoiceNumber, ConfirmPaymentDTO prmPaymentInfo) {
-        Invoice objInvoice=this.invoiceRepository.findById(invoiceNumber).orElse(null);
-        if(objInvoice==null){
-           throw new EntidadNoExisteException("La Factura #"+invoiceNumber+" no existen en la base de datos");
+        Invoice objInvoice = this.invoiceRepository.findById(invoiceNumber).orElse(null);
+        if (objInvoice == null) {
+            throw new EntidadNoExisteException("La Factura #" + invoiceNumber + " no existen en la base de datos");
         }
         objInvoice.setInProcess(false);
-        if(prmPaymentInfo.getObservation()!=null){
-            if(objInvoice.getReferenceNumber()!=null){
-                objInvoice.setReferenceNumber(objInvoice.getReferenceNumber()+" "+prmPaymentInfo.getObservation());
-            }else{
+        if (prmPaymentInfo.getObservation() != null) {
+            if (objInvoice.getReferenceNumber() != null) {
+                objInvoice.setReferenceNumber(objInvoice.getReferenceNumber() + " " + prmPaymentInfo.getObservation());
+            } else {
                 objInvoice.setReferenceNumber(prmPaymentInfo.getObservation());
             }
         }
-        String terminalsIds=objInvoice.getTerminalIds();
-        if(prmPaymentInfo.getConfirm()){
-            
-            Business objBusiness =this.businessRepository.findById(objInvoice.getBusinessId()).orElse(null); 
-            if(objBusiness!=null){
+        String terminalsIds = objInvoice.getTerminalIds();
+        if (prmPaymentInfo.getConfirm()) {
+
+            Business objBusiness = this.businessRepository.findById(objInvoice.getBusinessId()).orElse(null);
+            if (objBusiness != null) {
                 objBusiness.setLastPayment(LocalDate.now());
                 this.businessRepository.save(objBusiness);
             }
-        if(terminalsIds!=null){
-            String[] terminalIds=terminalsIds.split(",");
-            for (String terminalId : terminalIds) {
-                Terminal objTerminal=this.serviceDBTerminal.findById(Long.parseLong(terminalId)).orElse(null);
-                if(objTerminal!=null){
-                    objTerminal.setLastPayment(LocalDate.now());
-                    objTerminal.setEnable(true);
-                    objTerminal.setPayment(true);
-                    // se incrementa la fecha de expiración del terminal de acuerdo a la duración
+            if (terminalsIds != null) {
+                String[] terminalIds = terminalsIds.split(",");
+                for (String terminalId : terminalIds) {
+                    Terminal objTerminal = this.serviceDBTerminal.findById(Long.parseLong(terminalId)).orElse(null);
+                    if (objTerminal != null) {
+                        objTerminal.setLastPayment(LocalDate.now());
+                        objTerminal.setEnable(true);
+                        objTerminal.setPayment(true);
+                        // se incrementa la fecha de expiración del terminal de acuerdo a la duración
                         // del servicio
-                    if (objTerminal.getExpirationDate() != null && objTerminal.isEnable() && objTerminal.isPayment()) {
-                        if(!objTerminal.getExpirationDate().isBefore(LocalDate.now())){
-                            objTerminal.setExpirationDate(objTerminal.getExpirationDate().plusDays(objTerminal.getService().getDuration()));
-                        }else{
-                            objTerminal.setExpirationDate(LocalDate.now().plusDays(objTerminal.getService().getDuration()));
+                        if (objTerminal.getExpirationDate() != null && objTerminal.isEnable()
+                                && objTerminal.isPayment()) {
+                            if (!objTerminal.getExpirationDate().isBefore(LocalDate.now())) {
+                                objTerminal.setExpirationDate(objTerminal.getExpirationDate()
+                                        .plusDays(objTerminal.getService().getDuration()));
+                            } else {
+                                objTerminal.setExpirationDate(
+                                        LocalDate.now().plusDays(objTerminal.getService().getDuration()));
+                            }
+                        } else {
+                            objTerminal.setExpirationDate(
+                                    LocalDate.now().plusDays(objTerminal.getService().getDuration()));
                         }
-                    } else {
-                            objTerminal.setExpirationDate(LocalDate.now().plusDays(objTerminal.getService().getDuration()));
+                        if(objTerminal.isPrincipal()){
+                            objTerminal.getBusiness().setPriorNotification(null);
+                            objTerminal.getBusiness().setAfterNotification(null);
+                            objTerminal.getBusiness().setLastDayNotification(null);
+                        }
+                        this.serviceDBTerminal.save(objTerminal);
                     }
-                    this.serviceDBTerminal.save(objTerminal);
                 }
             }
-        }
-        }else{
+        } else {
             objInvoice.setRejected(true);
-            if(objInvoice.getReferenceNumber()!=null){
-                objInvoice.setReferenceNumber(objInvoice.getReferenceNumber()+"-"+"PAGO RECHAZADO");
-            }else{
+            if (objInvoice.getReferenceNumber() != null) {
+                objInvoice.setReferenceNumber(objInvoice.getReferenceNumber() + "-" + "PAGO RECHAZADO");
+            } else {
                 objInvoice.setReferenceNumber("PAGO RECHAZADO");
             }
         }
-        objInvoice=this.invoiceRepository.save(objInvoice);
+        objInvoice = this.invoiceRepository.save(objInvoice);
         InvoiceDTO objInvoiceDTO = this.mapper.map(objInvoice, InvoiceDTO.class);
-            return new ResponseEntity<InvoiceDTO>(objInvoiceDTO, HttpStatus.OK);
+        return new ResponseEntity<InvoiceDTO>(objInvoiceDTO, HttpStatus.OK);
     }
 
     /**
-     * Saves a payment method by creating a token for a credit card payment using the BlackStone API.
+     * Saves a payment method by creating a token for a credit card payment using
+     * the BlackStone API.
      *
-     * @param  prmRegistry    the payment data to be saved
-     * @return                the response entity with the result of the save operation
+     * @param prmRegistry the payment data to be saved
+     * @return the response entity with the result of the save operation
      */
     @Override
     @Transactional
     public ResponseEntity<?> createToken(PaymentDataDTO prmRegistry) {
-        prmRegistry=validateDataForCreateToken(prmRegistry);
-        if(prmRegistry==null){
-            HashMap<String,String> map=new HashMap<>();
-            map.put("message",msgError);
-            return new ResponseEntity<>(map,HttpStatus.BAD_REQUEST);
+        prmRegistry = validateDataForCreateToken(prmRegistry);
+        if (prmRegistry == null) {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("message", msgError);
+            return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
         }
-        Business objBusiness=this.businessRepository.findById(prmRegistry.getBusinessId()).orElse(null);
-        if(objBusiness==null){
-            throw new EntidadNoExisteException("El Business con businessId "+prmRegistry.getBusinessId()+" no existen en la base de datos");
+        Business objBusiness = this.businessRepository.findById(prmRegistry.getBusinessId()).orElse(null);
+        if (objBusiness == null) {
+            throw new EntidadNoExisteException(
+                    "El Business con businessId " + prmRegistry.getBusinessId() + " no existen en la base de datos");
         }
         String userTransactionNumber = uniqueString();
-        try{
-                            ResponseJSON objToken=blackStoneService.getToken(prmRegistry.getZipCode(),
-                            prmRegistry.getCreditcarnumber().replaceAll("-", ""),
-                            prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear(),
-                            prmRegistry.getNameOnCard(),
-                            prmRegistry.getSecuritycode(), null, userTransactionNumber);
-                            if(objToken.getResponseCode()==200){
-                                PaymentData objPaymentData=new PaymentData();
-                                objPaymentData.setToken(objToken.getToken());
-                                objPaymentData.setExpDate(prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear());
-                                objPaymentData.setNameOnCard(prmRegistry.getNameOnCard().toUpperCase().trim());
-                                objPaymentData.setCvn(prmRegistry.getSecuritycode());
-                                objPaymentData.setLast4Digits(prmRegistry.getCreditcarnumber().replaceAll("-", "").substring(prmRegistry.getCreditcarnumber().length()-4));
-                                objBusiness.setPaymentData(objPaymentData); 
-                                this.businessRepository.save(objBusiness);
-                                HashMap<String,String> map=new HashMap<>();
-                                map.put("message","Token creado exitosamente");
-                                return new ResponseEntity<>(map,HttpStatus.CREATED);
-                            }else{
-                                HashMap<String,String> map=new HashMap<>();
-                                map.put("message","No se pudo crear el token: "+objToken.getMsg());
-                                return new ResponseEntity<>(map,HttpStatus.BAD_REQUEST);
-                            }
-                            
-                            } catch (Exception e) {
-                                HashMap<String,String> map=new HashMap<>();
-                                map.put("message",e.getMessage());
-                                return new ResponseEntity<>(map,HttpStatus.BAD_REQUEST);
-                            }
-    }
-    private PaymentDataDTO validateDataForCreateToken(PaymentDataDTO prmRegistry) {
-            if(prmRegistry.getCreditcarnumber()!=null){
-                if(!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
-                    msgError = "Letters are not allowed in the credit card number";
-                return null;
-                }
-            }else{
-                msgError = "The credit card number is required";
-                return null;
+        try {
+            ResponseJSON objToken = blackStoneService.getToken(prmRegistry.getZipCode(),
+                    prmRegistry.getCreditcarnumber().replaceAll("-", ""),
+                    prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear(),
+                    prmRegistry.getNameOnCard(),
+                    prmRegistry.getSecuritycode(), null, userTransactionNumber);
+            if (objToken.getResponseCode() == 200) {
+                PaymentData objPaymentData = new PaymentData();
+                objPaymentData.setToken(objToken.getToken());
+                objPaymentData.setExpDate(prmRegistry.getExpDateMonth() + prmRegistry.getExpDateYear());
+                objPaymentData.setNameOnCard(prmRegistry.getNameOnCard().toUpperCase().trim());
+                objPaymentData.setCvn(prmRegistry.getSecuritycode());
+                objPaymentData.setLast4Digits(prmRegistry.getCreditcarnumber().replaceAll("-", "")
+                        .substring(prmRegistry.getCreditcarnumber().length() - 4));
+                objBusiness.setPaymentData(objPaymentData);
+                this.businessRepository.save(objBusiness);
+                HashMap<String, String> map = new HashMap<>();
+                map.put("message", "Token creado exitosamente");
+                return new ResponseEntity<>(map, HttpStatus.CREATED);
+            } else {
+                HashMap<String, String> map = new HashMap<>();
+                map.put("message", "No se pudo crear el token: " + objToken.getMsg());
+                return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
             }
-            if(prmRegistry.getNameOnCard()!=null){
-                prmRegistry.setNameOnCard(prmRegistry.getNameOnCard().toUpperCase().trim());
-            }else{
-                msgError = "The name on card is required";
-                return null;
-            }
-            if(prmRegistry.getSecuritycode()!=null){
-                if(!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")){
-                    msgError = "Letters are not allowed in the security code";
-                return null;
-                }
-            }else{
-                msgError = "The security code is required";
-                return null;
-            }
-            if(prmRegistry.getExpDateMonth()!=null){
-                if(!prmRegistry.getExpDateMonth().matches("[+-]?\\d*(\\.\\d+)?")){
-                    msgError = "Letters are not allowed in the expiration date";
-                return null;
-                }else{
-                    if(Integer.parseInt(prmRegistry.getExpDateMonth())>12){
-                        msgError = "The expiration date month must be less than or equal to 12";
-                        return null;
-                    }
-                }
-            }else{
-                msgError = "The expiration date month is required";
-                return null;
-            }
-            if(prmRegistry.getExpDateYear()!=null){
-                if(!prmRegistry.getExpDateYear().matches("[+-]?\\d*(\\.\\d+)?")){
-                    msgError = "Letters are not allowed in the expiration date";
-                return null;
-                }else{
-                    prmRegistry.setExpDateYear(prmRegistry.getExpDateYear().trim());
-                    if(prmRegistry.getExpDateYear().length()!=2){
-                        msgError = "The expiration date year must be 2 digits";
-                        return null;
-                    }
-                }
-            }else{
-                msgError = "The expiration date year is required";
-                return null;
-            }
-            
-            return prmRegistry;
-            
+
+        } catch (Exception e) {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("message", e.getMessage());
+            return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private PaymentDataDTO validateDataForCreateToken(PaymentDataDTO prmRegistry) {
+        if (prmRegistry.getCreditcarnumber() != null) {
+            if (!prmRegistry.getCreditcarnumber().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
+                msgError = "Letters are not allowed in the credit card number";
+                return null;
+            }
+        } else {
+            msgError = "The credit card number is required";
+            return null;
+        }
+        if (prmRegistry.getNameOnCard() != null) {
+            prmRegistry.setNameOnCard(prmRegistry.getNameOnCard().toUpperCase().trim());
+        } else {
+            msgError = "The name on card is required";
+            return null;
+        }
+        if (prmRegistry.getSecuritycode() != null) {
+            if (!prmRegistry.getSecuritycode().replace("-", "").matches("[+-]?\\d*(\\.\\d+)?")) {
+                msgError = "Letters are not allowed in the security code";
+                return null;
+            }
+        } else {
+            msgError = "The security code is required";
+            return null;
+        }
+        if (prmRegistry.getExpDateMonth() != null) {
+            if (!prmRegistry.getExpDateMonth().matches("[+-]?\\d*(\\.\\d+)?")) {
+                msgError = "Letters are not allowed in the expiration date";
+                return null;
+            } else {
+                if (Integer.parseInt(prmRegistry.getExpDateMonth()) > 12) {
+                    msgError = "The expiration date month must be less than or equal to 12";
+                    return null;
+                }
+            }
+        } else {
+            msgError = "The expiration date month is required";
+            return null;
+        }
+        if (prmRegistry.getExpDateYear() != null) {
+            if (!prmRegistry.getExpDateYear().matches("[+-]?\\d*(\\.\\d+)?")) {
+                msgError = "Letters are not allowed in the expiration date";
+                return null;
+            } else {
+                prmRegistry.setExpDateYear(prmRegistry.getExpDateYear().trim());
+                if (prmRegistry.getExpDateYear().length() != 2) {
+                    msgError = "The expiration date year must be 2 digits";
+                    return null;
+                }
+            }
+        } else {
+            msgError = "The expiration date year is required";
+            return null;
+        }
+
+        return prmRegistry;
+
+    }
 
 }

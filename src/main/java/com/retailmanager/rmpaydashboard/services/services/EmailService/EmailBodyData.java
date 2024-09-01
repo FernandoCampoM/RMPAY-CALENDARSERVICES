@@ -35,6 +35,7 @@ public class EmailBodyData {
     private double subTotal;
     private double stateTax;
     private boolean automaticPayments;
+    private String errorMessage;
     
     private List<RejectedPaymentsDTO> rejectedPayments= new ArrayList<>();
 

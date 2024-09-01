@@ -9,9 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Component;
 
+import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Terminal;
+import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.InvoiceServices.IInvoiceServices;
 
 import jakarta.transaction.Transactional;
 
@@ -19,6 +24,11 @@ import jakarta.transaction.Transactional;
 public class BackgroundRoutinesService {
     @Autowired
     private TerminalRepository terminalRepository;
+    @Autowired
+    private BusinessRepository businessRepository;
+    @Autowired
+    private IInvoiceServices invoiceService;
+
     @Autowired
     IEmailService emailService;
     @Modifying
@@ -128,8 +138,37 @@ public class BackgroundRoutinesService {
     }
 
     public void automaticPayments() {
+        System.out.println("INICIO DE PAGO AUTOMATICO");
         LocalDate date = LocalDate.now();
-        List<Terminal> terminals = terminalRepository.findTerminalsForPayment(date);
+        Iterable<Business> allBusinesses = businessRepository.findAll();
+        for (Business business : allBusinesses) {
+            try {
+
+                if(business.getPaymentData()!=null){
+                    System.out.println("EJECUTANO PAGO PARA EL NEGOCIO: "+business.getBusinessId());
+                    List<Terminal> terminalsforPayment = terminalRepository.findTerminalsForPayment(date, business.getBusinessId());
+                    List<Terminal> terminalsThatAreNotPaid=terminalRepository.terminalsThatAreNotPaid(date, business.getBusinessId());
+                    if(terminalsforPayment.size()>0){
+                        doPaymentDTO paymentInfo = new doPaymentDTO();
+                        paymentInfo.setTerminalsNumber(terminalsforPayment.size()+terminalsThatAreNotPaid.size());
+                        paymentInfo.setBusinessId(business.getBusinessId());
+                        paymentInfo.setAutomaticPayments(true);
+                        paymentInfo.setTerms(true);
+                        paymentInfo.setPaymethod("TOKEN");
+                        paymentInfo.setTerminalsDoPayment(new ArrayList<>());
+                        for (Terminal terminal : terminalsforPayment) {
+                            TerminalsDoPaymentDTO terminalDoPayment = new TerminalsDoPaymentDTO();
+                            terminalDoPayment.setTerminalId(terminal.getTerminalId());
+                            terminalDoPayment.setIdService(terminal.getService().getServiceId());
+                            paymentInfo.getTerminalsDoPayment().add(terminalDoPayment);
+                        }
+                        invoiceService.doPayment(paymentInfo);
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Error BackgroundRoutinesService.automaticPayments: Business Id: " + business.getBusinessId() + " -- " + e.getMessage());
+            }
+        }
     }
 
 }
