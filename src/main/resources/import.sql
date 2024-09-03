@@ -1,7 +1,7 @@
 USE [RMPAY]
 SET IDENTITY_INSERT [dbo].[Users] ON 
-INSERT [dbo].[Users] ([userID], [email], [enable], [name], [password], [phone], [rol], [username]) VALUES (1, N'rmpayadmin@rmpay.com', 1, N'nombre_completo', N'$2a$10$v9Z35MgLhhMcTb6FADuliuRbHij78SRL1YShMu/oagQR0zzLUz2pG', N'3156837054', N'ROLE_MANAGER', N'rmpayadmin')
-INSERT [dbo].[Users] ([userID], [email], [enable], [name], [password], [phone], [rol], [username]) VALUES (6, N'rmpayuser@rmpay.com', 1, N'user test', N'$2a$10$v9Z35MgLhhMcTb6FADuliuRbHij78SRL1YShMu/oagQR0zzLUz2pG', N'3156837054', N'ROLE_USER', N'rmpayuser')
+INSERT [dbo].[Users] ([userID], [email], [enable], [name], [password], [phone], [rol], [username],[lastLogin]) VALUES (1, N'rmpayadmin@rmpay.com', 1, N'User Admin', N'$2a$10$jc6vTUvY8BeWzmeh29cd5.gJn9poemEIFaSCVBMSXqjAxXgIXnlsG', N'3156837054', N'ROLE_MANAGER', N'rmpayadmin','2024-09-01')
+INSERT [dbo].[Users] ([userID], [email], [enable], [name], [password], [phone], [rol], [username]) VALUES (6, N'rmpayuser@rmpay.com', 1, N'user test', N'$2a$10$kfPlFLXEnv0Zmqo9toeUYuc.4uGEXlyTUX3oor4VthyzPEV59z7gS', N'3156837054', N'ROLE_USER', N'rmpayuser')
 SET IDENTITY_INSERT [dbo].[Users] OFF
 INSERT [dbo].[paymentMethods] ([code], [name], [enable], [Notes]) VALUES (N'ATHMOVIL', N'ATH Movil', 1, NULL)
 INSERT [dbo].[paymentMethods] ([code], [name], [enable], [Notes]) VALUES (N'BANK-ACCOUNT', N'Cuenta de Banco', 1, NULL)

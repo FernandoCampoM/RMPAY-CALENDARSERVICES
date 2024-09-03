@@ -10,11 +10,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class Utils {
     public static void main(String[] args){
-        String texto="ejemploUsuario";
-        System.out.println(texto.substring(texto.length()-4));
+        String texto="rmpayuser";
         String textoCodificado=new BCryptPasswordEncoder().encode(texto);
         System.out.println(textoCodificado);
-        System.out.println(new BCryptPasswordEncoder().matches("ejemploUsuario", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));
+        System.out.println(new BCryptPasswordEncoder().matches("rmpayuser", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));
         
         
         String originalFileName = "archivo con caracteres : no permitidos.txt";
