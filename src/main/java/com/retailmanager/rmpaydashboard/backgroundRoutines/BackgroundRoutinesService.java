@@ -144,7 +144,7 @@ public class BackgroundRoutinesService {
         for (Business business : allBusinesses) {
             try {
 
-                if(business.getPaymentData()!=null){
+                if(business.getPaymentData()!=null && business.getPaymentData().isUsingAutomaticPayment()){
                     System.out.println("EJECUTANO PAGO PARA EL NEGOCIO: "+business.getBusinessId());
                     List<Terminal> terminalsforPayment = terminalRepository.findTerminalsForPayment(date, business.getBusinessId());
                     List<Terminal> terminalsThatAreNotPaid=terminalRepository.terminalsThatAreNotPaid(date, business.getBusinessId());

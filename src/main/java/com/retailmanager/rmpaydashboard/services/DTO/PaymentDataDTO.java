@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,6 +19,8 @@ private int paymentId;
     private String nameOnCard;
     private String cvn;
     private String last4Digits;
+    @NotNull(message = "{paymentdata.usingAutomaticPayment.notnull}")
+    private boolean usingAutomaticPayment;
 
 
     @NotEmpty(message = "{paymentdata.creditcardnumber.notempty}")

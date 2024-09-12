@@ -33,6 +33,7 @@ import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
+import com.retailmanager.rmpaydashboard.repositories.PaymentDataRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.ConfirmPaymentDTO;
@@ -78,6 +79,8 @@ public class InvoiceServices implements IInvoiceServices {
     String msgError = "";
     @Autowired
     private TerminalRepository serviceDBTerminal;
+    @Autowired
+    PaymentDataRepository paymentDataRepository;
     Gson gson = new Gson();
 
     /**
@@ -296,7 +299,7 @@ public class InvoiceServices implements IInvoiceServices {
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }
-                        if(objTer.isPrincipal()){
+                        if (objTer.isPrincipal()) {
                             objBusiness.setPriorNotification(null);
                             objBusiness.setAfterNotification(null);
                             objBusiness.setLastDayNotification(null);
@@ -345,7 +348,7 @@ public class InvoiceServices implements IInvoiceServices {
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }
-                        if(objTer.isPrincipal()){
+                        if (objTer.isPrincipal()) {
                             objBusiness.setPriorNotification(null);
                             objBusiness.setAfterNotification(null);
                             objBusiness.setLastDayNotification(null);
@@ -787,7 +790,7 @@ public class InvoiceServices implements IInvoiceServices {
                             objTerminal.setExpirationDate(
                                     LocalDate.now().plusDays(objTerminal.getService().getDuration()));
                         }
-                        if(objTerminal.isPrincipal()){
+                        if (objTerminal.isPrincipal()) {
                             objTerminal.getBusiness().setPriorNotification(null);
                             objTerminal.getBusiness().setAfterNotification(null);
                             objTerminal.getBusiness().setLastDayNotification(null);
@@ -846,6 +849,7 @@ public class InvoiceServices implements IInvoiceServices {
                 objPaymentData.setLast4Digits(prmRegistry.getCreditcarnumber().replaceAll("-", "")
                         .substring(prmRegistry.getCreditcarnumber().length() - 4));
                 objBusiness.setPaymentData(objPaymentData);
+                objPaymentData.setUsingAutomaticPayment(prmRegistry.isUsingAutomaticPayment());
                 this.businessRepository.save(objBusiness);
                 HashMap<String, String> map = new HashMap<>();
                 map.put("message", "Token creado exitosamente");
@@ -920,6 +924,91 @@ public class InvoiceServices implements IInvoiceServices {
 
         return prmRegistry;
 
+    }
+
+    /**
+     * Verifies if a payment method exists for a given business ID.
+     *
+     * @param prmBusinessId the ID of the business
+     * @return a ResponseEntity containing a boolean value indicating if the payment
+     *         method exists
+     *         or not, wrapped in a ResponseEntity with HTTP status code 200
+     * @throws EntidadNoExisteException if the business with the given ID does not
+     *                                  exist in the database
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> existToken(Long prmBusinessId) {
+        Business objBusiness = this.businessRepository.findById(prmBusinessId).orElse(null);
+        if (objBusiness == null) {
+            throw new EntidadNoExisteException(
+                    "El Business con businessId " + prmBusinessId + " no existen en la base de datos");
+        }
+        if (objBusiness.getPaymentData() != null) {
+            return new ResponseEntity<>(true, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(false, HttpStatus.OK);
+        }
+    }
+
+    /**
+     * Retrieves the payment method for a given business ID.
+     *
+     * @param prmBusinessId the ID of the business
+     * @return a ResponseEntity containing the payment method data, or an exception
+     *         if the business does not exist
+     * @throws EntidadNoExisteException if the business with the given ID does not
+     *                                  exist in the database
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getToken(Long prmBusinessId) {
+        Business objBusiness = this.businessRepository.findById(prmBusinessId).orElse(null);
+        if (objBusiness == null) {
+            throw new EntidadNoExisteException(
+                    "El Business con businessId " + prmBusinessId + " no existen en la base de datos");
+        }
+        if (objBusiness.getPaymentData() == null) {
+            throw new EntidadNoExisteException(
+                    "El Business con businessId " + prmBusinessId + " no tiene un metodo de pago configurado");
+        }
+
+        PaymentDataDTO objPaymentData = this.mapper.map(objBusiness.getPaymentData(), PaymentDataDTO.class);
+        return new ResponseEntity<>(objPaymentData, HttpStatus.OK);
+    }
+
+    /**
+     * Deletes the payment data for a given business ID.
+     *
+     * @param prmBusinessId the ID of the business
+     * @return a ResponseEntity containing the result of the deletion operation, or
+     *         an exception if the business does not exist
+     * @throws EntidadNoExisteException if the business with the given ID does not
+     *                                  exist in the database
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> deleteToken(Long prmBusinessId) {
+        Business objBusiness = this.businessRepository.findById(prmBusinessId).orElse(null);
+        if (objBusiness == null) {
+            throw new EntidadNoExisteException(
+                    "El Business con businessId " + prmBusinessId + " no existen en la base de datos");
+        }
+        try {
+            if (objBusiness.getPaymentData() != null) {
+                int paymentDataId = objBusiness.getPaymentData().getPaymentId();
+                objBusiness.setPaymentData(null);
+
+                this.businessRepository.save(objBusiness);
+                paymentDataRepository.deleteById(paymentDataId);
+            }
+
+        } catch (Exception e) {
+            HashMap<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return new ResponseEntity<>(true, HttpStatus.OK);
     }
 
 }

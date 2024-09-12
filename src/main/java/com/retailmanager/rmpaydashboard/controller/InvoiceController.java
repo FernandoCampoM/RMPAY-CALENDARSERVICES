@@ -1,8 +1,10 @@
 package com.retailmanager.rmpaydashboard.controller;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +17,7 @@ import com.retailmanager.rmpaydashboard.services.services.InvoiceServices.IInvoi
 
 import jakarta.validation.Valid;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +44,39 @@ public class InvoiceController {
     @PostMapping("/invoices/token")
     public ResponseEntity<?> createToken(@Valid @RequestBody PaymentDataDTO prmPaymentInfo){
         return this.invoiceService.createToken(prmPaymentInfo);
+    }
+    @GetMapping("/invoices/token/exist")
+    public ResponseEntity<?> createToken(@Valid @RequestParam("businessid") String prmBusinessId){
+       try {
+            Long businessId = Long.parseLong(prmBusinessId);
+            return this.invoiceService.existToken(businessId);
+        } catch (Exception e) {
+            HashMap<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+    @GetMapping("/invoices/token")
+    public ResponseEntity<?> getToken(@Valid @RequestParam("businessid") String prmBusinessId){
+       try {
+            Long businessId = Long.parseLong(prmBusinessId);
+            return this.invoiceService.getToken(businessId);
+        } catch (Exception e) {
+            HashMap<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+    @DeleteMapping("/invoices/token")
+    public ResponseEntity<?> deleteToken(@Valid @RequestParam("businessid") String prmBusinessId){
+       try {
+            Long businessId = Long.parseLong(prmBusinessId);
+            return this.invoiceService.deleteToken(businessId);
+        } catch (Exception e) {
+            HashMap<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
     @PostMapping("/invoices/doPayment")
     public ResponseEntity<?> doPayment(@Valid @RequestBody doPaymentDTO prmPaymentInfo){

@@ -29,6 +29,9 @@ public class PaymentData {
     private String cvn;
     @Column(nullable = false)
     private String last4Digits;
+    //Cómo le seteo un vaor por default? 
+    @Column(nullable = true) 
+    private boolean usingAutomaticPayment;
 
     
     

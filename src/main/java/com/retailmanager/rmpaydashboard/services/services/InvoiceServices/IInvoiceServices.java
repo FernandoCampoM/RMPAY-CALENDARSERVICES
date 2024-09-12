@@ -10,6 +10,9 @@ import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
 
 public interface IInvoiceServices {
     public ResponseEntity<?> createToken(PaymentDataDTO prmPaymentInfo);
+    public ResponseEntity<?> existToken(Long prmBusinessId);
+    public ResponseEntity<?> getToken(Long prmBusinessId);
+    public ResponseEntity<?> deleteToken(Long prmBusinessId);
     public ResponseEntity<?> doPayment(doPaymentDTO prmPaymentInfo);
     public ResponseEntity<?> getPaymentHistoryByBusiness(Long businessId, LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> testPayment(doPaymentDTO prmPaymentInfo);
