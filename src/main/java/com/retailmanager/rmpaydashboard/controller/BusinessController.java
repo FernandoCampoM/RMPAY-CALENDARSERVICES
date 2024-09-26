@@ -1,6 +1,7 @@
 package com.retailmanager.rmpaydashboard.controller;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -17,8 +18,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.retailmanager.rmpaydashboard.services.DTO.BusinessConfigurationDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.BusinessConfigurationMini;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
+import com.retailmanager.rmpaydashboard.services.services.BusinessConfigurationService.IBusinessConfigurationService;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.ProductService.IProductService;
 
@@ -32,6 +37,8 @@ import jakarta.validation.constraints.Positive;
 public class BusinessController {
     @Autowired
     private IBusinessService businessService;
+    @Autowired
+    private IBusinessConfigurationService businessConfigurationService;
     @Autowired
     private IProductService productService;
     /**
@@ -177,4 +184,30 @@ public class BusinessController {
     public ResponseEntity<?> deleteLogoAth(@PathVariable Long businessId){
         return businessService.deleteLogoATH(businessId);
     }
+
+    ////////////////BUSINESS CONFIGURATION////////////////////
+    @PostMapping("/business/{businessId}/configuration")
+    public ResponseEntity<?> SaveBusinessConfigurations(@PathVariable Long businessId, @RequestBody BusinessConfigurationDTO config) {
+        config.setBusinessId(businessId);
+        return businessConfigurationService.create(config);
+    }
+    @PostMapping("/business/{businessId}/configuration/batch")
+    public ResponseEntity<?> batchUpdateBusinessConfigurations(@PathVariable Long businessId, @RequestBody List<BusinessConfigurationMini> config) {
+        
+        return businessConfigurationService.update(businessId, config);
+    }
+    /**
+     * Retrieves all BusinessConfigurations by a given Start key for a given Business.
+     * 
+     * @param  businessId  the ID of the Business to find the configurations for
+     * @param  configKey   the key to search for
+     * @return             a ResponseEntity containing a list of BusinessConfigurationMini objects
+     *                     or throws an EntidadNoExisteException if the Business does not exist
+     */
+    @GetMapping("/business/{businessId}/configuration")
+    public ResponseEntity<?> getBusinessConfigurations(@PathVariable Long businessId,@RequestParam(name ="startKey") String configKey) {
+        
+        return businessConfigurationService.getAllByKey(configKey, businessId);
+    }
+
 }

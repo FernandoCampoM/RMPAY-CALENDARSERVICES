@@ -416,7 +416,7 @@ public class UserService implements IUserService{
                                 objPaymentData.setNameOnCard(prmRegistry.getNameoncard());
                                 objPaymentData.setCvn(prmRegistry.getSecuritycode());
                                 objPaymentData.setLast4Digits(prmRegistry.getCreditcarnumber().replaceAll("-", "").substring(prmRegistry.getCreditcarnumber().length()-4));
-
+                                objPaymentData.setUsingAutomaticPayment(true);
                             }
                             
                             } catch (Exception e) {

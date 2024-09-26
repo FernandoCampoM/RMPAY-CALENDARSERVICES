@@ -26,9 +26,9 @@ public class Utils {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        System.out.println("ID unico: " + generateUniqueId());
-        System.out.println("ID unico: " + generateUniqueId());
-        System.out.println("ID unico: " + generateUniqueId());
+        String rutaProyecto = System.getProperty("user.dir");
+        String directorioImagenes = rutaProyecto + "/src/main/resources/static/images/";
+        System.out.println(directorioImagenes);
     }
     public static long generateUniqueId() {
          Random random = new Random();

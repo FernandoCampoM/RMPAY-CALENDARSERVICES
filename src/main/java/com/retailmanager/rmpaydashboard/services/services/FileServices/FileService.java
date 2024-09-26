@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
-import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.FileModel;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.FileRepository;
@@ -24,7 +23,7 @@ import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 public class FileService implements IFileService {
     
     String rutaProyecto = System.getProperty("user.dir");
-    String directorioImagenes = rutaProyecto + "/src/main/resources/static/images/";
+    String directorioImagenes = rutaProyecto + "/images/";
 
     @Autowired
     private FileRepository fileRepository;

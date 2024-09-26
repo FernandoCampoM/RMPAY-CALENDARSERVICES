@@ -259,7 +259,9 @@ public class BusinessService implements IBusinessService {
                                     objPaymentData.setNameOnCard(prmBusiness.getNameoncard());
                                     objPaymentData.setCvn(prmBusiness.getSecuritycode());
                                     objPaymentData.setLast4Digits(prmBusiness.getCreditcarnumber().replaceAll("-", "").substring(prmBusiness.getCreditcarnumber().length()-4));
+                                    objEmailBodyData.setAutomaticPayments(true);
                                     objBusiness.setPaymentData(objPaymentData);
+
                                 }
                             
                             } catch (Exception e) {
