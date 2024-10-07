@@ -2,7 +2,6 @@ package com.retailmanager.rmpaydashboard.controller;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 
 import javax.validation.Valid;
 
@@ -125,10 +124,7 @@ public class ProductsController {
     }
     @GetMapping("/products/inventory/generatedId")
     public ResponseEntity<?> generatedId(){
-        Random random = new Random();
-        long currentTimeMillis = System.currentTimeMillis();
-        int randomInt = random.nextInt(1000); // Agrega una aleatoriedad para reducir colisiones
-        long generatedId = currentTimeMillis + randomInt;
+        long generatedId = this.productService.generateUniqueReceiptId();
         HashMap<String, Long> rta = new HashMap<>();
         rta.put("generatedId", generatedId);
         return new ResponseEntity<>(rta,HttpStatus.OK);

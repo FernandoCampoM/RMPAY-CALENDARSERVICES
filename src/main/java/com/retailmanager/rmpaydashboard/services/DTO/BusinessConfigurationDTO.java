@@ -17,6 +17,7 @@ public class BusinessConfigurationDTO {
     private String configKey;  // Name of the configuration (e.g., 'MaxUsers')
 
     private String value;  // Text or long string configuration value with 'TEXT' type
+    private String configName;
 
     private LocalDateTime createdAt ;  // Creation timestamp
 

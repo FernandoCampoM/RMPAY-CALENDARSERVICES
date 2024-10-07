@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
 
+import java.math.BigDecimal;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +12,7 @@ public class InventoryItemDTO {
     private Long productId;
     private String description;
     private int quantity;
-    private Double totalCost;
-    private Double unitaryCost;
-    private Double price;
+    private BigDecimal totalCost;
+    private BigDecimal unitaryCost;
+    private BigDecimal price;
 }

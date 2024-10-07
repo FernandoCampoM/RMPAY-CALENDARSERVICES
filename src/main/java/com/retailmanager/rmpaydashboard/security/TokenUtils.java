@@ -61,7 +61,7 @@ public class TokenUtils {
     }
 
     public static UsernamePasswordAuthenticationToken getAuthentication(String token, UserRepository usuarioRepository){
-        Long terminalIdLong=null;
+        String terminalIdLong=null;
         try {
             System.out.println("TOKEN EN UTILS: "+token);
             Claims claims = Jwts.parserBuilder()
@@ -73,7 +73,7 @@ public class TokenUtils {
         System.out.println("username en UTILS: "+username);
         System.out.println("claims: "+claims.keySet());
         if(claims.keySet().contains("terminalId")){
-            terminalIdLong=claims.get("terminalId", Long.class);
+            terminalIdLong=claims.get("terminalId", String.class);
         }
         
         
@@ -91,7 +91,13 @@ public class TokenUtils {
         }
         
     }
-    public static Long getTerminalId(String token){
+    /**
+     * Retrieves the terminal ID associated with the given token, or null if the token is invalid or does not contain a terminal ID.
+     * 
+     * @param token the token to parse
+     * @return the terminal ID associated with the token, or null if the token is invalid or does not contain a terminal ID
+     */
+    public static String getTerminalId(String token){
         try {
             Claims claims = Jwts.parserBuilder()
                             .setSigningKey(ACCESS_TOKEN_SECRET.getBytes())
@@ -99,7 +105,7 @@ public class TokenUtils {
                             .parseClaimsJws(token)
                             .getBody();
         String username=claims.getSubject();
-        Long terminalId=claims.get("terminalId", Long.class);
+        String terminalId=claims.get("terminalId", String.class);
         if(terminalId!=null){
             return terminalId;
         }

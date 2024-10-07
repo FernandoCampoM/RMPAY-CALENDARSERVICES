@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
-import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
@@ -62,6 +62,7 @@ public class TerminalService implements ITerminalService {
     String msgError = "";
 
     /**
+     * GUARDA EL NOMBRE Y SERIAL DEL TERMINAL EN LA BASE DE DATOS SÍ EL TERMINAL YA ESTÁ CREADO
      * Saves a TerminalDTO object in the database and returns a response entity.
      *
      * @param prmTerminal the TerminalDTO object to be saved
@@ -71,8 +72,8 @@ public class TerminalService implements ITerminalService {
     @Override
     @Transactional
     public ResponseEntity<?> save(TerminalDTO prmTerminal) {
-        //TODO : MODIFICAR PARA REGUSTRAR EL TERMINAL TENEINDO EN CUENTA QUE ESTE YA EXISTE EN LA BASE DE DATOS
-        Long terminalId = prmTerminal.getTerminalId();
+        
+        String terminalId = prmTerminal.getTerminalId();
         Terminal terminal=null;
         if (terminalId != null) {
             terminal = this.serviceDBTerminal.findById(terminalId).orElse(null);
@@ -131,7 +132,7 @@ public class TerminalService implements ITerminalService {
      */
     @Override
     @Transactional
-    public ResponseEntity<?> update(Long terminalId, TerminalDTO prmTerminal) {
+    public ResponseEntity<?> update(String terminalId, TerminalDTO prmTerminal) {
         Terminal objTerminal = null;
         ResponseEntity<?> rta = null;
         if (terminalId != null) {
@@ -179,7 +180,7 @@ public class TerminalService implements ITerminalService {
      */
     @Override
     @Transactional
-    public boolean delete(Long terminalId) {
+    public boolean delete(String terminalId) {
         boolean bandera = false;
 
         if (terminalId != null) {
@@ -206,7 +207,7 @@ public class TerminalService implements ITerminalService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<?> findById(Long terminalId) {
+    public ResponseEntity<?> findById(String terminalId) {
         if (terminalId != null) {
             Optional<Terminal> optional = this.serviceDBTerminal.findById(terminalId);
             if (optional.isPresent()) {
@@ -253,7 +254,7 @@ public class TerminalService implements ITerminalService {
      */
     @Override
     @Transactional
-    public ResponseEntity<?> updateEnable(Long terminalId, boolean enable) {
+    public ResponseEntity<?> updateEnable(String terminalId, boolean enable) {
 
         if (terminalId != null) {
             Optional<Terminal> optional = this.serviceDBTerminal.findById(terminalId);
@@ -288,7 +289,7 @@ public class TerminalService implements ITerminalService {
         ResponseEntity<?> rta;
         Business objBusiness = null;
         Terminal objTerminal = this.mapper.map(prmTerminal, Terminal.class);
-        objTerminal.setTerminalId(null);
+        objTerminal.setTerminalId(getTerminalId());
         objTerminal.setRegisterDate(LocalDate.now());
         Long businessId = prmTerminal.getBusinesId();
         EmailBodyData objEmailBodyData = mapper.map(prmTerminal, EmailBodyData.class);
@@ -416,7 +417,7 @@ public class TerminalService implements ITerminalService {
         objTerminal.setEnable(true);
         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
         objTerminal.setSerial(null);
-        objTerminal.setName("Terminal " + LocalDate.now().toString());
+        objTerminal.setName(objTerminal.getTerminalId().toString());
         Invoice objInvoice = new Invoice();
         objInvoice.setTotalAmount(amount);
         objInvoice.setSubTotal(objEmailBodyData.getSubTotal());
@@ -707,6 +708,32 @@ public class TerminalService implements ITerminalService {
         EntidadNoExisteException objExeption = new EntidadNoExisteException(
                 "El Business con businessId " + businessId + " no existe en la Base de datos");
         throw objExeption;
+    }
+    /**
+     * Generates a unique Terminal ID.
+     *
+     * @return a unique 6 character string in the format "RMxxxx"
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public String getTerminalId() {
+        Random random = new Random();
+        //long currentTimeMillis = System.currentTimeMillis();
+        //long generatedId = currentTimeMillis + randomInt;
+        Terminal terminal = null;
+        int randomInt=0;
+        String formattedInt="00000";
+        do{
+            randomInt = random.nextInt(99999); // Agrega una aleatoriedad para reducir colisiones
+            formattedInt = String.format("%05d", randomInt);
+            String terminalId = "RM"+formattedInt;
+            terminal = this.serviceDBTerminal.findById(terminalId).orElse(null);
+            if(terminal==null){
+                return terminalId;
+            }
+        }while(terminal!=null);
+
+        return "RM"+formattedInt;
     }
 
 }

@@ -57,6 +57,7 @@ public class BusinessConfigurationService implements IBusinessConfigurationServi
         newConfig.setBusiness(business);
         newConfig.setCreatedAt(LocalDateTime.now());
         newConfig.setUpdatedAt(LocalDateTime.now());
+        newConfig.setConfigName(config.getConfigName());
         newConfig=configRepository.save(newConfig);
         config.setConfigurationid(newConfig.getConfigurationid());
         config.setCreatedAt(newConfig.getCreatedAt());
@@ -103,6 +104,7 @@ public class BusinessConfigurationService implements IBusinessConfigurationServi
             if(newConfig!=null){
                 newConfig.setValue(conf.getValue());
                 newConfig.setUpdatedAt(LocalDateTime.now());
+                newConfig.setConfigName(conf.getConfigName());
                 configRepository.save(newConfig);
             }
         }

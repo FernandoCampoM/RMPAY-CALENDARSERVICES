@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 
-import com.retailmanager.rmpaydashboard.security.AuthCredentials;
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;

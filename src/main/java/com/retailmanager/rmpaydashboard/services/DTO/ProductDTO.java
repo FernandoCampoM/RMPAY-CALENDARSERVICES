@@ -1,4 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
+import java.math.BigDecimal;
+
 import com.retailmanager.rmpaydashboard.models.Product;
 
 import jakarta.validation.constraints.*;
@@ -26,12 +28,12 @@ public class ProductDTO {
     private String description;
 
     @NotNull(message = "{product.cost.null}")
-    @Min(value = 0, message = "{product.cost.min}")
-    private double cost;
+    @DecimalMin(value = "0.00", message = "{product.cost.min}")
+    private BigDecimal cost;
 
     @NotNull(message = "{product.price.null}")
-    @Min(value = 0, message = "{product.price.min}")
-    private double price;
+    @DecimalMin(value = "0.00", message = "{product.price.min}")
+    private BigDecimal price;
     
     private Long idCategory;
     private String nameCategory;

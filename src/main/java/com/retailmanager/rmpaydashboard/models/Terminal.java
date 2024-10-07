@@ -6,8 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -24,8 +22,7 @@ import jakarta.persistence.Column;
 public class Terminal {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long terminalId;
+    private String terminalId;
     @Column(nullable = true)
     private String serial;
     @Column(nullable = true)

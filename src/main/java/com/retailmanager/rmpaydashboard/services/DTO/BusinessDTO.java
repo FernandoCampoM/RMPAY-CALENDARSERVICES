@@ -3,7 +3,6 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 import java.time.LocalDate;
 import java.util.List;
 
-import jakarta.persistence.Column;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

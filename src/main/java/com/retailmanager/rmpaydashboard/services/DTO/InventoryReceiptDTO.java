@@ -12,7 +12,7 @@ import lombok.Setter;
 public class InventoryReceiptDTO {
     private Long receiptId;
     private String comments;
-    
+    private String supplier;
     private String inventoryEntered;
     private LocalDateTime registerDate;
     private Long businessId;

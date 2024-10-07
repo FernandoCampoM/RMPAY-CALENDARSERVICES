@@ -1,12 +1,11 @@
 package com.retailmanager.rmpaydashboard.utils;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.Normalizer;
 import java.util.Random;
-import java.util.UUID;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import com.retailmanager.rmpaydashboard.models.Terminal;
 
 public class Utils {
     public static void main(String[] args){
@@ -15,20 +14,22 @@ public class Utils {
         System.out.println(textoCodificado);
         System.out.println(new BCryptPasswordEncoder().matches("rmpayuser", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));
         
+        System.out.println("Terminal Id: "+getTerminalId());
         
-        String originalFileName = "archivo con caracteres : no permitidos.txt";
-        String safeFileName = generateSafeFileName(originalFileName);
-        System.out.println("Nombre seguro para el archivo: " + safeFileName);
+    }
+    private static String getTerminalId() {
+        Random random = new Random();
+        //long currentTimeMillis = System.currentTimeMillis();
+        //long generatedId = currentTimeMillis + randomInt;
+        Terminal terminal = null;
+        int randomInt=0;
+        
+            randomInt = random.nextInt(99999); // Agrega una aleatoriedad para reducir colisiones
+            
+            randomInt=23;
+            String formattedInt = String.format("%05d", randomInt);
 
-        try {
-            InetAddress ip = InetAddress.getLocalHost();
-            System.out.println("IP address of my PC: " + ip.getHostAddress());
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-        String rutaProyecto = System.getProperty("user.dir");
-        String directorioImagenes = rutaProyecto + "/src/main/resources/static/images/";
-        System.out.println(directorioImagenes);
+        return "RM"+formattedInt;
     }
     public static long generateUniqueId() {
          Random random = new Random();

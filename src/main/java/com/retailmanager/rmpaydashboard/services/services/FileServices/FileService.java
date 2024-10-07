@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.FileModel;
-import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 
 @Service
@@ -28,8 +27,6 @@ public class FileService implements IFileService {
     @Autowired
     private FileRepository fileRepository;
 
-    @Autowired
-    private BusinessRepository businessRepository;
     /**
      * Saves the provided file to the database.
      *

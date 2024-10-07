@@ -65,7 +65,7 @@ public class SaleDTO {
     private Long businessId;
     private Integer saleToRefund;
 
-    private Long terminalId;
+    private String terminalId;
     @NotNull(message = "{sale.tipAmount.notNull}")
     @PositiveOrZero(message = "{sale.tipAmount.positiveOrZero}")
     private Double tipAmount;

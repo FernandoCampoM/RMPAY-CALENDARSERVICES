@@ -1,6 +1,5 @@
 package com.retailmanager.rmpaydashboard.services.services.EmailService;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface IEmailService {

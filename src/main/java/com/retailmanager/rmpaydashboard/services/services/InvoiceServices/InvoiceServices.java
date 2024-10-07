@@ -1,7 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.services.InvoiceServices;
 
 import java.text.DecimalFormat;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
@@ -15,7 +14,6 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -40,10 +38,8 @@ import com.retailmanager.rmpaydashboard.services.DTO.ConfirmPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.InvoiceDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PaymentDataDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PaymentHistoryReport;
-import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
-import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
@@ -72,8 +68,6 @@ public class InvoiceServices implements IInvoiceServices {
 
     @Autowired
     private BusinessRepository serviceDBBusiness;
-    @Autowired
-    private IBusinessService businessService;
     @Autowired
     private IBlackStoneService blackStoneService;
     String msgError = "";
@@ -278,7 +272,7 @@ public class InvoiceServices implements IInvoiceServices {
             objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
 
             objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
-            List<Long> listTerminalIds = new ArrayList<Long>();
+            List<String> listTerminalIds = new ArrayList<String>();
             switch (prmPaymentInfo.getPaymethod()) {
                 case "CREDIT-CARD":
                     objBusiness.setLastPayment(LocalDate.now());
@@ -344,7 +338,7 @@ public class InvoiceServices implements IInvoiceServices {
                             } else {
                                 objTer.setExpirationDate(objTer.getExpirationDate().plusDays(service.getDuration()));
                             }
-                            // TODO: revisar esta parte de pago con token, esta sin revisar
+                            
                         } else {
                             objTer.setExpirationDate(LocalDate.now().plusDays(service.getDuration()));
                         }
@@ -770,7 +764,7 @@ public class InvoiceServices implements IInvoiceServices {
             if (terminalsIds != null) {
                 String[] terminalIds = terminalsIds.split(",");
                 for (String terminalId : terminalIds) {
-                    Terminal objTerminal = this.serviceDBTerminal.findById(Long.parseLong(terminalId)).orElse(null);
+                    Terminal objTerminal = this.serviceDBTerminal.findById(terminalId).orElse(null);
                     if (objTerminal != null) {
                         objTerminal.setLastPayment(LocalDate.now());
                         objTerminal.setEnable(true);

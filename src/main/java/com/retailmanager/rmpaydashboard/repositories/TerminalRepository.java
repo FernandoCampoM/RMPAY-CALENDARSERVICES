@@ -15,13 +15,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 
-public interface TerminalRepository extends CrudRepository<Terminal, Long> {
+public interface TerminalRepository extends CrudRepository<Terminal, String> {
     Optional<Terminal> findOneBySerial(String serial);
     
     List<Terminal> findByBusiness(Business business);
     @Modifying
     @Query("UPDATE Terminal u SET u.enable = :enable WHERE u.terminalId = :terminalId")
-    void updateEnable(Long terminalId, boolean enable);
+    void updateEnable(String terminalId, boolean enable);
     /**
      * Obtiene los terminles expirados de un negocio
      *
@@ -42,7 +42,7 @@ public interface TerminalRepository extends CrudRepository<Terminal, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Terminal t SET t.enable= false where t.terminalId = :terminalId")
-     int deactivateExpiredTerminals(Long terminalId);
+     int deactivateExpiredTerminals(String terminalId);
 
     @Query("Select t from Terminal t where t.business.priorNotification IS NULL  and t.expirationDate=:targetDate")
      List<Terminal> getBusinessForPriorNotification(LocalDate targetDate);

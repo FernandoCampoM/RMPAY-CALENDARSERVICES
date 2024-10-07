@@ -15,7 +15,6 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
-import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -45,7 +45,7 @@ public class User {
     @Column(nullable = true)
     private LocalDate lastLogin;
     @Column(nullable = true)
-    private Long tempAuthId;
+    private String tempAuthId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false,columnDefinition = "VARCHAR(50) default 'ROLE_USER'")

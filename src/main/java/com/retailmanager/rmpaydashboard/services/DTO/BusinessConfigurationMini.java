@@ -12,4 +12,5 @@ public class BusinessConfigurationMini {
     private String configKey;  // Name of the configuration (e.g., 'MaxUsers')
 
     private String value;
+    private String configName;
 }

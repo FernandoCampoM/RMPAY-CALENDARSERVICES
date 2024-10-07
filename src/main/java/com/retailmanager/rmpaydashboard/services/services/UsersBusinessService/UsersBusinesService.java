@@ -36,7 +36,6 @@ import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
-import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.security.TokenUtils;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
@@ -68,8 +67,7 @@ public class UsersBusinesService implements IUsersBusinessService{
     private PermisionRepository serviceDBUPermission;
     @Autowired
     private UserPermissionRepository serviceDBUserPermission;
-    @Autowired
-    private UserRepository serviceDBUser;
+    
     /**
      * Save the UsersBusinessDTO to the database.
      *
@@ -487,7 +485,7 @@ public class UsersBusinesService implements IUsersBusinessService{
     public ResponseEntity<?> registerExit(String authToken,EmployeeAuthentication prmEmployeeAuthentication) {
         Terminal objTerminal=null;
         Business objBusiness=null;
-        Long terminalId=TokenUtils.getTerminalId(authToken);
+        String terminalId=TokenUtils.getTerminalId(authToken);
         if(terminalId!=null){
             objTerminal=this.serviceDBTerminal.findById(terminalId).orElse(null);
             if(objTerminal!=null){
@@ -532,7 +530,7 @@ public class UsersBusinesService implements IUsersBusinessService{
     public ResponseEntity<?> registerEntry(String authToken,EmployeeAuthentication prmEmployeeAuthentication) {
         Terminal objTerminal=null;
         Business objBusiness=null;
-        Long terminalId=TokenUtils.getTerminalId(authToken);
+        String terminalId=TokenUtils.getTerminalId(authToken);
         if(terminalId!=null){
             objTerminal=this.serviceDBTerminal.findById(terminalId).orElse(null);
             if(objTerminal!=null){

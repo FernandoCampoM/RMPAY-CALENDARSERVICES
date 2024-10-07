@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter @Setter @NoArgsConstructor  @AllArgsConstructor
 public class TerminalsDoPaymentDTO {
-    private Long terminalId;
+    private String terminalId;
     private Long idService;
 
     //ATRIUBUTOS DE PAGO INTERNOS QUE NO SE RECIBEN DESDE EL FRONTEND

@@ -32,6 +32,8 @@ public class BusinessConfiguration {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();  // Update timestamp
+    @Column(nullable = true)
+    private String configName;
 
     @PreUpdate
     protected void onUpdate() {

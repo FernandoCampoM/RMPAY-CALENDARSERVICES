@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.models;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,10 +27,12 @@ public class Product {
     private String name;
     @Column(nullable = true, unique = false)
     private String description;
-    @Column(nullable = false, unique = false)
-    private double cost;
-    @Column(nullable = false, unique = false)
-    private double price;
+    @Column(nullable = false, unique = false, precision = 10, scale = 2)
+    private BigDecimal cost;
+
+    @Column(nullable = false, unique = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
     
     @Column(nullable = false, unique = false)
     private String code;

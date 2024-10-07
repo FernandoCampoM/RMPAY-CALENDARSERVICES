@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.retailmanager.rmpaydashboard.models.User;
 
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 @AllArgsConstructor  
 public class UserDetailsImpl implements UserDetails{

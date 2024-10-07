@@ -49,6 +49,7 @@ import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneSer
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 import com.retailmanager.rmpaydashboard.services.services.ResellerServices.IResellerService;
+import com.retailmanager.rmpaydashboard.services.services.TerminalService.ITerminalService;
 
 
 
@@ -83,6 +84,8 @@ public class UserService implements IUserService{
     String msgError = "";
     @Autowired
     private TerminalRepository serviceDBTerminal;
+    @Autowired
+    private ITerminalService terminalService;
     Gson gson = new Gson();
     /**
      * Save user data into the database and return the response entity
@@ -479,7 +482,7 @@ public class UserService implements IUserService{
                             objInvoice.setSubTotal(objEmailBodyData.getSubTotal());
                             objInvoice.setStateTax(stateTax);
                             objInvoice.setTotalAmount(amount);
-                            List<Long> listTerminalIds=new ArrayList<Long>();
+                            List<String> listTerminalIds=new ArrayList<String>();
                             List<String> paymentDescription=new ArrayList<>();
                             paymentDescription.add( descripcion);
                             switch (prmRegistry.getPaymethod()){
@@ -487,12 +490,13 @@ public class UserService implements IUserService{
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setTerminalId(this.terminalService.getTerminalId());
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName("Terminal "+(i+1));
+                                        objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
@@ -536,12 +540,13 @@ public class UserService implements IUserService{
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setTerminalId(this.terminalService.getTerminalId());
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName("Terminal "+(i+2));
+                                        objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
@@ -587,12 +592,13 @@ public class UserService implements IUserService{
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setTerminalId(this.terminalService.getTerminalId());
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(null);
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName("Terminal "+(i+1));
+                                        objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);

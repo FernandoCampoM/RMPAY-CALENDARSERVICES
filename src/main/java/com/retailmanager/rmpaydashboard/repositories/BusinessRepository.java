@@ -1,8 +1,6 @@
 package com.retailmanager.rmpaydashboard.repositories;
 
-import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.models.Business;
-import com.retailmanager.rmpaydashboard.models.User;
 
 import java.time.LocalDate;
 import java.util.List;

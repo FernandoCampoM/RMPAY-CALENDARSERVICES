@@ -14,7 +14,7 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TerminalDTO {
-    private Long terminalId;
+    private String terminalId;
     
     private String serial;
     @NotBlank(message = "{terminal.name.empty}")

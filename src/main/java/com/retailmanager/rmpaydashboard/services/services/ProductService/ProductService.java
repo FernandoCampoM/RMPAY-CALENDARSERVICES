@@ -7,16 +7,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamResource;
@@ -26,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,8 +68,6 @@ public class ProductService implements IProductService {
     @Autowired 
     private InventoryReceiptRepository serviceDBInventoryReceipt;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
     
     /**
      * Save a product and handle exceptions.
@@ -611,14 +605,23 @@ public class ProductService implements IProductService {
         prmInventoryReceipt.setInventoryEntered(objInventoryReceipt.getInventoryEntered()); 
         return new ResponseEntity<>(prmInventoryReceipt,HttpStatus.CREATED);
     }
-    private Long generateUniqueReceiptId() {
+    @Override
+    public Long generateUniqueReceiptId() {
         // Implementa tu lógica para generar un ID único aquí, por ejemplo:
         // Puede ser una combinación de la fecha actual, un contador, o cualquier lógica que asegure unicidad.
         // Ejemplo simple:
-        Random random = new Random();
-        long currentTimeMillis = System.currentTimeMillis();
-        int randomInt = random.nextInt(1000); // Agrega una aleatoriedad para reducir colisiones
-        return currentTimeMillis + randomInt; // Esto generará un timestamp como ID
+        // Random random = new Random();
+        // long currentTimeMillis = System.currentTimeMillis();
+        // int randomInt = random.nextInt(1000); // Agrega una aleatoriedad para reducir colisiones
+        // return currentTimeMillis + randomInt; // Esto generará un timestamp como ID
+        Long lastId=this.serviceDBInventoryReceipt.getLastId();
+        if(lastId==null){
+            return 1L;
+        }
+        if(lastId==0){
+            return 1L;
+        }
+        return lastId+1;
     }
     @Override
     @Transactional(readOnly = true)

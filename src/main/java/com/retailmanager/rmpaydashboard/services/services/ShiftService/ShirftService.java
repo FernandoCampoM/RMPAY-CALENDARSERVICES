@@ -8,7 +8,6 @@ import java.util.List;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,8 @@ import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.security.TokenUtils;
 import com.retailmanager.rmpaydashboard.services.DTO.ShiftDTO;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class ShirftService implements IShiftService{
     @Autowired
@@ -39,11 +40,12 @@ public class ShirftService implements IShiftService{
     private ShiftReporsitory serviceDBShift;
 
     @Override
+    @Transactional
     public ResponseEntity<?> openShift(String authToken, ShiftDTO shiftDTO) {
 
         Terminal objTerminal=null;
         Business objBusiness=null;
-        Long terminalId=TokenUtils.getTerminalId(authToken);
+        String terminalId=TokenUtils.getTerminalId(authToken);
         if(terminalId!=null){
             objTerminal=this.serviceDBTerminal.findById(terminalId).orElse(null);
             if(objTerminal!=null){

@@ -9,10 +9,11 @@ import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 public interface ITerminalService {
     public ResponseEntity<?> save(TerminalDTO prmTerminal);
     public ResponseEntity<?> buyTerminal(BuyTerminalDTO prmTerminal);
-    public ResponseEntity<?> update(Long terminalId, TerminalDTO prmTerminal);
-    public boolean delete(Long terminalId);
-    public ResponseEntity<?> findById(Long terminalId);
+    public ResponseEntity<?> update(String terminalId, TerminalDTO prmTerminal);
+    public boolean delete(String terminalId);
+    public ResponseEntity<?> findById(String terminalId);
     public ResponseEntity<?> findBySerial(String  serial);
-    public ResponseEntity<?> updateEnable(Long terminalId, boolean enable);
+    public ResponseEntity<?> updateEnable(String terminalId, boolean enable);
     public ResponseEntity<?> getExpiredTerminals(Long businessId); 
+    public String getTerminalId();
 }

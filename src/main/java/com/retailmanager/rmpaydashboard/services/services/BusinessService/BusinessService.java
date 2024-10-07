@@ -43,6 +43,7 @@ import com.retailmanager.rmpaydashboard.services.services.FileServices.IFileServ
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
+import com.retailmanager.rmpaydashboard.services.services.TerminalService.ITerminalService;
 
 @org.springframework.stereotype.Service
 public class BusinessService implements IBusinessService {
@@ -54,6 +55,8 @@ public class BusinessService implements IBusinessService {
     private ServiceRepository serviceDBService;
     @Autowired
     private TerminalRepository serviceDBTerminal;
+    @Autowired
+    private ITerminalService terminalService;
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
@@ -296,7 +299,7 @@ public class BusinessService implements IBusinessService {
                         
                         objBusinessDTO=this.mapper.map(objBusiness, BusinessDTO.class);
                         if(prmBusiness.getAdditionalTerminals()!=null && prmBusiness.getAdditionalTerminals()!=0 && objBusinessDTO!=null && prmBusiness.getPaymethod()!=null){
-                            List<Long> listTerminalIds=new ArrayList<Long>();
+                            List<String> listTerminalIds=new ArrayList<String>();
                             Invoice objInvoice=new Invoice();
                             List<String> paymentDescription=new ArrayList<>();
                             objInvoice.setSubTotal(objEmailBodyData.getSubTotal());
@@ -307,12 +310,13 @@ public class BusinessService implements IBusinessService {
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setTerminalId(this.terminalService.getTerminalId());
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName("Terminal "+(i+1));
+                                        objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
                                         objTerminal.setPayment(true);
                                         if(i==0){
@@ -357,12 +361,13 @@ public class BusinessService implements IBusinessService {
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setTerminalId(this.terminalService.getTerminalId());
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName("Terminal "+(i+1));
+                                        objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);
@@ -406,12 +411,13 @@ public class BusinessService implements IBusinessService {
                                     for (int i = 0; i < prmBusiness.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
+                                        objTerminal.setTerminalId(this.terminalService.getTerminalId());
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
                                         objTerminal.setExpirationDate(LocalDate.now().plusDays(objService.getDuration()));
                                         objTerminal.setSerial(null);
-                                        objTerminal.setName("Terminal "+(i+1));
+                                        objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
                                         if(i==0){
                                             objTerminal.setPrincipal(true);

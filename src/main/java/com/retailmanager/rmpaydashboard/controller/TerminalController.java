@@ -35,7 +35,7 @@ public class TerminalController {
      * @return              the ResponseEntity containing the terminal found
      */
     @GetMapping("/terminals/{terminalId}")
-    public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")Long terminalId){
+    public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")String terminalId){
         return this.terminalService.findById(terminalId);
     }
     /**
@@ -70,7 +70,7 @@ public class TerminalController {
      * @return              description of return value
      */
     @PutMapping("/terminals/{terminalId}")
-    public ResponseEntity<?> update(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")Long terminalId,@Valid @RequestBody TerminalDTO prmTerminal){
+    public ResponseEntity<?> update(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")String terminalId,@Valid @RequestBody TerminalDTO prmTerminal){
         return this.terminalService.update(terminalId,prmTerminal);
     }
     /**
@@ -80,7 +80,7 @@ public class TerminalController {
      * @return              true if the terminal is successfully deleted, false otherwise
      */
     @DeleteMapping("/terminals/{terminalId}")
-    public Boolean delete(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")Long terminalId){
+    public Boolean delete(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")String terminalId){
         return this.terminalService.delete(terminalId);
     }
     /**
@@ -91,7 +91,7 @@ public class TerminalController {
      * @return             the ResponseEntity with the result of the update
      */
     @PutMapping("/terminals/{terminalId}/enable/{enable}")
-    public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")Long terminalId, @Valid @PathVariable boolean enable){
+    public ResponseEntity<?> updateEnable(@Valid @PathVariable @Positive(message = "El id del terminal debe ser positivo")String terminalId, @Valid @PathVariable boolean enable){
         return this.terminalService.updateEnable(terminalId,enable);
     }
     @GetMapping("/terminals/expiredByBusiness/{businessId}")

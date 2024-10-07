@@ -1,20 +1,14 @@
 package com.retailmanager.rmpaydashboard.models;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Random;
 
 import com.retailmanager.rmpaydashboard.services.DTO.InventoryReceiptDTO;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +21,8 @@ public class InventoryReceipt {
     private String comments;
     @Column(nullable = false,columnDefinition = "VARCHAR(MAX)")
     private String inventoryEntered;
+    @Column(nullable = true,columnDefinition = "VARCHAR(MAX)")
+    private String supplier;
     private LocalDateTime registerDate;
 
     @ManyToOne(optional = false)
@@ -40,6 +36,7 @@ public class InventoryReceipt {
         inventoryReceiptDTO.setRegisterDate(this.registerDate.withNano(0));
         inventoryReceiptDTO.setReceiptId(this.receiptId);
         inventoryReceiptDTO.setBusinessId(this.objBusiness.getBusinessId());
+        inventoryReceiptDTO.setSupplier(this.supplier);
          return inventoryReceiptDTO;
     }
 

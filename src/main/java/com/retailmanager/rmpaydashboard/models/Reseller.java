@@ -4,11 +4,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
 
 import jakarta.persistence.*;
 

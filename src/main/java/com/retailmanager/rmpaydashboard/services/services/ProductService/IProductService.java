@@ -50,4 +50,6 @@ public interface IProductService {
 
     public ResponseEntity<?> receiveInventory(InventoryReceiptDTO prmInventoryReceipt);
     public ResponseEntity<?> getInventoryHistory(Long businessId);
+
+    public Long generateUniqueReceiptId();
 }
