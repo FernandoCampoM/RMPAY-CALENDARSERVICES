@@ -765,6 +765,7 @@ public static Duration calculateDuration(LocalDate startDate, LocalTime startTim
             entryExits=serviceDBEntryExit.findByUserBusinessIdAndDate(businessId, startDate, endDate);
         }
         for(EntryExit entryExit:entryExits){
+            entryExit.setHour(entryExit.getHour().withNano(0));
             if(empleados.containsKey(entryExit.getUserBusiness().getUserBusinessId())){
                 HashMap<String,Object> info=(HashMap<String,Object>)empleados.get(entryExit.getUserBusiness().getUserBusinessId());
                 List<EntryExit> ponchesList=(List<EntryExit>)info.get("ponches");

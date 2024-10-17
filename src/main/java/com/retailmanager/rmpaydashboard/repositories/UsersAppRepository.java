@@ -22,4 +22,8 @@ public interface UsersAppRepository extends CrudRepository<UsersBusiness,Long>{
     @Modifying
     @Query("UPDATE UsersBusiness u SET u.enable = :enable WHERE u.userBusinessId = :userBusinessId")
     void updateEnable(Long userBusinessId, boolean enable);
+
+    @Modifying
+    @Query("UPDATE UsersBusiness u SET u.download = :download WHERE u.userBusinessId != :userBusinessId")
+    void updateAllDownloadExceptMe(Long userBusinessId, boolean download);
 }

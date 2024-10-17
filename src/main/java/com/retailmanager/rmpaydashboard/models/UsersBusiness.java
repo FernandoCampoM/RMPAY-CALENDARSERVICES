@@ -38,7 +38,8 @@ public class UsersBusiness {
     @ManyToOne(cascade=CascadeType.PERSIST,optional = false)
     @JoinColumn( name="businessId",nullable = false)
     private Business business;
-
+    //Indica si el empleado ha descargado en el
+    // terminal la lista de los empleados existentes.
     private Boolean download=false;
     @Column(nullable = true)
     private Double costHour;

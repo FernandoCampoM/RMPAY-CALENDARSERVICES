@@ -1,9 +1,11 @@
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\InventoryReceiptRepository.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\BusinessConfigurationService\BusinessConfigurationService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\UsersBusinessService\IUsersBusinessService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\ConfigurationNotFoundException.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\TerminalRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\EmailService\IEmailService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ResellerServices\ResellerServices.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\BusinessConfiguration.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\InvalidToken.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\InvoiceDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\security\TokenUtils.java
@@ -25,6 +27,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\ResponseJSON.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\PaymentMethodController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\ResellerAcountSold.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\BusinessConfigurationService\IBusinessConfigurationService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ReportsServices\ReportService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\ServiceDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\ServiceController.java
@@ -58,6 +61,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\PaymentPlanInfo.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\TerminalDisabled.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\ShiftReporsitory.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\BusinessConfigurationRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Permission.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\ProductRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\ReportsDTO\DailySummaryDTO.java
@@ -85,10 +89,12 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\RestApiExceptionHandler.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Category.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\security\Token.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\BusinessConfigurationDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\PaymentMethodDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\doPaymentDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\ShiftDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\security\UserDetailsImpl.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\BusinessConfigurationMini.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ProductService\IProductService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\UsersBusinessService\UsersBusinesService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\ResponsePayment.java

@@ -23,4 +23,5 @@ public interface IBusinessConfigurationService {
 
     // Delete a BusinessConfiguration by its ID
     public ResponseEntity<?> delete(Long id);
+    
 }

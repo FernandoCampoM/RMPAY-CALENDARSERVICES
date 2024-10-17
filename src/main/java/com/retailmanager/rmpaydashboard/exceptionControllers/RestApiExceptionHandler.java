@@ -21,6 +21,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.Configur
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ErrorUtils;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidDateOrTime;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidToken;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.MaxTerminalsReached;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.TerminalDisabled;
@@ -157,6 +158,18 @@ public class RestApiExceptionHandler {
                                                 HttpStatus.BAD_REQUEST.value())
                                 .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
                 return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+        @ExceptionHandler(InvalidDateOrTime.class)
+        public ResponseEntity<Error> handleInvalidDateOrTime(final HttpServletRequest req,
+                        final InvalidToken ex, final Locale locale) {
+                final Error error = ErrorUtils
+                                .crearError(CodigoError.INVALID_DATEORTIME.getCodigo(),
+                                                String.format("%s, %s",
+                                                                CodigoError.INVALID_DATEORTIME.getLlaveMensaje(),
+                                                                ex.getMessage()),
+                                                HttpStatus.UNPROCESSABLE_ENTITY.value())
+                                .setUrl(req.getRequestURL().toString()).setMetodo(req.getMethod());
+                return new ResponseEntity<>(error, HttpStatus.UNPROCESSABLE_ENTITY);
         }
         /**
          * Atiende las Exepciones MethodArgumentNotValidException y crea una rspuesta

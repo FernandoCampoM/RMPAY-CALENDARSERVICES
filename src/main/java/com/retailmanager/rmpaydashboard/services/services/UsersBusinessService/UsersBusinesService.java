@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidDateOrTime;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.EntryExit;
@@ -131,11 +132,13 @@ public class UsersBusinesService implements IUsersBusinessService{
                     usersBusiness.getUserPermissions().add(userPermission);
                 } 
                 usersBusiness=this.usersAppDBService.save(usersBusiness);
+                this.usersAppDBService.updateAllDownloadExceptMe(userBusinessId, false);
                 prmUsersBusiness=this.mapper.map(usersBusiness, UsersBusinessDTO.class);
                 prmUsersBusiness.setActivesPermissions(new ArrayList<>());
                 for (UserPermission iterable_element : usersBusiness.getUserPermissions()) {
                     prmUsersBusiness.getActivesPermissions().add(iterable_element.getPermission().getPermissionId());
                 }
+
                 return new ResponseEntity<UsersBusinessDTO>(prmUsersBusiness, HttpStatus.OK);
             }else{
                 EntidadNoExisteException objExeption = new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
@@ -566,6 +569,9 @@ public class UsersBusinesService implements IUsersBusinessService{
         if(listActivity==null || listActivity.isEmpty()){
             objEntryExit.setEntry(true);
         }else{
+            if(objEntryExit.getHour().isBefore(listActivity.get(0).getHour())){
+                throw new InvalidDateOrTime("La fecha o hora de entrada no puede ser menor a la registrada en el último ponche");
+            }
             if(listActivity.get(0).getEntry()){
                 objEntryExit.setEntry(false);
                 float hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
@@ -647,6 +653,9 @@ public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche) {
         List<EntryExit> listActivity=this.entryExitDBService.getPreviousEntry(objPonche.getId(),objPonche.getUserBusiness().getUserBusinessId(),pageable);
         float hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objPonche.getDate(), objPonche.getHour()).toHours();
         objPonche.setTotalWorkCost(hoursWorket*objPonche.getUserBusiness().getCostHour());
+        if(prmPonche.getHour().isBefore(listActivity.get(0).getHour())){
+            throw new InvalidDateOrTime("La fecha o hora de entrada no puede ser menor a la registrada en el último ponche");
+        }
     }
     objPonche=this.entryExitDBService.save(objPonche);
     EntryExitDTO objEntryExitDTO=this.mapper.map(objPonche, EntryExitDTO.class);

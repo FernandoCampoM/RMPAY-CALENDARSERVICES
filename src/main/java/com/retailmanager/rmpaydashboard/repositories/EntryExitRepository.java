@@ -16,13 +16,13 @@ public interface EntryExitRepository extends CrudRepository<EntryExit, Long>,  P
      * @param userBusinessId
      * @return
      */
-    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.userBusinessId = :userBusinessId ORDER BY e.date DESC, e.hour DESC")
+    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.userBusinessId = :userBusinessId ORDER BY e.id,e.date DESC, e.hour DESC")
     public List<EntryExit> getLastActivity(Long userBusinessId, Pageable pageable);
 
-    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.business.businessId = :businessId AND e.date >= :startDate AND e.date <= :endDate ORDER BY e.date , e.hour ")
+    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.business.businessId = :businessId AND e.date >= :startDate AND e.date <= :endDate ORDER BY e.id,e.date , e.hour ")
     public List<EntryExit> findByUserBusinessIdAndDate(Long businessId, LocalDate startDate, LocalDate endDate);
 
-    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.business.businessId = :businessId AND e.date >= :startDate AND e.date <= :endDate AND e.userBusiness.userBusinessId =:filter ORDER BY e.date , e.hour ")
+    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.business.businessId = :businessId AND e.date >= :startDate AND e.date <= :endDate AND e.userBusiness.userBusinessId =:filter ORDER BY e.id,e.date , e.hour ")
     public List<EntryExit> findByUserBusinessIdAndDate(Long businessId, LocalDate startDate, LocalDate endDate, Long filter);
 
     @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.userBusinessId = :userBusinessId AND e.id<:id ORDER BY e.id DESC")
