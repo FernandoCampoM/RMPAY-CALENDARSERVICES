@@ -16,7 +16,7 @@ public interface EntryExitRepository extends CrudRepository<EntryExit, Long>,  P
      * @param userBusinessId
      * @return
      */
-    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.userBusinessId = :userBusinessId ORDER BY e.id,e.date DESC, e.hour DESC")
+    @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.userBusinessId = :userBusinessId ORDER BY e.id desc")
     public List<EntryExit> getLastActivity(Long userBusinessId, Pageable pageable);
 
     @Query("SELECT e FROM EntryExit e WHERE e.userBusiness.business.businessId = :businessId AND e.date >= :startDate AND e.date <= :endDate ORDER BY e.id,e.date , e.hour ")

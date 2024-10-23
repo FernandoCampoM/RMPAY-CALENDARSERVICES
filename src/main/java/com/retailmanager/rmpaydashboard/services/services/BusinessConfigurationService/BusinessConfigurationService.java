@@ -1,6 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.BusinessConfigurationService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.modelmapper.ModelMapper;
@@ -16,8 +17,11 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.BusinessConfiguration;
+import com.retailmanager.rmpaydashboard.models.EmployeeBusinessConfigDownload;
+import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessConfigurationRepository;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.EmployeeBusinessConfigDownloadRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessConfigurationDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessConfigurationMini;
 
@@ -27,6 +31,8 @@ public class BusinessConfigurationService implements IBusinessConfigurationServi
     private BusinessConfigurationRepository configRepository;
     @Autowired
     private BusinessRepository businessRepository;
+    @Autowired
+    private EmployeeBusinessConfigDownloadRepository downloadConfigRepository;
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
@@ -62,11 +68,23 @@ public class BusinessConfigurationService implements IBusinessConfigurationServi
         config.setConfigurationid(newConfig.getConfigurationid());
         config.setCreatedAt(newConfig.getCreatedAt());
         config.setUpdatedAt(newConfig.getUpdatedAt());
+        List<UsersBusiness> employees=business.getUsersBusiness();
+        List<EmployeeBusinessConfigDownload> downloads = new ArrayList<>();
+        for (UsersBusiness employee : employees) {
+            EmployeeBusinessConfigDownload download = new EmployeeBusinessConfigDownload();
+            download.setDownload(false);
+            download.setObjConfiguration(newConfig);
+            download.setObjUser(employee);
+            downloads.add(download);
+        }
+        downloadConfigRepository.saveAll(downloads);
+
 
         return new ResponseEntity<>(config,HttpStatus.CREATED);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getById(Long id) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getById'");
@@ -106,6 +124,7 @@ public class BusinessConfigurationService implements IBusinessConfigurationServi
                 newConfig.setUpdatedAt(LocalDateTime.now());
                 newConfig.setConfigName(conf.getConfigName());
                 configRepository.save(newConfig);
+                downloadConfigRepository.updateDownload(newConfig.getConfigurationid(),businessId,false);
             }
         }
 

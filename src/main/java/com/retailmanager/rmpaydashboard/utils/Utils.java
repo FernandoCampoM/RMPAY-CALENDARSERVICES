@@ -1,6 +1,7 @@
 package com.retailmanager.rmpaydashboard.utils;
 
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.util.Random;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,7 +14,9 @@ public class Utils {
         String textoCodificado=new BCryptPasswordEncoder().encode(texto);
         System.out.println(textoCodificado);
         System.out.println(new BCryptPasswordEncoder().matches("rmpayuser", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));
-        
+        LocalDate date = LocalDate.now();
+        LocalDate date2 = LocalDate.now();
+        System.out.println("La fecha es: "+date.isEqual(date2));
         System.out.println("Terminal Id: "+getTerminalId());
         
     }

@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+import com.retailmanager.rmpaydashboard.services.DTO.BusinessConfigurationDTO;
+
 @Entity
 @Getter @Setter // Lombok annotation to generate getters, setters, equals, hash, toString
 @NoArgsConstructor  // Lombok annotation to generate no-args constructor
@@ -39,4 +41,16 @@ public class BusinessConfiguration {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    public BusinessConfigurationDTO toDTO() {
+        BusinessConfigurationDTO businessConfigurationDTO = new BusinessConfigurationDTO();
+        businessConfigurationDTO.setConfigurationid(Configurationid);
+        businessConfigurationDTO.setBusinessId(business.getBusinessId());
+        businessConfigurationDTO.setConfigKey(configKey);
+        businessConfigurationDTO.setValue(value);
+        businessConfigurationDTO.setConfigName(configName);
+        businessConfigurationDTO.setCreatedAt(createdAt);
+        businessConfigurationDTO.setUpdatedAt(updatedAt);
+        return businessConfigurationDTO;
+    }
+
 }

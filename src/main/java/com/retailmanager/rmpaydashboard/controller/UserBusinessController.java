@@ -128,6 +128,14 @@ public class UserBusinessController {
     public ResponseEntity<?> updateDownloadCategory(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId, @Valid @RequestBody @NotEmpty(message = "category_ids.notempty") List<Long> category_ids) {
         return usersBusinessService.updateDownloadCategory(userBusinessId, category_ids);
     }
+    @GetMapping("/userBusiness/businessConfiguration/{userBusinessId}")
+    public ResponseEntity<?> getBusinessConfiguration(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
+        return usersBusinessService.getBusinessConfiguration(userBusinessId);
+    }
+    @PutMapping("/userBusiness/businessConfiguration/{userBusinessId}")
+    public ResponseEntity<?> updateDownloadbusinessConfiguration(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId, @Valid @RequestBody @NotEmpty(message = "configuration_ids.notempty") List<Long> configuration_ids) {
+        return usersBusinessService.updateDownloadBusinessConfiguration(userBusinessId, configuration_ids);
+    }
     @GetMapping("/userBusiness/userBusiness/{userBusinessId}")
     public ResponseEntity<?> getUsersBusiness(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long userBusinessId) {
         return usersBusinessService.getUsersBusiness(userBusinessId);

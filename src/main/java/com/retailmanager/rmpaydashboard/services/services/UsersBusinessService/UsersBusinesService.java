@@ -23,6 +23,7 @@ import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadN
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidDateOrTime;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
+import com.retailmanager.rmpaydashboard.models.EmployeeBusinessConfigDownload;
 import com.retailmanager.rmpaydashboard.models.EntryExit;
 import com.retailmanager.rmpaydashboard.models.Permission;
 import com.retailmanager.rmpaydashboard.models.Terminal;
@@ -31,6 +32,7 @@ import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UserPermission;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
+import com.retailmanager.rmpaydashboard.repositories.EmployeeBusinessConfigDownloadRepository;
 import com.retailmanager.rmpaydashboard.repositories.EntryExitRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
@@ -39,6 +41,7 @@ import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductReposit
 import com.retailmanager.rmpaydashboard.repositories.UserPermissionRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.security.TokenUtils;
+import com.retailmanager.rmpaydashboard.services.DTO.BusinessConfigurationDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
@@ -68,6 +71,8 @@ public class UsersBusinesService implements IUsersBusinessService{
     private PermisionRepository serviceDBUPermission;
     @Autowired
     private UserPermissionRepository serviceDBUserPermission;
+    @Autowired
+    private EmployeeBusinessConfigDownloadRepository employeeBusinessConfig;
     
     /**
      * Save the UsersBusinessDTO to the database.
@@ -555,7 +560,7 @@ public class UsersBusinesService implements IUsersBusinessService{
         }
         List<UsersBusiness> objUser=this.usersAppDBService.findByPasswordAndBusinessId(String.valueOf(prmEmployeeAuthentication.getPassword()), objBusiness.getBusinessId());
         if(objUser==null || objUser.isEmpty()){
-            throw new EntidadNoExisteException("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" no existe en la Base de datos");
+            throw new EntidadNoExisteException("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" no existe en la Base de datos para el Negocio "+objBusiness.getBusinessId());
         }
         if(objUser.get(0).getEnable()==false){
             throw new UserDisabled("El Empleado con password "+prmEmployeeAuthentication.getPassword()+" esta deshabilitado");
@@ -565,16 +570,21 @@ public class UsersBusinesService implements IUsersBusinessService{
         objEntryExit.setHour(LocalTime.now());
         objEntryExit.setUserBusiness(objUser.get(0));
         Pageable pageable = PageRequest.of(0, 10);
+        float hoursWorket=0;
         List<EntryExit> listActivity=this.entryExitDBService.getLastActivity(objUser.get(0).getUserBusinessId(),pageable);
         if(listActivity==null || listActivity.isEmpty()){
             objEntryExit.setEntry(true);
         }else{
-            if(objEntryExit.getHour().isBefore(listActivity.get(0).getHour())){
-                throw new InvalidDateOrTime("La fecha o hora de entrada no puede ser menor a la registrada en el último ponche");
+            if(objEntryExit.getDate().isBefore(listActivity.get(0).getDate())){
+                throw new InvalidDateOrTime("La fecha de entrada no puede ser menor a la registrada en el último ponche");
+            }
+            if(objEntryExit.getDate().isEqual(listActivity.get(0).getDate()) && objEntryExit.getHour().isBefore(listActivity.get(0).getHour())){
+                throw new InvalidDateOrTime("La hora de entrada no puede ser menor a la registrada en el último ponche");
             }
             if(listActivity.get(0).getEntry()){
                 objEntryExit.setEntry(false);
-                float hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
+                 hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
+                
                 objEntryExit.setTotalWorkCost(hoursWorket*objUser.get(0).getCostHour());
             }else{
                 objEntryExit.setEntry(true);
@@ -586,6 +596,7 @@ public class UsersBusinesService implements IUsersBusinessService{
         EntryExitDTO.setUserId(objUser.get(0).getUserBusinessId());
         EntryExitDTO.setName(objUser.get(0).getUsername());
         EntryExitDTO.setHour(EntryExitDTO.getHour().withNano(0));
+        EntryExitDTO.setHoursWorked(hoursWorket);
         return new ResponseEntity<>(EntryExitDTO,HttpStatus.CREATED);
     }
 /**
@@ -668,5 +679,58 @@ public static Duration calculateDuration(LocalDate startDate, LocalTime startTim
         LocalDateTime endDateTime = LocalDateTime.of(endDate, endTime);
         return Duration.between(startDateTime, endDateTime);
     }
+
+/**
+ * Retrieves the business configuration associated with the given user business ID.
+ *
+ * @param  userBusinessId  the ID of the user business
+ * @return                 the ResponseEntity containing the list of BusinessConfigurationDTO objects
+ *                         or an INTERNAL_SERVER_ERROR status if an exception occurs
+ * @throws EntidadNoExisteException if the UsersBusiness with the given ID does not exist in the database
+ */ 
+@Override
+@Transactional
+public ResponseEntity<?> getBusinessConfiguration(Long userBusinessId) {
+    List<BusinessConfigurationDTO> businessConfiguration=new ArrayList<>();
+        
+            UsersBusiness objUser=this.usersAppDBService.findById(userBusinessId).orElse(null);
+            if(objUser==null){
+                throw new EntidadNoExisteException("El UsersBusiness con userBusinessId "+userBusinessId+" no existe en la Base de datos");
+            }
+            try {    
+            List<EmployeeBusinessConfigDownload> ebcList=this.employeeBusinessConfig.findByObjUserAndDownload(objUser,false);
+            for(EmployeeBusinessConfigDownload ebc:ebcList){
+                businessConfiguration.add(ebc.getObjConfiguration().toDTO());
+                //ubp.setDownload(true);
+                //this.ubpServices.save(ubp);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        
+
+        return new ResponseEntity<>(businessConfiguration,HttpStatus.OK);
+}
+
+/**
+ * Updates the download status for a list of business configurations associated with a user business.
+ *
+ * @param userBusinessId   the ID of the user business
+ * @param configuration_ids the list of configuration IDs to be updated
+ * @return                  a ResponseEntity indicating the success or failure of the operation
+ */
+@Override
+@Transactional
+public ResponseEntity<?> updateDownloadBusinessConfiguration(Long userBusinessId, List<Long> configuration_ids) {
+    try{
+        for(Long configuration_id:configuration_ids){
+            this.employeeBusinessConfig.updateDownload(configuration_id, userBusinessId, true);
+        }
+    }catch(Exception e){
+        return new ResponseEntity<>("{\"message\":\""+e.getMessage()+"\"}",HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    return new ResponseEntity<>(true,HttpStatus.OK);
+}
     
 }
