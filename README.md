@@ -10,6 +10,7 @@
 - [Configuración](#Configuración)
 - [Uso](#uso)
 - [Estructura del Proyecto](#estructura-del-proyecto)
+- [Despliegue en Docker](#despliegue-en-docker)
 
 
 ## Instalación
@@ -56,3 +57,35 @@ Después de iniciar la aplicación, se crea automáticamente un usuario por defe
    ```plaintext
    http://localhost:9091
     ```
+
+## Despliegue en Docker
+
+Para desplegar `RMPAYDASHBOARD` utilizando Docker, sigue los siguientes pasos:
+
+### 1. Crear la Imagen Docker
+
+Primero, construimos una imagen Docker del proyecto utilizando el plugin `spring-boot-maven-plugin` con el comando:
+
+  ```bash
+  mvnw spring-boot:build-image -Dspring-boot.build-image.imageName=rmpayservice 
+  ```
+Este comando genera una imagen llamada rmpayservice
+### 2. Guardar la Imagen Docker
+Una vez generada la imagen, la guardamos en un archivo .tar para transferirla al servidor de producción. Ejecuta el siguiente comando para guardar la imagen en la ruta especificada:
+  ```bash
+  docker save rmpayservice > D:\\Images\\rmpayservice.tar
+  ```
+Luego, transfiere la imagen al servidor y colócala en la carpeta `C:\\RMPAYService.`
+### 3. Cargar y Desplegar la Nueva Imagen en el Servidor
+1. Detén el contenedor Docker en ejecución para reemplazarlo con la nueva imagen:
+  Puedes realizarlo desde Docker desktop o desde un terminal `docker stop <nombre-del-contenedor>`
+2. Carga la imagen Docker desde el archivo .tar que transferiste:
+`docker load -i C:\\RMPAYService\\rmpayservice.tar`
+3. Finalmente, recrea los contenedores con docker-compose:
+`docker stop <nombre-del-contenedor>`
+Esto reiniciará los contenedores en el servidor con la nueva versión de la aplicación.
+Nota: Asegúrate de que tu archivo docker-compose.yml esté correctamente configurado para desplegar la imagen rmpayservice.
+> ⚠️ **Warning**  
+> Antes de proceder desplegar en el servidor, asegúrate de que:
+> - No elimines las carpetas `C:\RMPAYService\images` y `C:\RMPAYService\sql_data`, ya que contienen la información esencial de la base de datos y el repositorio de imágenes.
+> - Estas carpetas son críticas tanto para el funcionamiento de la aplicación como para almacenar las imágenes subidas por los usuarios en sus perfiles y negocios.
