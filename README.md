@@ -59,7 +59,10 @@ Después de iniciar la aplicación, se crea automáticamente un usuario por defe
     ```
 
 ## Despliegue en Docker
-
+> ⚠️ **Warning**  
+> Antes de proceder a desplegar en el servidor de Producción, asegúrate de que:
+> - No elimines las carpetas `C:\RMPAYService\images` y `C:\RMPAYService\sql_data`, ya que contienen la información esencial de la base de datos y el repositorio de imágenes.
+> - Estas carpetas son críticas tanto para el funcionamiento de la aplicación como para almacenar las imágenes subidas por los usuarios en sus perfiles y negocios.
 Para desplegar `RMPAYDASHBOARD` utilizando Docker, sigue los siguientes pasos:
 
 ### 1. Crear la Imagen Docker
@@ -92,7 +95,4 @@ Luego, transfiere la imagen al servidor y colócala en la carpeta `C:\\RMPAYServ
   ```
 Esto reiniciará los contenedores en el servidor con la nueva versión de la aplicación.
 Nota: Asegúrate de que tu archivo docker-compose.yml esté correctamente configurado para desplegar la imagen rmpayservice.
-> ⚠️ **Warning**  
-> Antes de proceder desplegar en el servidor, asegúrate de que:
-> - No elimines las carpetas `C:\RMPAYService\images` y `C:\RMPAYService\sql_data`, ya que contienen la información esencial de la base de datos y el repositorio de imágenes.
-> - Estas carpetas son críticas tanto para el funcionamiento de la aplicación como para almacenar las imágenes subidas por los usuarios en sus perfiles y negocios.
+
