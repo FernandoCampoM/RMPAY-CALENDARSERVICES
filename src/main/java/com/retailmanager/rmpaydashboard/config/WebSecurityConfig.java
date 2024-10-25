@@ -53,7 +53,7 @@ public class WebSecurityConfig {
                     .requestMatchers(HttpMethod.POST,"/api/register").permitAll()
                     .requestMatchers(HttpMethod.POST,"/api/file").permitAll()
                     .requestMatchers("/users/password/**").hasAnyAuthority("ROLE_MANAGER_VIEW","ROLE_MANAGER")
-                    .requestMatchers(HttpMethod.GET,"/api/**").hasAnyAuthority("ROLE_MANAGER_VIEW")
+                    .requestMatchers(HttpMethod.GET,"/api/**").hasAnyAuthority("ROLE_MANAGER_VIEW","ROLE_MANAGER","ROLE_USER")
                     .requestMatchers("/api/**").hasAnyAuthority("ROLE_MANAGER","ROLE_USER")
                     .anyRequest()
                     .authenticated())
