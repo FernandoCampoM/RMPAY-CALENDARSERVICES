@@ -78,11 +78,18 @@ Una vez generada la imagen, la guardamos en un archivo .tar para transferirla al
 Luego, transfiere la imagen al servidor y colócala en la carpeta `C:\\RMPAYService.`
 ### 3. Cargar y Desplegar la Nueva Imagen en el Servidor
 1. Detén el contenedor Docker en ejecución para reemplazarlo con la nueva imagen:
-  Puedes realizarlo desde Docker desktop o desde un terminal `docker stop <nombre-del-contenedor>`
+  Puedes realizarlo desde Docker desktop o desde un terminal:
+  ```bash
+  docker stop <nombre-del-contenedor>
+  ```
 2. Carga la imagen Docker desde el archivo .tar que transferiste:
-`docker load -i C:\\RMPAYService\\rmpayservice.tar`
+  ```bash
+  docker load -i C:\\RMPAYService\\rmpayservice.tar
+  ```
 3. Finalmente, recrea los contenedores con docker-compose:
-`docker stop <nombre-del-contenedor>`
+  ```bash
+  docker stop <nombre-del-contenedor>
+  ```
 Esto reiniciará los contenedores en el servidor con la nueva versión de la aplicación.
 Nota: Asegúrate de que tu archivo docker-compose.yml esté correctamente configurado para desplegar la imagen rmpayservice.
 > ⚠️ **Warning**  
