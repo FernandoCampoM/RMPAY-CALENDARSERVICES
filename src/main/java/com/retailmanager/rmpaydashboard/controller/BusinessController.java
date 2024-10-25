@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +48,7 @@ public class BusinessController {
      * @param  businessId   the ID of the business to find
      * @return              the ResponseEntity containing the business found
      */
+    // @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MANAGER','ROLE_MANAGER_VIEW')")
     @GetMapping("/business/{businessId}")
     public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "El id del negocio debe ser positivo")Long businessId){
         return this.businessService.findById(businessId);

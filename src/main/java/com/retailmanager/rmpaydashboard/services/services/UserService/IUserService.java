@@ -28,6 +28,8 @@ public interface IUserService {
     public ResponseEntity<?> getActivesClients();
     public ResponseEntity<?> getUnregisteredClients();
     public ResponseEntity<?> getAllUsersManagers();
+
+    public ResponseEntity<?> updatePasswordForAdmin(Long userId, String password);
     
 
     

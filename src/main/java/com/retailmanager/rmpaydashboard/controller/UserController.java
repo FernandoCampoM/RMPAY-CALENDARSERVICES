@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.UpdatePasswordAdminDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 import com.retailmanager.rmpaydashboard.services.services.UserService.IUserService;
 
@@ -163,5 +164,17 @@ public class UserController {
     @GetMapping("/users/managers")
     public ResponseEntity<?> getManagers(){
         return this.userService.getAllUsersManagers();
+    }
+
+    /**
+     * Updates the password for a user with a manager role.
+     *
+     * @param  userId         the ID of the user to update
+     * @param  prmPassword    the new password data to be validated and processed
+     * @return                a ResponseEntity containing the result of the update operation
+     */
+    @PutMapping("/users/password/{userId}")
+    public ResponseEntity<?> updatePasswordAdmin(@Valid @PathVariable @Positive(message = "userId.positive")Long userId, @RequestBody UpdatePasswordAdminDTO prmPassword){
+        return this.userService.updatePasswordForAdmin(userId, prmPassword.getNewPassword());
     }
 }

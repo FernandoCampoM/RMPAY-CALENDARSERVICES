@@ -32,7 +32,6 @@ public class Reseller {
     private String address;
     private boolean status;
     private Long imageprofile;
-    private Double commissionsBalance=0.0;
     private String email1;
     private String email2;
 

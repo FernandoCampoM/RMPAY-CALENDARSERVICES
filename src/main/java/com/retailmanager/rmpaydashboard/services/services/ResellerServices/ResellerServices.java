@@ -26,6 +26,7 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.google.zxing.BarcodeFormat;
  import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
 import java.awt.Color;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
@@ -115,7 +116,16 @@ public class ResellerServices implements IResellerService {
         objReseller.setPhone(prmReseller.getPhone());
         objReseller.setStatus(prmReseller.isStatus());
         objReseller=this.resellerRepository.save(objReseller);
-        return new ResponseEntity<>(this.mapper.map(objReseller, ResellerDTO.class),HttpStatus.OK);
+        ResellerDTO objResellerDTO=this.mapper.map(objReseller, ResellerDTO.class);
+        Double comissionsBalance=0.0;
+            for(ResellerSales rs:objReseller.getSales()){
+                if(rs.getResellerPayment()==null){
+                    comissionsBalance=comissionsBalance+rs.getCommission();
+                }
+                
+            }
+            objResellerDTO.setCommissionsBalance(comissionsBalance);
+        return new ResponseEntity<>(objResellerDTO,HttpStatus.OK);
     }
 
     /**
@@ -131,7 +141,16 @@ public class ResellerServices implements IResellerService {
         if(objReseller==null){
             throw new EntidadNoExisteException("El Reseller con resellerId "+prmId+" no existe en la Base de datos");  
         }
-        return new ResponseEntity<>(this.mapper.map(objReseller, ResellerDTO.class),HttpStatus.OK);
+        ResellerDTO objResellerDTO=this.mapper.map(objReseller, ResellerDTO.class);
+        Double comissionsBalance=0.0;
+            for(ResellerSales rs:objReseller.getSales()){
+                if(rs.getResellerPayment()==null){
+                    comissionsBalance=comissionsBalance+rs.getCommission();
+                }
+                
+            }
+            objResellerDTO.setCommissionsBalance(comissionsBalance);
+        return new ResponseEntity<>(objResellerDTO,HttpStatus.OK);
     }
 
     /**
@@ -143,11 +162,21 @@ public class ResellerServices implements IResellerService {
     @Transactional(readOnly = true)
     public ResponseEntity<?> getAll() {
         Iterable<Reseller> listReseller=this.resellerRepository.findAll();
-        List<Reseller> rtaReseller=new ArrayList<>();
+        
+        List<ResellerDTO> rtaDTO=new ArrayList<>();
         for(Reseller r:listReseller){
-            rtaReseller.add(r);
+            ResellerDTO rDTO=this.mapper.map(r, ResellerDTO.class);
+            Double comissionsBalance=0.0;
+            for(ResellerSales rs:r.getSales()){
+                if(rs.getResellerPayment()==null){
+                    comissionsBalance=comissionsBalance+rs.getCommission();
+                }
+            }
+            rDTO.setCommissionsBalance(comissionsBalance);
+            rtaDTO.add(rDTO);
         }
-        List<ResellerDTO> rtaDTO=this.mapper.map(rtaReseller, new TypeToken<List<ResellerDTO>>(){}.getType());
+        
+        
         return new ResponseEntity<>(rtaDTO,HttpStatus.OK);
     }
 
@@ -212,7 +241,16 @@ public class ResellerServices implements IResellerService {
         if(objReseller==null){
             throw new EntidadNoExisteException("El Reseller con username "+userName+" no existe en la Base de datos");  
         }
-        return new ResponseEntity<>(this.mapper.map(objReseller, ResellerDTO.class),HttpStatus.OK);
+        ResellerDTO objResellerDTO=this.mapper.map(objReseller, ResellerDTO.class);
+        Double comissionsBalance=0.0;
+            for(ResellerSales rs:objReseller.getSales()){
+                if(rs.getResellerPayment()==null){
+                    comissionsBalance=comissionsBalance+rs.getCommission();
+                }
+                
+            }
+            objResellerDTO.setCommissionsBalance(comissionsBalance);
+        return new ResponseEntity<>(objResellerDTO,HttpStatus.OK);
     }
 
     /**
@@ -224,6 +262,7 @@ public class ResellerServices implements IResellerService {
      * @throws EntidadNoExisteException if the Reseller with the given identifier does not exist
      */
     @Override
+    @Transactional
     public ResponseEntity<?> getAccountsSold(Long prmResellerId) {
         try{
             Reseller objReseller=this.resellerRepository.findById(prmResellerId).orElse(null);
@@ -409,7 +448,7 @@ public class ResellerServices implements IResellerService {
             List<ResellerUnpaidAccounts> listResellerAcountReport=new ArrayList<>();
             for(ResellerSales objResellerSales:listResellerSales){
                 Business objBusiness=this.businessRepository.findOneByMerchantId(objResellerSales.getMerchantId()).orElse(null);
-                if(objBusiness!=null && objResellerSales.getInvoice().isInProcess()==false){
+                if(objBusiness!=null && objResellerSales.getInvoice().isInProcess()==false && objResellerSales.getResellerPayment()==null){
                     ResellerUnpaidAccounts objResellerAcountReport=new ResellerUnpaidAccounts();
                     objResellerAcountReport.setResellerSalesId(objResellerSales.getResellerSalesId());
                     objResellerAcountReport.setIdUser(objBusiness.getUser().getUserID());
@@ -572,6 +611,45 @@ public class ResellerServices implements IResellerService {
             return new ResponseEntity<>(map,HttpStatus.INTERNAL_SERVER_ERROR);
         }
         
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> getPaymentHistory(Long prmResellerId, LocalDate startDate, LocalDate endDate) {
+        Reseller objReseller=this.resellerRepository.findById(prmResellerId).orElse(null);
+        if(objReseller==null){
+            throw new EntidadNoExisteException("El Reseller con ID "+prmResellerId+" no existe en la Base de datos");
+        }
+        try{
+            List<ResellerPaymentDTO> objRPSL=new ArrayList<>();
+            List<ResellerPayment> objRPS=this.resellerPaymentRepository.getAllBy(prmResellerId,startDate,endDate);
+            for(ResellerPayment objRP:objRPS){
+                ResellerPaymentDTO objRPSdto=new ResellerPaymentDTO();
+                objRPSdto.setPaymentId(objRP.getPaymentId());
+                objRPSdto.setDate(objRP.getDate());
+                objRPSdto.setTime(objRP.getTime().withNano(0));
+                objRPSdto.setPaymentMethod(objRP.getPaymentMethod());
+                objRPSdto.setTotal(objRP.getTotal());
+                objRPSdto.setResellerId(objRP.getReseller().getResellerId());
+                objRPSdto.setSalesInfo(new ArrayList<>());
+                HashMap<String, String> salesInfo = new HashMap<>();
+                for(ResellerSales objRS:objRP.getResellerSales()){
+                    Business objBusiness=this.businessRepository.findOneByMerchantId(objRS.getMerchantId()).orElse(null);
+                    if(objBusiness!=null){
+                        salesInfo.put("clientName",objBusiness.getUser().getName());
+                    }
+                    salesInfo.put("commission",String.valueOf(objRS.getCommission()));
+                    salesInfo.put("resellerSalesId",objRS.getResellerSalesId().toString());
+                    objRPSdto.getSalesInfo().add(salesInfo);
+                }
+                objRPSL.add(objRPSdto);
+            }
+            return new ResponseEntity<>(objRPSL,HttpStatus.OK);
+        }catch(Exception e){
+            HashMap<String, String> map = new HashMap<>();
+            map.put("message", "Error al obtener el historial de pagos. Por favor comuniquese con el administrador de la página."+e.getMessage());
+            return new ResponseEntity<>(map,HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     
 }

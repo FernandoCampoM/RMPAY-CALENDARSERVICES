@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
@@ -16,6 +17,7 @@ import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.security.JWTAthenticationFilter;
 import com.retailmanager.rmpaydashboard.security.JWTAuthorizationFilter;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -50,14 +52,26 @@ public class WebSecurityConfig {
                     .requestMatchers(HttpMethod.GET,"/api/resellers/**").permitAll()
                     .requestMatchers(HttpMethod.POST,"/api/register").permitAll()
                     .requestMatchers(HttpMethod.POST,"/api/file").permitAll()
+                    .requestMatchers("/users/password/**").hasAnyAuthority("ROLE_MANAGER_VIEW","ROLE_MANAGER")
+                    .requestMatchers(HttpMethod.GET,"/api/**").hasAnyAuthority("ROLE_MANAGER_VIEW")
+                    .requestMatchers("/api/**").hasAnyAuthority("ROLE_MANAGER","ROLE_USER")
                     .anyRequest()
                     .authenticated())
                 .sessionManagement(sesion->sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 
                 .addFilter(jwtAthenticationFilter)
                 .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                .accessDeniedHandler(accessDeniedHandler()))
                 .build();
         
+    }
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not allowed to access this resource");
+            
+        };
     }
     
 }

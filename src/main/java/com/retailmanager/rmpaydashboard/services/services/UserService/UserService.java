@@ -905,5 +905,33 @@ public class UserService implements IUserService{
 
     }
 
+    /**
+     * Updates the password for a user with a manager role.
+     *
+     * @param userId the ID of the user to update
+     * @param password the new password
+     * @return a ResponseEntity containing the updated user or a BAD_REQUEST status if the
+     *         user with the given ID does not exist
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> updatePasswordForAdmin(Long userId, String password) {
+        User user=this.serviceDBUser.findById(userId).orElse(null);
+
+        if(user!=null  ){
+            if(user.getRol().compareTo(Rol.ROLE_MANAGER)!=0 && user.getRol().compareTo(Rol.ROLE_MANAGER_VIEW)!=0){
+                HashMap<String, String> map = new HashMap<>();
+                map.put("message", "No tiene permisos para realizar esta operacion");
+                return new ResponseEntity<>(map,HttpStatus.FORBIDDEN); 
+            }
+            user.setPassword(new BCryptPasswordEncoder().encode(password));
+            this.serviceDBUser.save(user);
+            HashMap<String, String> map = new HashMap<>();
+            map.put("message", "Contraseña actualizada correctamente");
+            return new ResponseEntity<>(map,HttpStatus.OK);
+        }
+        return new ResponseEntity<User>(HttpStatus.BAD_REQUEST);
+    }
+
    
 }

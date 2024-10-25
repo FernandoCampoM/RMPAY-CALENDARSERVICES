@@ -525,12 +525,28 @@ public class UsersBusinesService implements IUsersBusinessService{
         objEntryExit.setEntry(false);
         objEntryExit.setDate(LocalDate.now());
         objEntryExit.setHour(LocalTime.now());
+        Pageable pageable = PageRequest.of(0, 10);
+        float hoursWorket=0;
+        List<EntryExit> listActivity=this.entryExitDBService.getLastActivity(objUser.get(0).getUserBusinessId(),pageable);
+        if(listActivity!=null && !listActivity.isEmpty()){
+            if(listActivity.get(0).getEntry()){
+                if(objEntryExit.getDate().isBefore(listActivity.get(0).getDate())){
+                    throw new InvalidDateOrTime("La fecha de entrada no puede ser menor a la registrada en el último ponche");
+                }
+                if(objEntryExit.getDate().isEqual(listActivity.get(0).getDate()) && objEntryExit.getHour().isBefore(listActivity.get(0).getHour())){
+                    throw new InvalidDateOrTime("La hora de entrada no puede ser menor a la registrada en el último ponche");
+                }
+                hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
+                objEntryExit.setTotalWorkCost(hoursWorket*objUser.get(0).getCostHour());
+            }
+        }
         objEntryExit.setUserBusiness(objUser.get(0));
         objEntryExit=this.entryExitDBService.save(objEntryExit);
         EntryExitDTO prmEntryExit=this.mapper.map(objEntryExit, EntryExitDTO.class);
         prmEntryExit.setUserId(objUser.get(0).getUserBusinessId());
         prmEntryExit.setName(objUser.get(0).getUsername());
         prmEntryExit.setHour(prmEntryExit.getHour().withNano(0));
+        prmEntryExit.setHoursWorked(hoursWorket);
         return new ResponseEntity<>(prmEntryExit,HttpStatus.CREATED);
     }
     @Override

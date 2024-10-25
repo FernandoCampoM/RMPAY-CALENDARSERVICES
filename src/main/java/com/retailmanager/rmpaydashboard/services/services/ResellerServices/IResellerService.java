@@ -1,5 +1,7 @@
 package com.retailmanager.rmpaydashboard.services.services.ResellerServices;
 
+import java.time.LocalDate;
+
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.models.Invoice;
@@ -124,6 +126,6 @@ public interface IResellerService {
     public ResponseEntity<?> doPayment(ResellerPaymentDTO prmPayment);
 
     public ResponseEntity<?> getPaymentHistory(Long prmResellerId);
-
+    public ResponseEntity<?> getPaymentHistory(Long prmResellerId, LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> addResellerSales(Long prmResellerId, String prmMerchantId, Double prmTotalValue,Double prmCommission, Invoice prmInvoice, String prmServiceDescription); 
 }
