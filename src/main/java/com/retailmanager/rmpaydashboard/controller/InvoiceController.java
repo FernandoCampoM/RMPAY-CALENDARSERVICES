@@ -46,7 +46,7 @@ public class InvoiceController {
         return this.invoiceService.createToken(prmPaymentInfo);
     }
     @GetMapping("/invoices/token/exist")
-    public ResponseEntity<?> createToken(@Valid @RequestParam("businessid") String prmBusinessId){
+    public ResponseEntity<?> exist(@Valid @RequestParam("businessid") String prmBusinessId){
        try {
             Long businessId = Long.parseLong(prmBusinessId);
             return this.invoiceService.existToken(businessId);

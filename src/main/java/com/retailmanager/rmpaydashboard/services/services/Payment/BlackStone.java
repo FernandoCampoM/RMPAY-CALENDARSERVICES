@@ -253,6 +253,21 @@ public class BlackStone implements IBlackStoneService {
             String cid = reqBS.getCid(); // un id cualqiera
             String UserName = reqBS.getUserName();
             String Password = reqBS.getPassword();
+            System.out.println("AppKey: " + AppKey);
+System.out.println("AppType: " + AppType);
+System.out.println("Merchant ID (mid): " + mid);
+System.out.println("Client ID (cid): " + cid);
+System.out.println("UserName: " + UserName);
+System.out.println("Password: " + Password);
+System.out.println("Amount: " + Amount);
+System.out.println("ZipCode: " + ZipCode);
+System.out.println("Token: " + token);
+System.out.println("NameOnCard: " + NameOnCard);
+System.out.println("CVN: " + CVN);
+System.out.println("Track2: " + Track2);
+System.out.println("UserTransactionNumber: " + UserTransactionNumber);
+System.out.println("URL: "+reqBS.getUrlForPymentWithToken());
+
             // El transaction type debe ser 2 para el payment con token
             TokenPayment creditCardPayment = new TokenPayment(AppKey, AppType, mid, cid, UserName, Password, Amount,
                     ZipCode, token, "", NameOnCard, CVN, Track2, UserTransactionNumber, "2", "", "", "1");
