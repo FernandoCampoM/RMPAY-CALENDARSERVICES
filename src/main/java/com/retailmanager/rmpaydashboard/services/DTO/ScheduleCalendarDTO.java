@@ -2,12 +2,6 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 
 import java.time.LocalDateTime;
 
-import com.retailmanager.rmpaydashboard.models.Business;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

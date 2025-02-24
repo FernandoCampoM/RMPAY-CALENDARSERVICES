@@ -4,8 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
+import org.modelmapper.ModelMapper; 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -154,5 +153,19 @@ public class ScheduleCalendarService implements IScheduleCalendarService {
         }
         return new ResponseEntity<Iterable<ScheduleCalendarDTO>>(listScheduleCalendarDTO, HttpStatus.OK);
     }
-    
+
+@Override
+@Transactional(readOnly = true)
+public ResponseEntity<?> getAllByBusinessId(Long prmBusinessId) {
+    Iterable<ScheduleCalendar> listScheduleCalendar=scheduleDBService.findByBusinessId(prmBusinessId);
+    List<ScheduleCalendarDTO> listScheduleCalendarDTO = StreamSupport
+    .stream(listScheduleCalendar.spliterator(), false) // Convierte el Iterable en un Stream
+    .map(schedule ->{ ScheduleCalendarDTO dto=mapper.map(schedule, ScheduleCalendarDTO.class);
+        dto.setEmployeeId(schedule.getEmployee() != null ? schedule.getEmployee().getUserBusinessId() : null);
+        return dto;
+    }) // Mapea cada elemento
+    .collect(Collectors.toList()); 
+
+    return new ResponseEntity<Iterable<ScheduleCalendarDTO>>(listScheduleCalendarDTO, HttpStatus.OK);    
+}
 }

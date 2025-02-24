@@ -11,4 +11,7 @@ public interface IScheduleCalendarService {
     public boolean delete(Long id);
     public ResponseEntity<?> findById(Long serviceId);
     public ResponseEntity<?> getAll(Long employeeId);
+    public ResponseEntity<?> getAllByBusinessId(Long prmBusinessId);
+
+    
 }
