@@ -13,7 +13,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
+import com.retailmanager.rmpaydashboard.repositories.TerminalPayAtTableRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserPayAtTableRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 
 import jakarta.servlet.FilterChain;
@@ -25,7 +27,8 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
 
     private UserRepository usuarioRepository;
     private TerminalRepository terminalRepository; 
-    
+    private TerminalPayAtTableRepository terminalPayAtTableRepository;
+    private UserPayAtTableRepository userPayAtTableRepository;
     /** 
      * @param request
      * @param response
@@ -38,12 +41,18 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         AuthCredentials authCredentials = new AuthCredentials();
         try {
             authCredentials= new ObjectMapper().readValue(request.getReader(), AuthCredentials.class);
+           
             if(authCredentials.getTerminalId()!=null){
-                if(!terminalRepository.existsById(authCredentials.getTerminalId())){
-                    throw new EntidadNoExisteException("El Terminal con ID "+authCredentials.getTerminalId()+" no existe en la Base de datos");
+                if(authCredentials.getTerminalId().startsWith("RM")){
+                    if(!terminalRepository.existsById(authCredentials.getTerminalId())){
+                        throw new EntidadNoExisteException("El Terminal con ID "+authCredentials.getTerminalId()+" no existe en la Base de datos");
+                    }else{
+                        usuarioRepository.updateTempAuthId(authCredentials.getUsername(), authCredentials.getTerminalId());
+                    }
                 }else{
-                    usuarioRepository.updateTempAuthId(authCredentials.getUsername(), authCredentials.getTerminalId());
+                    //Logica para PayAtTable
                 }
+                
             }
         } catch (IOException e) {
             
@@ -79,5 +88,11 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
     }
     public void setTerminalRepository(TerminalRepository terminalRepository) {
         this.terminalRepository = terminalRepository;
+    }
+    public void setTerminalPayAtTableRepository(TerminalPayAtTableRepository terminalPayAtTableRepository) {
+        this.terminalPayAtTableRepository = terminalPayAtTableRepository;
+    }
+    public void setUserPayAtTableRepository(UserPayAtTableRepository userPayAtTableRepository) {
+        this.userPayAtTableRepository = userPayAtTableRepository;
     }
 }

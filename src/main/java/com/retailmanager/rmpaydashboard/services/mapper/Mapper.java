@@ -18,8 +18,9 @@ public class Mapper {
     @Bean(name="mapperbase")
     public ModelMapper modelMapper(){
         ModelMapper objMapper= new ModelMapper();
-
-
+        objMapper.getConfiguration().setPropertyCondition(context -> 
+        !(context.getSource() instanceof org.hibernate.collection.spi.PersistentCollection));
+        
         return objMapper;
     }
      
