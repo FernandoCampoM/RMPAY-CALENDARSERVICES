@@ -28,6 +28,8 @@ public class RMPayAtTheTable_User {
 
     @Column( nullable = false)
     private String merchantId;
+    @Column( nullable = true)
+    private String name;
 
     @Column( nullable = false, unique = true)
     private String username;

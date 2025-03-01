@@ -31,6 +31,8 @@ public class RMPayAtTheTable_UserDTO {
     @NotBlank(message = "{userPayAtTheTable.merchantId.notBlank}")
     @Pattern(regexp = "^[A-Za-z0-9\\-_]{4,50}$", message = "{userPayAtTheTable.merchantId.pattern}")
     private String merchantId;
+    @NotBlank(message = "{userPayAtTheTable.name.notBlank}")
+    private String name;
     
     @NotBlank(message = "{userPayAtTheTable.username.notBlank}")
     

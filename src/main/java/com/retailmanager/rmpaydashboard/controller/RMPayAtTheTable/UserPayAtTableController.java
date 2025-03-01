@@ -3,6 +3,8 @@ package com.retailmanager.rmpaydashboard.controller.RMPayAtTheTable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 import com.retailmanager.rmpaydashboard.services.DTO.RMPayAtTheTable.RMPayAtTheTable_UserDTO;
@@ -41,8 +43,8 @@ public class UserPayAtTableController {
     }
 
     @GetMapping
-    public ResponseEntity<List<RMPayAtTheTable_UserDTO>> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<?> getAllUsers(@PageableDefault(size = 200,page = 0) Pageable pageable,@RequestParam(required=false) String filter) {
+        return userService.getAllUsers(pageable, filter);
     }
     
     @GetMapping("/username/{username}")

@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.services.services.RMPayAtTheTable.UserS
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpaydashboard.services.DTO.RMPayAtTheTable.RMPayAtTheTable_UserDTO;
@@ -12,7 +13,7 @@ public interface IUserPayAtTableService {
     ResponseEntity<?> updateUser(Long userId, RMPayAtTheTable_UserDTO userDTO);
     ResponseEntity<?> deleteUser(Long userId);
     ResponseEntity<RMPayAtTheTable_UserDTO> getUserById(Long userId);
-    ResponseEntity<List<RMPayAtTheTable_UserDTO>> getAllUsers();
+    ResponseEntity<?> getAllUsers(Pageable pageable, String filter);
     ResponseEntity<RMPayAtTheTable_UserDTO> getUserByUsername(String username);
     ResponseEntity<RMPayAtTheTable_UserDTO> getUserByMerchantId(String merchantId);
     ResponseEntity<?> authenticaton(UserAuthDTO userAuthDTO);

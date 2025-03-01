@@ -4,6 +4,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
@@ -65,6 +68,7 @@ public class UserPayAtTableService implements IUserPayAtTableService {
         user.setBusinessName(userDTO.getBusinessName());
         user.setPhone(userDTO.getPhone());
         user.setMerchantId(userDTO.getMerchantId());
+        user.setName(userDTO.getName());
         RMPayAtTheTable_User updatedUser = userRepository.save(user);
         return ResponseEntity.ok(mapper.map(updatedUser, RMPayAtTheTable_UserDTO.class));
     }
@@ -96,9 +100,16 @@ public class UserPayAtTableService implements IUserPayAtTableService {
     }
 
     @Override
-    public ResponseEntity<List<RMPayAtTheTable_UserDTO>> getAllUsers() {
-        List<RMPayAtTheTable_User> users = (List<RMPayAtTheTable_User>) userRepository.findAll();
-        List<RMPayAtTheTable_UserDTO> userDTOs = users.stream()
+    public ResponseEntity<?> getAllUsers(Pageable pageable, String filter) {
+        Page<RMPayAtTheTable_User> users = null;
+        if (filter != null) {
+            filter = "%" + filter + "%";
+            users = userRepository.findyAllUsersByFilter(pageable, filter);
+        } else {
+            users = userRepository.findyAllUsersByFilter(pageable);
+        }
+            
+        List<RMPayAtTheTable_UserDTO> userDTOs = users.getContent().stream()
         .map(user -> {
             RMPayAtTheTable_UserDTO userDTO = mapper.map(user, RMPayAtTheTable_UserDTO.class);
             // Mapear los terminales del usuario a DTOs
@@ -110,7 +121,8 @@ public class UserPayAtTableService implements IUserPayAtTableService {
             return userDTO;
         })
         .collect(Collectors.toList());
-        return ResponseEntity.ok(userDTOs); 
+        Page<RMPayAtTheTable_UserDTO> userDTOPage = new PageImpl<>(userDTOs, pageable, users.getTotalElements());
+        return ResponseEntity.ok(userDTOPage); 
     }
 
     @Override
@@ -154,15 +166,28 @@ public class UserPayAtTableService implements IUserPayAtTableService {
         Optional<RMPayAtTheTable_Terminal> terminalOpt = terminals.stream().filter(t -> t.getSerialNumber().equals(userAuthDTO.getSerialNumber())).findFirst();
         if (terminalOpt.isPresent()) {
             RMPayAtTheTable_Terminal terminal = terminalOpt.get();
+            if(terminal.getUser().getUserId()!=user.getUserId()){
+                map.clear();
+                map.put("message", "El terminal con serial number " + userAuthDTO.getSerialNumber() + " pertenece a otro usuario");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(map);
+            }
             if (!terminal.getActive()) {
                 map.clear();
                 map.put("message", "El terminal con serial number " + userAuthDTO.getSerialNumber() + " está desactivado");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                return ResponseEntity.status(HttpStatus.LOCKED)
                         .body(map);
             }
         } else {
-            RMPayAtTheTable_Terminal newTerminal = new RMPayAtTheTable_Terminal();
-            
+
+            RMPayAtTheTable_Terminal newTerminal = terminalRepository.findBySerialNumber(userAuthDTO.getSerialNumber()).orElse(null);
+            if (newTerminal != null) {
+                map.clear();
+                map.put("message", "El terminal con serial number " + userAuthDTO.getSerialNumber() + " ya existe en la Base de datos y pertenece a otro usuario");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(map);
+            }
+            newTerminal = new RMPayAtTheTable_Terminal();
             newTerminal.setSerialNumber(userAuthDTO.getSerialNumber());
             newTerminal.setActive(true);
             newTerminal.setUser(user);
