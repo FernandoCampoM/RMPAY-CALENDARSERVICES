@@ -22,3 +22,12 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+target/surefire-reports/2025-02-25T14-21-05_267.dumpstream
+target/surefire-reports/2025-02-25T14-27-32_090.dumpstream
+target/surefire-reports/2025-02-25T14-36-13_822.dumpstream
+target/surefire-reports/2025-02-25T14-40-03_291.dumpstream
+target/surefire-reports/2025-02-27T19-27-41_463.dumpstream
+target/surefire-reports/2025-03-01T00-07-25_749.dumpstream
+target/surefire-reports/2025-03-01T00-20-15_055.dumpstream
+target/surefire-reports/2025-03-05T11-33-57_317.dumpstream
+*.dumpstream

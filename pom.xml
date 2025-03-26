@@ -15,7 +15,9 @@
 	<description>DASHBOARD FOR RMPAY APLICATION</description>
 	<properties>
 		<java.version>20</java.version>
+		<spring-boot.build-image.docker.host>tcp://localhost:2375</spring-boot.build-image.docker.host>
 	</properties>
+
 	<dependencies>
 
 		<dependency>
@@ -157,39 +159,31 @@
 	</dependencies>
 
 	<build>
-		<finalName>RMPAYDashboard</finalName>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>3.4.3</version>
-				<configuration>
-					<classifier>${repackage.classifier}</classifier>
-					<image>
-						<builder>paketobuildpacks/builder:tiny</builder>
-						<env>
-							<BP_NATIVE_IMAGE>false</BP_NATIVE_IMAGE>
-							
-							<BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
-							
-						</env>
-					</image>
-				</configuration>
-		</plugin>
-		</plugins>
-	</build>
+    <finalName>RMPAYservice</finalName>
+    <plugins>
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <version>3.2.3</version>
+            <configuration>
+                <excludes>
+                    <exclude>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                    </exclude>
+                </excludes>
+                <image>
+                    <builder>paketobuildpacks/builder:tiny</builder>
+                    <env>
+                        <BP_NATIVE_IMAGE>false</BP_NATIVE_IMAGE>
+                        <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                    </env>
+                </image>
+                <classifier>${repackage.classifier}</classifier>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
 	<repositories>
 		<repository>
 			<id>spring-milestones</id>
