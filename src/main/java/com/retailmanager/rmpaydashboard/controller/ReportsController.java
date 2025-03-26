@@ -43,6 +43,12 @@ public class ReportsController {
         return reportService.getBestSellingItems(businessId, startDate, endDate, categoria);
     }
 
+    @GetMapping("/reports/work-hours-report")
+    public ResponseEntity<?> WorkHoursReportService(@RequestParam(name = "businessId",required = false) Long businessId,
+                                                 @RequestParam(name = "startDate") @Valid LocalDate startDate,
+                                                 @RequestParam(name = "endDate") @Valid LocalDate endDate) {
+        return reportService.WorkHoursReportService(businessId, startDate, endDate);
+    }
     @GetMapping("/reports/sales-by-category")
     public ResponseEntity<?> getSalesByCategory(@RequestParam(name = "businessId") Long businessId,
                                                  @RequestParam(name = "startDate") @Valid LocalDate startDate,

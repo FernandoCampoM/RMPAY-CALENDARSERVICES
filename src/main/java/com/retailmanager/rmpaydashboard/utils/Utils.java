@@ -10,7 +10,10 @@ import com.retailmanager.rmpaydashboard.models.Terminal;
 
 public class Utils {
     public static void main(String[] args){
-        String texto="rmpayadmin";
+        String texto="RM123456";
+        if(texto.startsWith("RM")){
+            System.out.println("Si contiene RM");
+        }
         String textoCodificado=new BCryptPasswordEncoder().encode(texto);
         System.out.println(textoCodificado);
         System.out.println(new BCryptPasswordEncoder().matches("rmpayuser", "$2a$10$3hXD2CTLL18GTNFCZiYfWuWyhMQFc30EvsMh5fWnCIXKPfflhe/mC"));

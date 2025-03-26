@@ -1,5 +1,0 @@
-# Created at 2024-09-02T23:59:30.049
-Boot Manifest-JAR contains absolute paths in classpath 'D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-

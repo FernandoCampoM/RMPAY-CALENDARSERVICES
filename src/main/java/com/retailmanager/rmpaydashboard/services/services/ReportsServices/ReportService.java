@@ -29,12 +29,15 @@ import com.retailmanager.rmpaydashboard.models.EntryExit;
 import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Product;
 import com.retailmanager.rmpaydashboard.models.Sale;
+import com.retailmanager.rmpaydashboard.models.Shift;
 import com.retailmanager.rmpaydashboard.models.Transactions;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.EntryExitRepository;
 import com.retailmanager.rmpaydashboard.repositories.ProductRepository;
 import com.retailmanager.rmpaydashboard.repositories.SaleRepository;
+import com.retailmanager.rmpaydashboard.repositories.ShiftReporsitory;
 import com.retailmanager.rmpaydashboard.repositories.TransactionsRepository;
+import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.ProductDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TransactionDTO;
@@ -58,6 +61,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private EntryExitRepository serviceDBEntryExit;
+
+    @Autowired
+    private UsersAppRepository usersAppRepository;
 
     /**
      * Retrieves the daily summary for a given business ID.
@@ -802,5 +808,36 @@ public static Duration calculateDuration(LocalDate startDate, LocalTime startTim
         }
         return new ResponseEntity<>(list,HttpStatus.OK);
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> WorkHoursReportService(Long businessId, LocalDate startDate, LocalDate endDate) {
+        List<Object[]> laborHoursVsHourlyCost;
+        if(businessId!=null){
+            laborHoursVsHourlyCost=usersAppRepository.reporteHorasTrabajadas( startDate, endDate,businessId);
+        }else{
+            laborHoursVsHourlyCost=usersAppRepository.reporteHorasTrabajadas(startDate, endDate);
+        }
+        return new ResponseEntity<>(mapearReporte(laborHoursVsHourlyCost),HttpStatus.OK);
+        
+    }
+    public List<HashMap<String, Object>> mapearReporte(List<Object[]> resultados) {
+        List<HashMap<String, Object>> listaMapeada = new ArrayList<>();
+    
+        for (Object[] fila : resultados) {
+            HashMap<String, Object> mapa = new HashMap<>();
+            mapa.put("username", fila[0]);
+            mapa.put("horas_programadas", fila[1]);
+            mapa.put("horas_trabajadas", fila[2]);
+            mapa.put("diferencia_horas", fila[3]);
+            mapa.put("costo_programado", fila[4]);
+            mapa.put("costo_real", fila[5]);
+            mapa.put("diferencia_costo", fila[6]);
+    
+            listaMapeada.add(mapa);
+        }
+    
+        return listaMapeada;
     }
 }

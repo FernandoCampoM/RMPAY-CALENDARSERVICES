@@ -30,6 +30,10 @@ public interface IReportService {
 
     public ResponseEntity<?> getReportPonches(Long businessId, LocalDate startDate, LocalDate endDate, Long filter);
 
+    /*
+     * Get labor hours vs hourly cost by business and date range
+     */
+    public ResponseEntity<?> WorkHoursReportService(Long businessId, LocalDate startDate, LocalDate endDate);
 
     
 }

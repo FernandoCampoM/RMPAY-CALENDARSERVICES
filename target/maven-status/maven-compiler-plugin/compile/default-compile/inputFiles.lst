@@ -11,6 +11,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\BusinessConfigurationService\IBusinessConfigurationService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ReportsServices\ReportService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\ServiceController.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\RMPayAtTheTable\UserAuthDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\Sys_general_configRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\CategoryService\CategoryService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\TerminalsDoPaymentDTO.java
@@ -35,6 +36,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Address.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\TokenPayment.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\PaymentMethods.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\UserPayAtTableRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\UserPermission.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\PaymentDetailsDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\PaymentMethodService\IPaymentMethosService.java
@@ -52,9 +54,11 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\security\UserDetailsImpl.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\BusinessConfigurationMini.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\ResponsePayment.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\RMPayAtTheTable\TerminalService\ITerminalPayAtTableService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\EmailService\EmailConfigProjection.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\EntidadNoExisteException.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\PaymentHistoryReport.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\RMPayAtTheTable\TerminalService\TerminalPayAtTableService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\backgroundRoutines\BackgroundRoutines.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\ItemForSale.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\SaleRepository.java
@@ -95,6 +99,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\UserBusiness_Category.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ProductService\ProductService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\config\WebSecurityConfig.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\RMPayAtTheTable\RMPayAtTheTable_UserDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\ScheduleCalendarController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Terminal.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\ResellerPaymentRepository.java
@@ -118,6 +123,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\PermisionRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\TerminalController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\Error.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\RMPayAtTheTable\TerminalPayAtTableController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ServiceService\IServiceService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\InvoiceServices\InvoiceServices.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\ResellerAcountReport.java
@@ -142,9 +148,12 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\PaymentPlanInfo.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\ShiftReporsitory.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\BusinessConfigurationRepository.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\rmpayAtTheTable\RMPayAtTheTable_User.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\rmpayAtTheTable\RMPayAtTheTable_Terminal.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\CategoryDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\UserBusinessController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\EntidadYaExisteException.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\TerminalPayAtTableRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\AddressDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ReportsServices\IReportService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\security\JWTAuthorizationFilter.java
@@ -158,6 +167,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ProductService\IProductService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\UsersBusinessService\UsersBusinesService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ShiftService\IShiftService.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\RMPayAtTheTable\UserPayAtTableController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\EmployeeBusinessConfigDownloadRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\CreditCardPayment.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\FileServices\IFileService.java
@@ -167,6 +177,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Business.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\ResellerPayment.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\ReportsDTO\EarningsReportDTO.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\RMPayAtTheTable\RMPayAtTheTable_TerminalDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\UserDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\backgroundRoutines\BackgroundRoutinesService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\InvoiceController.java
@@ -177,6 +188,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ServiceService\ServiceService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\UsersBusiness.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\MaxTerminalsReached.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\RMPayAtTheTable\UserServices\IUserPayAtTableService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\InventoryItemDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\RequestPayment.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ScheduleCalendar\IScheduleCalendarService.java
@@ -189,6 +201,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Product.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\ResellerSalesRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\InvalidDateOrTime.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\RMPayAtTheTable\UserServices\UserPayAtTableService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\InvoiceRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\AvailableSchedules.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\InventoryReceipt.java

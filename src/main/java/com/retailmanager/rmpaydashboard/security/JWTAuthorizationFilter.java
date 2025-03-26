@@ -9,6 +9,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.retailmanager.rmpaydashboard.repositories.TerminalPayAtTableRepository;
+import com.retailmanager.rmpaydashboard.repositories.UserPayAtTableRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 
 import jakarta.servlet.FilterChain;
@@ -21,7 +23,13 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter{
     
     @Autowired
     private UserRepository usuarioRepository;
-    
+
+    @Autowired
+    private UserPayAtTableRepository userPayAtTableRepository;
+
+    @Autowired
+    private TerminalPayAtTableRepository terminalPayAtTableRepository;
+
     /** 
      * @param request
      * @param response
@@ -38,7 +46,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter{
        
        if(bearerToken!=null && bearerToken.startsWith("Bearer ")){
             String token =bearerToken.replace("Bearer ", "");
-            UsernamePasswordAuthenticationToken usernamePAT=TokenUtils.getAuthentication(token,usuarioRepository);
+            UsernamePasswordAuthenticationToken usernamePAT=TokenUtils.getAuthentication(token,usuarioRepository,userPayAtTableRepository,terminalPayAtTableRepository);
             
             SecurityContextHolder.getContext().setAuthentication(usernamePAT);
 
