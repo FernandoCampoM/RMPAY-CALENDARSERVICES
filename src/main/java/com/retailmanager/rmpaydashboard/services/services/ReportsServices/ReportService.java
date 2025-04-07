@@ -840,4 +840,82 @@ public static Duration calculateDuration(LocalDate startDate, LocalTime startTim
     
         return listaMapeada;
     }
+
+    /**
+     * Returns a list of user weekly schedules for a given business and date range.
+     * The list contains the userBusinessId and the hours for each day of the week.
+     * If the businessId is null, the list will contain all users.
+     * @param businessId the ID of the business
+     * @param startDate the start date of the date range
+     * @param endDate the end date of the date range
+     * @return a ResponseEntity containing a list of user weekly schedules
+     */
+    @Override
+@Transactional(readOnly = true)
+public ResponseEntity<?> Report_UserWeeklySchedule(Long employeeId, LocalDate startDate, LocalDate endDate) {
+    List<Object[]> horariosSemanales=new ArrayList<>();
+    
+    if (employeeId != null) {
+        horariosSemanales = usersAppRepository.getUserWeeklySchedule(startDate, endDate, employeeId);
+    } else {
+        horariosSemanales = usersAppRepository.getUserWeeklySchedule(startDate, endDate);
+    }
+
+    return new ResponseEntity<>(mapearHorarioSemanal(horariosSemanales), HttpStatus.OK);
+}
+
+public List<HashMap<String, Object>> mapearHorarioSemanal(List<Object[]> resultados) {
+    List<HashMap<String, Object>> listaMapeada = new ArrayList<>();
+
+    for (Object[] fila : resultados) {
+        HashMap<String, Object> mapa = new HashMap<>();
+        mapa.put("username", fila[0]);
+        mapa.put("userBusinessId", fila[1]);
+        mapa.put("monday", fila[2]);
+        mapa.put("tuesday", fila[3]);
+        mapa.put("wednesday", fila[4]);
+        mapa.put("thursday", fila[5]);
+        mapa.put("friday", fila[6]);
+        mapa.put("saturday", fila[7]);
+        mapa.put("sunday", fila[8]);
+        listaMapeada.add(mapa);
+    }
+
+    return listaMapeada;
+}
+
+@Override
+@Transactional(readOnly = true)
+public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(Long userBusinessId, LocalDate startDate, LocalDate endDate) {
+    List<Object[]> detallesHoras = new ArrayList<>();
+
+    if (userBusinessId != null) {
+        detallesHoras = usersAppRepository.getEmployeeWeeklyScheduleDetail(userBusinessId,startDate, endDate);
+    } else {
+        detallesHoras = usersAppRepository.getAllEmployeesWeeklyScheduleDetail(startDate, endDate);
+    }
+
+    return new ResponseEntity<>(mapearDetalleHorarioSemanal(detallesHoras), HttpStatus.OK);
+}
+
+public List<HashMap<String, Object>> mapearDetalleHorarioSemanal(List<Object[]> resultados) {
+    List<HashMap<String, Object>> listaMapeada = new ArrayList<>();
+
+    for (Object[] fila : resultados) {
+        HashMap<String, Object> mapa = new HashMap<>();
+        mapa.put("username", fila[0]);
+        mapa.put("fecha", fila[1]);
+        mapa.put("turno", fila[2]);
+        mapa.put("horario", fila[3]);
+        mapa.put("horas", fila[4]);
+        mapa.put("horasxDia", fila[5]);
+        mapa.put("totalHoras", fila[6]);
+        mapa.put("userBusinessId", fila[7]);
+
+        listaMapeada.add(mapa);
+    }
+
+    return listaMapeada;
+}
+
 }

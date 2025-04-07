@@ -42,7 +42,18 @@ public class ReportsController {
                                                   @RequestParam(name = "category") String categoria) {
         return reportService.getBestSellingItems(businessId, startDate, endDate, categoria);
     }
-
+    @GetMapping("/reports/employee-weeklyScheduleDetail-report")
+    public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(@RequestParam(name = "employeeId",required = false) Long employeeId,
+                                                 @RequestParam(name = "startDate") @Valid LocalDate startDate,
+                                                 @RequestParam(name = "endDate") @Valid LocalDate endDate) {
+        return reportService.getEmployeeWeeklyScheduleDetail(employeeId, startDate, endDate);
+    }
+    @GetMapping("/reports/user-weeklySchedule-report")
+    public ResponseEntity<?> Report_UserWeeklySchedule(@RequestParam(name = "employeeId",required = false) Long employeeId,
+                                                 @RequestParam(name = "startDate") @Valid LocalDate startDate,
+                                                 @RequestParam(name = "endDate") @Valid LocalDate endDate) {
+        return reportService.Report_UserWeeklySchedule(employeeId, startDate, endDate);
+    }
     @GetMapping("/reports/work-hours-report")
     public ResponseEntity<?> WorkHoursReportService(@RequestParam(name = "businessId",required = false) Long businessId,
                                                  @RequestParam(name = "startDate") @Valid LocalDate startDate,
