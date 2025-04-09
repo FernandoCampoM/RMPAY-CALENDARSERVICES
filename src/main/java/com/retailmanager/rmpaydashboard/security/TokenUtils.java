@@ -11,10 +11,12 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
+import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
 import com.retailmanager.rmpaydashboard.models.rmpayAtTheTable.RMPayAtTheTable_Terminal;
 import com.retailmanager.rmpaydashboard.models.rmpayAtTheTable.RMPayAtTheTable_User;
 import com.retailmanager.rmpaydashboard.repositories.TerminalPayAtTableRepository;
+import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserPayAtTableRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 
@@ -49,7 +51,7 @@ public class TokenUtils {
                     .signWith(Keys.hmacShaKeyFor(ACCESS_TOKEN_SECRET.getBytes()))
                     .compact();
     }
-    public static String createTokenWithClaims(User user){
+    public static String createTokenWithClaims(User user, TerminalRepository terminalRepository){
         long expirationTime=ACCESS_TOKEN_VALIDITY_SECONDS *1_000;
         Date expirationDate=new Date(System.currentTimeMillis() + expirationTime);
         Map<String, Object> extra= new HashMap<>();
@@ -57,6 +59,8 @@ public class TokenUtils {
         extra.put("roles", user.getRol().toString());
         if(user.getTempAuthId()!=null){
             extra.put("terminalId", user.getTempAuthId());
+            Terminal terminal=terminalRepository.findById(user.getTempAuthId()).orElseThrow(()->new EntidadNoExisteException("Terminal no encontrada con id: "+user.getTempAuthId()));
+            extra.put("terminalExpirationDate", terminal.getExpirationDate().toString());
         }
         
         

@@ -34,8 +34,8 @@ public interface IReportService {
      * Get labor hours vs hourly cost by business and date range
      */
     public ResponseEntity<?> WorkHoursReportService(Long businessId, LocalDate startDate, LocalDate endDate);
-
+    public ResponseEntity<?> workHoursVsScheduleHours(Long businessId, LocalDate startDate, LocalDate endDate);
     public ResponseEntity<?> Report_UserWeeklySchedule(Long userBusinessId, LocalDate startDate, LocalDate endDate);
-    public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(Long userBusinessId, LocalDate startDate, LocalDate endDate);
+    public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(Long businessId,Long userBusinessId, LocalDate startDate, LocalDate endDate);
 
 }

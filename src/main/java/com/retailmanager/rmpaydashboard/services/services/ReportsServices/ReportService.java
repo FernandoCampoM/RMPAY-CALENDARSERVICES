@@ -793,11 +793,7 @@ public static Duration calculateDuration(LocalDate startDate, LocalTime startTim
             HashMap<String,Object> info=(HashMap<String,Object>)empleados.get(userBusinessId);
             List<EntryExit> ponchesList=(List<EntryExit>)info.get("ponches");
             entryExitDTOs=this.mapper.map(ponchesList, new TypeToken<List<EntryExitDTO>>(){}.getType());
-            for(int i=0;i<entryExitDTOs.size();i++){
-                if(!entryExitDTOs.get(i).getEntry() && i!=0){
-                    entryExitDTOs.get(i).setHoursWorked(calculateDuration(entryExitDTOs.get(i-1).getDate(), entryExitDTOs.get(i-1).getHour(), entryExitDTOs.get(i).getDate(), entryExitDTOs.get(i).getHour()).toHours());
-                }
-            }
+            
             info.put("ponches",entryExitDTOs);
             empleados.put(userBusinessId,info);
         }
@@ -815,9 +811,9 @@ public static Duration calculateDuration(LocalDate startDate, LocalTime startTim
     public ResponseEntity<?> WorkHoursReportService(Long businessId, LocalDate startDate, LocalDate endDate) {
         List<Object[]> laborHoursVsHourlyCost;
         if(businessId!=null){
-            laborHoursVsHourlyCost=usersAppRepository.reporteHorasTrabajadas( startDate, endDate,businessId);
+            laborHoursVsHourlyCost=usersAppRepository.reporteHorasTrabajadasVsHorasProgramadas( startDate, endDate,businessId);
         }else{
-            laborHoursVsHourlyCost=usersAppRepository.reporteHorasTrabajadas(startDate, endDate);
+            laborHoursVsHourlyCost=usersAppRepository.reporteHorasTrabajadasVsHorasProgramadas(startDate, endDate);
         }
         return new ResponseEntity<>(mapearReporte(laborHoursVsHourlyCost),HttpStatus.OK);
         
@@ -886,11 +882,15 @@ public List<HashMap<String, Object>> mapearHorarioSemanal(List<Object[]> resulta
 
 @Override
 @Transactional(readOnly = true)
-public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(Long userBusinessId, LocalDate startDate, LocalDate endDate) {
+public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(Long businessId,Long userBusinessId, LocalDate startDate, LocalDate endDate) {
     List<Object[]> detallesHoras = new ArrayList<>();
 
-    if (userBusinessId != null) {
-        detallesHoras = usersAppRepository.getEmployeeWeeklyScheduleDetail(userBusinessId,startDate, endDate);
+    if(businessId!=null && userBusinessId==null){
+        detallesHoras = usersAppRepository.getEmployeesWeeklyScheduleByBusiness(businessId, startDate, endDate);
+    }else if(businessId!=null && userBusinessId!=null){
+        detallesHoras = usersAppRepository.getEmployeeWeeklyScheduleDetail(businessId,userBusinessId, startDate, endDate);
+    }else if (userBusinessId != null && businessId == null) {
+        detallesHoras = usersAppRepository.getEmployeeWeeklyScheduleDetailByEmployee(userBusinessId,startDate, endDate);
     } else {
         detallesHoras = usersAppRepository.getAllEmployeesWeeklyScheduleDetail(startDate, endDate);
     }
@@ -916,6 +916,34 @@ public List<HashMap<String, Object>> mapearDetalleHorarioSemanal(List<Object[]> 
     }
 
     return listaMapeada;
+}
+@Override
+@Transactional(readOnly = true)
+public ResponseEntity<?> workHoursVsScheduleHours(Long businessId, LocalDate startDate, LocalDate endDate) {
+    List<Object[]> resultado;
+
+        resultado = usersAppRepository.resumenHorasTrabajadasVsHorasProgramadas(startDate, endDate, businessId);
+    
+    
+    HashMap<String, Object> response = new HashMap<>();
+    if(resultado==null){
+        response.put("total_horas_programadas", 0);
+        response.put("total_horas_trabajadas", 0);
+        response.put("diferencia_total_horas", 0);
+        response.put("total_costo_programado", 0);
+        response.put("total_costo_real", 0);
+        response.put("diferencia_total_costo", 0);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    
+    response.put("total_horas_programadas", resultado.get(0)[0]);
+    response.put("total_horas_trabajadas", resultado.get(0)[1]);
+    response.put("diferencia_total_horas", resultado.get(0)[2]);
+    response.put("total_costo_programado", resultado.get(0)[3]);
+    response.put("total_costo_real", resultado.get(0)[4]);
+    response.put("diferencia_total_costo", resultado.get(0)[5]);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
 }
 
 }

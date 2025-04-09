@@ -537,6 +537,7 @@ public class UsersBusinesService implements IUsersBusinessService{
                     throw new InvalidDateOrTime("La hora de entrada no puede ser menor a la registrada en el último ponche");
                 }
                 hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
+                objEntryExit.setHoursWorked(hoursWorket);
                 objEntryExit.setTotalWorkCost(hoursWorket*objUser.get(0).getCostHour());
             }
         }
@@ -600,7 +601,7 @@ public class UsersBusinesService implements IUsersBusinessService{
             if(listActivity.get(0).getEntry()){
                 objEntryExit.setEntry(false);
                  hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objEntryExit.getDate(), objEntryExit.getHour()).toHours();
-                
+                objEntryExit.setHoursWorked(hoursWorket);
                 objEntryExit.setTotalWorkCost(hoursWorket*objUser.get(0).getCostHour());
             }else{
                 objEntryExit.setEntry(true);
@@ -679,6 +680,7 @@ public ResponseEntity<?> updatePonche(Long activityId, EntryExitDTO prmPonche) {
         Pageable pageable = PageRequest.of(0, 10);
         List<EntryExit> listActivity=this.entryExitDBService.getPreviousEntry(objPonche.getId(),objPonche.getUserBusiness().getUserBusinessId(),pageable);
         float hoursWorket=calculateDuration(listActivity.get(0).getDate(), listActivity.get(0).getHour(), objPonche.getDate(), objPonche.getHour()).toHours();
+        objPonche.setHoursWorked(hoursWorket);
         objPonche.setTotalWorkCost(hoursWorket*objPonche.getUserBusiness().getCostHour());
         if(prmPonche.getHour().isBefore(listActivity.get(0).getHour())){
             throw new InvalidDateOrTime("La fecha o hora de entrada no puede ser menor a la registrada en el último ponche");

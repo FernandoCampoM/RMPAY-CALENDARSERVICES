@@ -44,9 +44,10 @@ public class ReportsController {
     }
     @GetMapping("/reports/employee-weeklyScheduleDetail-report")
     public ResponseEntity<?> getEmployeeWeeklyScheduleDetail(@RequestParam(name = "employeeId",required = false) Long employeeId,
+    @RequestParam(name = "businessId",required = false) Long businessId,
                                                  @RequestParam(name = "startDate") @Valid LocalDate startDate,
                                                  @RequestParam(name = "endDate") @Valid LocalDate endDate) {
-        return reportService.getEmployeeWeeklyScheduleDetail(employeeId, startDate, endDate);
+        return reportService.getEmployeeWeeklyScheduleDetail(businessId,employeeId, startDate, endDate);
     }
     @GetMapping("/reports/user-weeklySchedule-report")
     public ResponseEntity<?> Report_UserWeeklySchedule(@RequestParam(name = "employeeId",required = false) Long employeeId,
@@ -59,6 +60,12 @@ public class ReportsController {
                                                  @RequestParam(name = "startDate") @Valid LocalDate startDate,
                                                  @RequestParam(name = "endDate") @Valid LocalDate endDate) {
         return reportService.WorkHoursReportService(businessId, startDate, endDate);
+    }
+    @GetMapping("/reports/summary-workHoursVsScheduleHours")
+    public ResponseEntity<?> workHoursVsScheduleHours(@RequestParam(name = "businessId") Long businessId,
+                                                 @RequestParam(name = "startDate") @Valid LocalDate startDate,
+                                                 @RequestParam(name = "endDate") @Valid LocalDate endDate) {
+        return reportService.workHoursVsScheduleHours(businessId, startDate, endDate);
     }
     @GetMapping("/reports/sales-by-category")
     public ResponseEntity<?> getSalesByCategory(@RequestParam(name = "businessId") Long businessId,

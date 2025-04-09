@@ -32,101 +32,125 @@ public interface UsersAppRepository extends CrudRepository<UsersBusiness, Long> 
     void updateAllDownloadExceptMe(Long userBusinessId, boolean download);
 
     @Query(value = """
-                WITH HorasProgramadas AS (
-                    SELECT
-                        s.userBusinessId,
-                        SUM(DATEDIFF(HOUR, CONCAT(s.startDate, ' ', s.startTime), CONCAT(s.endDate, ' ', s.endTime))) AS horas_programadas,
-                        SUM(DATEDIFF(HOUR, CONCAT(s.startDate, ' ', s.startTime), CONCAT(s.endDate, ' ', s.endTime)) * ub.costHour) AS costo_programado
-                    FROM Shift s
-                    JOIN UsersBusiness ub ON s.userBusinessId = ub.userBusinessId
-                    WHERE s.startDate >= :startDate AND s.endDate <= :endDate
-                    GROUP BY s.userBusinessId, ub.costHour
-                ),
-                HorasDiarias AS (
-                    SELECT
-                        e.userBusinessId,
-                        e.date,
-                        DATEDIFF(HOUR, MIN(e.hour), MAX(e.hour)) AS horas_trabajadas_diarias,
-                        DATEDIFF(HOUR, MIN(e.hour), MAX(e.hour)) * ub.costHour AS costo_real_diario
-                    FROM EntryExit e
-                    JOIN UsersBusiness ub ON e.userBusinessId = ub.userBusinessId
-                    WHERE e.date BETWEEN :startDate AND :endDate
-                    GROUP BY e.userBusinessId, e.date, ub.costHour
-                ),
-                HorasTrabajadas AS (
-                    SELECT
-                        userBusinessId,
-                        SUM(horas_trabajadas_diarias) AS horas_trabajadas,
-                        SUM(costo_real_diario) AS costo_real
-                    FROM HorasDiarias
-                    GROUP BY userBusinessId
-                )
-                SELECT
-                    ub.username,
-                    COALESCE(hp.horas_programadas, 0) AS horas_programadas,
-                    COALESCE(ht.horas_trabajadas, 0) AS horas_trabajadas,
-                    COALESCE(ht.horas_trabajadas, 0) - COALESCE(hp.horas_programadas, 0) AS diferencia_horas,
-                    COALESCE(hp.costo_programado, 0) AS costo_programado,
-                    COALESCE(ht.costo_real, 0) AS costo_real,
-                    COALESCE(ht.costo_real, 0) - COALESCE(hp.costo_programado, 0) AS diferencia_costo
-                FROM UsersBusiness ub
-                LEFT JOIN HorasProgramadas hp ON ub.userBusinessId = hp.userBusinessId
-                LEFT JOIN HorasTrabajadas ht ON ub.userBusinessId = ht.userBusinessId
-                ORDER BY ub.username;
-            """, nativeQuery = true)
-    List<Object[]> reporteHorasTrabajadas(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-
+        WITH HorasProgramadas AS (
+            SELECT
+                sc.userBusinessId,
+                SUM(DATEDIFF(HOUR, sc.dateStart, sc.dateEnd)) AS horas_programadas,
+                SUM(DATEDIFF(HOUR, sc.dateStart, sc.dateEnd) * ub.costHour) AS costo_programado
+            FROM ScheduleCalendar sc
+            JOIN UsersBusiness ub ON sc.userBusinessId = ub.userBusinessId
+            WHERE sc.dateStart >= :startDate AND sc.dateEnd <= :endDate
+            GROUP BY sc.userBusinessId, ub.costHour
+        ),
+        HorasTrabajadas AS (
+            SELECT
+                e.userBusinessId,
+                SUM(e.hoursWorkeD) AS horas_trabajadas,
+                SUM(e.totalWorkCost) AS costo_real
+            FROM EntryExit e
+            WHERE e.entry = 0
+              AND e.date BETWEEN :startDate AND :endDate
+            GROUP BY e.userBusinessId
+        )
+        SELECT
+            ub.username,
+            COALESCE(hp.horas_programadas, 0) AS horas_programadas,
+            COALESCE(ht.horas_trabajadas, 0) AS horas_trabajadas,
+            COALESCE(ht.horas_trabajadas, 0) - COALESCE(hp.horas_programadas, 0) AS diferencia_horas,
+            COALESCE(hp.costo_programado, 0) AS costo_programado,
+            COALESCE(ht.costo_real, 0) AS costo_real,
+            COALESCE(ht.costo_real, 0) - COALESCE(hp.costo_programado, 0) AS diferencia_costo
+        FROM UsersBusiness ub
+        LEFT JOIN HorasProgramadas hp ON ub.userBusinessId = hp.userBusinessId
+        LEFT JOIN HorasTrabajadas ht ON ub.userBusinessId = ht.userBusinessId
+        ORDER BY ub.username;
+        """, nativeQuery = true)
+    List<Object[]> reporteHorasTrabajadasVsHorasProgramadas(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     @Query(value = """
-                WITH HorasProgramadas AS (
-                    SELECT
-                        s.userBusinessId,
-                        SUM(DATEDIFF(HOUR, CONCAT(s.startDate, ' ', s.startTime), CONCAT(s.endDate, ' ', s.endTime))) AS horas_programadas,
-                        SUM(DATEDIFF(HOUR, CONCAT(s.startDate, ' ', s.startTime), CONCAT(s.endDate, ' ', s.endTime)) * ub.costHour) AS costo_programado
-                    FROM Shift s
-                    JOIN UsersBusiness ub ON s.userBusinessId = ub.userBusinessId
-                    WHERE s.startDate >= :startDate
-                      AND s.endDate <= :endDate
-                      AND ub.businessId = :businessId
-                    GROUP BY s.userBusinessId, ub.costHour
-                ),
-                HorasDiarias AS (
-                    SELECT
-                        e.userBusinessId,
-                        e.date,
-                        DATEDIFF(HOUR, MIN(e.hour), MAX(e.hour)) AS horas_trabajadas_diarias,
-                        DATEDIFF(HOUR, MIN(e.hour), MAX(e.hour)) * ub.costHour AS costo_real_diario
-                    FROM EntryExit e
-                    JOIN UsersBusiness ub ON e.userBusinessId = ub.userBusinessId
-                    WHERE e.date BETWEEN :startDate AND :endDate
-                      AND ub.businessId = :businessId
-                    GROUP BY e.userBusinessId, e.date, ub.costHour
-                ),
-                HorasTrabajadas AS (
-                    SELECT
-                        userBusinessId,
-                        SUM(horas_trabajadas_diarias) AS horas_trabajadas,
-                        SUM(costo_real_diario) AS costo_real
-                    FROM HorasDiarias
-                    GROUP BY userBusinessId
-                )
-                SELECT
-                    ub.username,
-                    COALESCE(hp.horas_programadas, 0) AS horas_programadas,
-                    COALESCE(ht.horas_trabajadas, 0) AS horas_trabajadas,
-                    COALESCE(ht.horas_trabajadas, 0) - COALESCE(hp.horas_programadas, 0) AS diferencia_horas,
-                    COALESCE(hp.costo_programado, 0) AS costo_programado,
-                    COALESCE(ht.costo_real, 0) AS costo_real,
-                    COALESCE(ht.costo_real, 0) - COALESCE(hp.costo_programado, 0) AS diferencia_costo
-                FROM UsersBusiness ub
-                LEFT JOIN HorasProgramadas hp ON ub.userBusinessId = hp.userBusinessId
-                LEFT JOIN HorasTrabajadas ht ON ub.userBusinessId = ht.userBusinessId
-                WHERE ub.businessId = :businessId
-                ORDER BY ub.username;
-            """, nativeQuery = true)
-    List<Object[]> reporteHorasTrabajadas(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
-            @Param("businessId") Long businessId);
+    WITH HorasProgramadas AS (
+        SELECT
+            sc.userBusinessId,
+            SUM(DATEDIFF(HOUR, sc.dateStart, sc.dateEnd)) AS horas_programadas,
+            SUM(DATEDIFF(HOUR, sc.dateStart, sc.dateEnd) * ub.costHour) AS costo_programado
+        FROM ScheduleCalendar sc
+        JOIN UsersBusiness ub ON sc.userBusinessId = ub.userBusinessId
+        WHERE sc.dateStart >= :startDate 
+          AND sc.dateEnd <= :endDate
+          AND ub.businessId = :businessId
+        GROUP BY sc.userBusinessId, ub.costHour
+    ),
+    HorasTrabajadas AS (
+        SELECT
+            e.userBusinessId,
+            SUM(e.hoursWorkeD) AS horas_trabajadas,
+            SUM(e.totalWorkCost) AS costo_real
+        FROM EntryExit e
+        JOIN UsersBusiness ub ON e.userBusinessId = ub.userBusinessId
+        WHERE e.entry = 0
+          AND e.date BETWEEN :startDate AND :endDate
+          AND ub.businessId = :businessId
+        GROUP BY e.userBusinessId
+    )
+    SELECT
+        ub.username,
+        COALESCE(hp.horas_programadas, 0) AS horas_programadas,
+        COALESCE(ht.horas_trabajadas, 0) AS horas_trabajadas,
+        COALESCE(ht.horas_trabajadas, 0) - COALESCE(hp.horas_programadas, 0) AS diferencia_horas,
+        COALESCE(hp.costo_programado, 0) AS costo_programado,
+        COALESCE(ht.costo_real, 0) AS costo_real,
+        COALESCE(ht.costo_real, 0) - COALESCE(hp.costo_programado, 0) AS diferencia_costo
+    FROM UsersBusiness ub
+    LEFT JOIN HorasProgramadas hp ON ub.userBusinessId = hp.userBusinessId
+    LEFT JOIN HorasTrabajadas ht ON ub.userBusinessId = ht.userBusinessId
+    WHERE ub.businessId = :businessId
+    ORDER BY ub.username;
+    """, nativeQuery = true)
+List<Object[]> reporteHorasTrabajadasVsHorasProgramadas(
+    @Param("startDate") LocalDate startDate, 
+    @Param("endDate") LocalDate endDate,
+    @Param("businessId") Long businessId);
+    @Query(value = """
+        WITH HorasProgramadas AS (
+            SELECT
+                sc.userBusinessId,
+                SUM(DATEDIFF(HOUR, sc.dateStart, sc.dateEnd)) AS horas_programadas,
+                SUM(DATEDIFF(HOUR, sc.dateStart, sc.dateEnd) * ub.costHour) AS costo_programado
+            FROM ScheduleCalendar sc
+            JOIN UsersBusiness ub ON sc.userBusinessId = ub.userBusinessId
+            WHERE sc.dateStart >= :startDate 
+              AND sc.dateEnd <= :endDate
+              AND ub.businessId = :businessId
+            GROUP BY sc.userBusinessId, ub.costHour
+        ),
+        HorasTrabajadas AS (
+            SELECT
+                e.userBusinessId,
+                SUM(e.hoursWorkeD) AS horas_trabajadas,
+                SUM(e.totalWorkCost) AS costo_real
+            FROM EntryExit e
+            JOIN UsersBusiness ub ON e.userBusinessId = ub.userBusinessId
+            WHERE e.entry = 0
+              AND e.date BETWEEN :startDate AND :endDate
+              AND ub.businessId = :businessId
+            GROUP BY e.userBusinessId
+        )
+        SELECT
+            SUM(COALESCE(hp.horas_programadas, 0)) AS total_horas_programadas,
+            SUM(COALESCE(ht.horas_trabajadas, 0)) AS total_horas_trabajadas,
+            SUM(COALESCE(ht.horas_trabajadas, 0)) - SUM(COALESCE(hp.horas_programadas, 0)) AS diferencia_total_horas,
+            SUM(COALESCE(hp.costo_programado, 0)) AS total_costo_programado,
+            SUM(COALESCE(ht.costo_real, 0)) AS total_costo_real,
+            SUM(COALESCE(ht.costo_real, 0)) - SUM(COALESCE(hp.costo_programado, 0)) AS diferencia_total_costo
+        FROM
+            (SELECT * FROM UsersBusiness WHERE businessId = :businessId) ub
+        LEFT JOIN HorasProgramadas hp ON ub.userBusinessId = hp.userBusinessId
+        LEFT JOIN HorasTrabajadas ht ON ub.userBusinessId = ht.userBusinessId;
+        """, nativeQuery = true)
+        List<Object[]> resumenHorasTrabajadasVsHorasProgramadas(
+        @Param("startDate") LocalDate startDate, 
+        @Param("endDate") LocalDate endDate,
+        @Param("businessId") Long businessId);
+    
 
     @Query(value = """
                 WITH RawSchedule AS (
@@ -258,10 +282,115 @@ public interface UsersAppRepository extends CrudRepository<UsersBusiness, Long> 
                 JOIN TotalSemana ts ON d.userBusinessId = ts.userBusinessId
                 ORDER BY d.Fecha, d.Turno;
             """, nativeQuery = true)
-    List<Object[]> getEmployeeWeeklyScheduleDetail(
+    List<Object[]> getEmployeeWeeklyScheduleDetailByEmployee(
             @Param("userBusinessId") Long userBusinessId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+            @Query(value = """
+    WITH DetalleHoras AS (
+        SELECT
+            sc.userBusinessId,
+            ub.username,
+            CONVERT(DATE, sc.dateStart) AS Fecha,
+            CASE
+                WHEN CAST(sc.dateStart AS TIME) < '12:00' THEN 'Mañana'
+                ELSE 'Tarde'
+            END AS Turno,
+            FORMAT(sc.dateStart, 'h:mm tt', 'en-us') + ' - ' + FORMAT(sc.dateEnd, 'h:mm tt', 'en-us') AS Horario,
+            DATEDIFF(MINUTE, sc.dateStart, sc.dateEnd) / 60.0 AS Horas
+        FROM ScheduleCalendar sc
+        JOIN UsersBusiness ub ON sc.userBusinessId = ub.userBusinessId
+        WHERE sc.userBusinessId = :userBusinessId
+          AND ub.businessId = :businessId
+          AND sc.dateStart BETWEEN :startDate AND :endDate
+    ),
+    HorasPorDia AS (
+        SELECT
+            userBusinessId,
+            Fecha,
+            SUM(Horas) AS HorasxDia
+        FROM DetalleHoras
+        GROUP BY userBusinessId, Fecha
+    ),
+    TotalSemana AS (
+        SELECT
+            userBusinessId,
+            SUM(Horas) AS TotalHorasSemana
+        FROM DetalleHoras
+        GROUP BY userBusinessId
+    )
+    SELECT
+        d.username,
+        d.Fecha,
+        d.Turno,
+        d.Horario,
+        d.Horas,
+        hpd.HorasxDia,
+        ts.TotalHorasSemana,
+        d.userBusinessId
+    FROM DetalleHoras d
+    JOIN HorasPorDia hpd ON d.userBusinessId = hpd.userBusinessId AND d.Fecha = hpd.Fecha
+    JOIN TotalSemana ts ON d.userBusinessId = ts.userBusinessId
+    ORDER BY d.Fecha, d.Turno
+""", nativeQuery = true)
+List<Object[]> getEmployeeWeeklyScheduleDetail(
+    @Param("userBusinessId") Long userBusinessId,
+    @Param("businessId") Long businessId,
+    @Param("startDate") LocalDate startDate,
+    @Param("endDate") LocalDate endDate
+);
+@Query(value = """
+    WITH DetalleHoras AS (
+        SELECT
+            sc.userBusinessId,
+            ub.username,
+            CONVERT(DATE, sc.dateStart) AS Fecha,
+            CASE
+                WHEN CAST(sc.dateStart AS TIME) < '12:00' THEN 'Mañana'
+                ELSE 'Tarde'
+            END AS Turno,
+            FORMAT(sc.dateStart, 'h:mm tt', 'en-us') + ' - ' + FORMAT(sc.dateEnd, 'h:mm tt', 'en-us') AS Horario,
+            DATEDIFF(MINUTE, sc.dateStart, sc.dateEnd) / 60.0 AS Horas
+        FROM ScheduleCalendar sc
+        JOIN UsersBusiness ub ON sc.userBusinessId = ub.userBusinessId
+        WHERE ub.businessId = :businessId
+          AND sc.dateStart BETWEEN :startDate AND :endDate
+    ),
+    HorasPorDia AS (
+        SELECT
+            userBusinessId,
+            Fecha,
+            SUM(Horas) AS HorasxDia
+        FROM DetalleHoras
+        GROUP BY userBusinessId, Fecha
+    ),
+    TotalSemana AS (
+        SELECT
+            userBusinessId,
+            SUM(Horas) AS TotalHorasSemana
+        FROM DetalleHoras
+        GROUP BY userBusinessId
+    )
+    SELECT
+        d.username,
+        d.Fecha,
+        d.Turno,
+        d.Horario,
+        d.Horas,
+        hpd.HorasxDia,
+        ts.TotalHorasSemana,
+        d.userBusinessId
+    FROM DetalleHoras d
+    JOIN HorasPorDia hpd ON d.userBusinessId = hpd.userBusinessId AND d.Fecha = hpd.Fecha
+    JOIN TotalSemana ts ON d.userBusinessId = ts.userBusinessId
+    ORDER BY d.username, d.Fecha, d.Turno
+""", nativeQuery = true)
+List<Object[]> getEmployeesWeeklyScheduleByBusiness(
+    @Param("businessId") Long businessId,
+    @Param("startDate") LocalDate startDate,
+    @Param("endDate") LocalDate endDate
+);
+
 
     @Query(value = """
                 WITH DetalleHoras AS (

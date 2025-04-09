@@ -67,10 +67,10 @@ public class JWTAthenticationFilter extends UsernamePasswordAuthenticationFilter
         
         UserDetailsImpl userDetails=(UserDetailsImpl) authResult.getPrincipal();
         if(userDetails.getUserObject().isEnable()==false){
-            throw new UserDisabled("");
+            throw new UserDisabled("El USUARIO NO ESTA ACTIVO");
         }
         usuarioRepository.updateLastLogin(userDetails.getUserObject().getUserID(),LocalDate.now());
-        String token=TokenUtils.createTokenWithClaims(userDetails.getUserObject());
+        String token=TokenUtils.createTokenWithClaims(userDetails.getUserObject(), terminalRepository);
         usuarioRepository.updateTempAuthId(userDetails.getUserObject().getUsername(), null);
         
         Token fullToken=new Token();

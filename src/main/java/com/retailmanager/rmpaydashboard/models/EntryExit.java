@@ -37,4 +37,6 @@ public class EntryExit {
 
     @Column( nullable = true)
     private Double totalWorkCost;   
+    @Column( nullable = true)
+    private Float hoursWorked; 
 }
