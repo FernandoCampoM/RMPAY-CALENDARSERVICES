@@ -22,3 +22,5 @@ services:
       hibernate_ddl_auto: create
     ports:
       - "9094:9092"
+    volumes:
+      - ./images:/workspace/images

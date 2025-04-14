@@ -31,3 +31,6 @@ target/surefire-reports/2025-03-01T00-07-25_749.dumpstream
 target/surefire-reports/2025-03-01T00-20-15_055.dumpstream
 target/surefire-reports/2025-03-05T11-33-57_317.dumpstream
 *.dumpstream
+target/RMPAYservice.jar.original
+target/surefire-reports/com.retailmanager.rmpaydashboard.RmpaydashboardApplicationTests.txt
+target/surefire-reports/TEST-com.retailmanager.rmpaydashboard.RmpaydashboardApplicationTests.xml
