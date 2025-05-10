@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -40,6 +41,7 @@ import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
@@ -276,8 +278,24 @@ public class UserService implements IUserService{
             Optional<User> optional= this.serviceDBUser.findById(userId);
             if(optional.isPresent()){
                 optional.get().getBusiness().forEach(business -> business.setUser(null));
-                List<BusinessDTO> listBusiness=this.mapper.map(optional.get().getBusiness(),new TypeToken<List<BusinessDTO>>(){}.getType());
-                
+                   List<BusinessDTO> listBusinessDTO = new ArrayList<>();
+                    for (Business business : optional.get().getBusiness()) {
+                        // Mapea el objeto Business a BusinessDTO usando ModelMapper
+                        BusinessDTO businessDTO = this.mapper.map(business, BusinessDTO.class);
+                        // Mapea la lista de Terminales a una lista de TerminalDTO manualmente
+                        
+                        List<TerminalDTO> listTerminalDTO = business.getTerminals().stream()
+                                .map(terminal -> {
+                                    terminal.setBusiness(null);
+                                    TerminalDTO terminalDTO = this.mapper.map(terminal, TerminalDTO.class);
+                                    return terminalDTO;
+                                })
+                                .collect(Collectors.toList());
+
+                        businessDTO.setTerminals(listTerminalDTO);
+                        listBusinessDTO.add(businessDTO);
+                    }
+                List<BusinessDTO> listBusiness=listBusinessDTO;
                 return new ResponseEntity<List<BusinessDTO>>(listBusiness,HttpStatus.OK);
             }
         }

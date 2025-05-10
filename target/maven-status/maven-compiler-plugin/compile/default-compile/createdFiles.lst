@@ -102,7 +102,6 @@ com\retailmanager\rmpaydashboard\repositories\Sys_general_configRepository.class
 com\retailmanager\rmpaydashboard\services\services\TerminalService\TerminalService$1.class
 com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\ErrorUtils.class
 com\retailmanager\rmpaydashboard\services\services\Payment\data\RequestPayment.class
-com\retailmanager\rmpaydashboard\services\services\UserService\UserService$4.class
 com\retailmanager\rmpaydashboard\utils\ConverterJson.class
 com\retailmanager\rmpaydashboard\services\services\Payment\data\PaymentPlanInfo.class
 com\retailmanager\rmpaydashboard\security\JWTAthenticationFilter.class

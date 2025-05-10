@@ -65,6 +65,7 @@ public class UserPayAtTableController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticaton(@Valid @RequestBody UserAuthDTO userAuthDTO) {
+        System.out.println("---->userAuthDTO: "+userAuthDTO);
         return userService.authenticaton(userAuthDTO);
     }
 }

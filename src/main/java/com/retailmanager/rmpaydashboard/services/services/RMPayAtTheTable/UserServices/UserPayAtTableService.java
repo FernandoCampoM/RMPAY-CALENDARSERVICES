@@ -150,6 +150,7 @@ public class UserPayAtTableService implements IUserPayAtTableService {
 
     @Override
     public ResponseEntity<?> authenticaton(UserAuthDTO userAuthDTO) {
+        System.out.println("Inicio de sesion: " + userAuthDTO.getUsername());
         RMPayAtTheTable_User user = userRepository.findByUsername(userAuthDTO.getUsername()).orElse(null);
         HashMap<String, String> map = new HashMap<String, String>();
         if (user == null) {
@@ -171,6 +172,7 @@ public class UserPayAtTableService implements IUserPayAtTableService {
             if(terminal.getUser().getUserId()!=user.getUserId()){
                 map.clear();
                 map.put("message", "El terminal con serial number " + userAuthDTO.getSerialNumber() + " pertenece a otro usuario");
+                System.out.println("El terminal con serial number " + userAuthDTO.getSerialNumber() + " pertenece a otro usuario");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(map);
             }
