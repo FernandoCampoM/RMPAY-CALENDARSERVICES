@@ -121,7 +121,11 @@ public class TokenUtils {
                 if(terminal==null){
                     throw new EntidadNoExisteException("El terminal con serial number "+serialNumber+" no existe");
                 }else{
-                    if(terminal.getUser().getUserId()!=usuario.getUserId()){
+
+                    if(terminal.getUser().getUserId().equals(usuario.getUserId())==false){
+                        System.out.println("usrid terminal: "+terminal.getUser().getUserId()+
+                        "Name: "+terminal.getUser().getName()+" usrid user: "+usuario.getUserId()+
+                        "name: "+usuario.getName());
                         throw new EntidadNoExisteException("El terminal con serial number "+serialNumber+" no pertenece al usuario "+username);
                     }
                     if(!terminal.getActive()){
