@@ -114,6 +114,8 @@ public class ProductService implements IProductService {
             }
             Product objProduct = this.mapperBase.map(prmProduct, Product.class);
             objProduct.setCategory(optionalCategory.get());
+            objProduct.setCreatedAt(LocalDateTime.now());
+            objProduct.setUpdatedAt(LocalDateTime.now());
             if(objProduct!=null){
                 objProduct = this.serviceDBProducts.save(objProduct);
                 for(UsersBusiness usersBusiness:objProduct.getCategory().getBusiness().getUsersBusiness()){
@@ -183,6 +185,7 @@ public class ProductService implements IProductService {
         objProduct.setMinimumLevel(prmProduct.getMinimumLevel());
         objProduct.setMaximumLevel(prmProduct.getMaximumLevel());
         objProduct.setName(prmProduct.getName());
+        objProduct.setUpdatedAt(LocalDateTime.now());
         Long categoryId=prmProduct.getIdCategory();
         if(categoryId!=null){
             Optional<Category> optionalCategory = this.serviceDBCategory.findById(categoryId);
@@ -380,6 +383,8 @@ public class ProductService implements IProductService {
                 }
             }
             if(objProduct!=null){
+                objProduct.setCreatedAt(LocalDateTime.now());
+                objProduct.setUpdatedAt(LocalDateTime.now());
                 objProduct = this.serviceDBProducts.save(objProduct);
                 
             }
@@ -411,7 +416,9 @@ public class ProductService implements IProductService {
         if(productId!=null){
             Optional<Product> optional= this.serviceDBProducts.findById(productId);
             if(optional.isPresent()){
-                this.serviceDBProducts.updateEnable(productId, enable);
+                optional.get().setEnable(enable);
+                optional.get().setUpdatedAt(LocalDateTime.now());
+                this.serviceDBProducts.save(optional.get());
                 if(enable){
                     for(UsersBusiness usersBusiness:optional.get().getCategory().getBusiness().getUsersBusiness()){
                         ubpServices.updateDownload(productId,usersBusiness.getUserBusinessId(),false);

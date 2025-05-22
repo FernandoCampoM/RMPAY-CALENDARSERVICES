@@ -1,6 +1,7 @@
 package com.retailmanager.rmpaydashboard.models;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -55,4 +56,6 @@ public class Product {
     @ManyToOne(cascade=CascadeType.PERSIST,optional = true)
     @JoinColumn( name="categoryId",nullable = false)
     private Category category;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

@@ -96,9 +96,9 @@ public class UsersBusinesService implements IUsersBusinessService{
         Business business = null;
         if(businessId!=null) {
             business=this.serviceDBBusiness.findById(businessId).orElse(null);
-            Optional<UsersBusiness> existingUser = this.usersAppDBService.findByPassword(prmUsersBusiness.getPassword());
+            Optional<UsersBusiness> existingUser = this.usersAppDBService.findByPasswordAndBusiness(prmUsersBusiness.getPassword(), businessId);
             if(existingUser.isPresent()){
-                throw new EntidadYaExisteException("El Empleado con password "+prmUsersBusiness.getPassword()+" ya existe en la Base de datos");
+                throw new EntidadYaExisteException("El Empleado con password "+prmUsersBusiness.getPassword()+" ya existe en la Base de datos para el Negocio "+businessId);
             }
             UsersBusiness usersBusiness = this.mapper.map(prmUsersBusiness, UsersBusiness.class);
             usersBusiness.setUserPermissions(new ArrayList<>());
@@ -141,10 +141,10 @@ public class UsersBusinesService implements IUsersBusinessService{
         if(userBusinessId!=null) {
             UsersBusiness usersBusiness = this.usersAppDBService.findById(userBusinessId).orElse(null);
             if(usersBusiness!=null) {
-                Optional<UsersBusiness> existingUser = this.usersAppDBService.findByPassword(prmUsersBusiness.getPassword());
-                System.out.println("Existing User: " + existingUser.get().getUserBusinessId());
-                if(existingUser.isPresent() && existingUser.get().getUserBusinessId().equals(userBusinessId)==false){
-                    throw new EntidadYaExisteException("El Empleado con password "+prmUsersBusiness.getPassword()+" ya existe en la Base de datos");
+                Optional<UsersBusiness> existingUser = this.usersAppDBService.findByPasswordAndBusiness(prmUsersBusiness.getPassword(), prmUsersBusiness.getIdBusines());
+                //System.out.println("Existing User: " + existingUser.get().getUserBusinessId());
+                if(existingUser != null && existingUser.isPresent() && existingUser.get().getUserBusinessId().equals(userBusinessId)==false){
+                    throw new EntidadYaExisteException("El Empleado con password "+prmUsersBusiness.getPassword()+" ya existe en la Base de datos para el Negocio "+prmUsersBusiness.getIdBusines());
                 }
                 usersBusiness.setUsername(prmUsersBusiness.getUsername());
                 usersBusiness.setPassword(prmUsersBusiness.getPassword());

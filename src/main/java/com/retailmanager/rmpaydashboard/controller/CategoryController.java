@@ -64,7 +64,10 @@ public class CategoryController {
     public ResponseEntity<?> findById(@Valid @PathVariable @Positive(message = "categoryId.positive") Long categoryId) {
         return categoryService.findById(categoryId);
     }
-
+    @GetMapping("/categories/business/{businessId}")
+    public ResponseEntity<?> findByBusinessId(@Valid @PathVariable @Positive(message = "businessId.positive") Long businessId) {
+            return categoryService.findByBusinessId(businessId);
+        }
     /**
      * Find category by name.
      *

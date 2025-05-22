@@ -11,4 +11,5 @@ public interface ICategoryService   {
     public ResponseEntity<?> findById(Long categoryId);
     public ResponseEntity<?> findByName(String name);
     public ResponseEntity<?> updateEnable(Long categoryId, boolean enable);
+    public ResponseEntity<?> findByBusinessId(Long businessId);
 }

@@ -568,7 +568,7 @@ public class UserService implements IUserService{
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(true);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().minusDays(1));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);
@@ -620,7 +620,7 @@ public class UserService implements IUserService{
                                         objTerminal.setRegisterDate(LocalDate.now());
                                         objTerminal.setEnable(false);
                                         objTerminal.setBusiness(objBusiness);
-                                        objTerminal.setExpirationDate(null);
+                                        objTerminal.setExpirationDate(LocalDate.now().minusDays(1));
                                         objTerminal.setSerial(null);
                                         objTerminal.setName(objTerminal.getTerminalId());
                                         objTerminal.setService(objService);

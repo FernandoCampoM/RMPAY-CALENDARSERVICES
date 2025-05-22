@@ -1,5 +1,6 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import com.retailmanager.rmpaydashboard.models.Product;
 
@@ -67,6 +68,8 @@ public class ProductDTO {
     private Boolean enable;
 
     private int suggestedPurchase;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static ProductDTO tOProduct(Product product) {
         ProductDTO objProduct = new ProductDTO();
@@ -85,6 +88,8 @@ public class ProductDTO {
         objProduct.setMaximumLevel(product.getMaximumLevel());
         objProduct.setEnable(product.isEnable());
         objProduct.setSuggestedPurchase(product.getMaximumLevel() - product.getQuantity());
+        objProduct.setCreatedAt(product.getCreatedAt());
+        objProduct.setUpdatedAt(product.getUpdatedAt());
         return objProduct;
     }
 }

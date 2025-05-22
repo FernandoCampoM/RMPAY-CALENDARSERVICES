@@ -461,7 +461,7 @@ public class TerminalService implements ITerminalService {
                 emailService.notifyNewTerminal(objEmailBodyData);
                 break;
             case "ATHMOVIL":
-                objTerminal.setExpirationDate(null);
+                objTerminal.setExpirationDate(LocalDate.now().minusDays(1));
                 objTerminal.setPayment(false);
                 objTerminal = this.serviceDBTerminal.save(objTerminal);
                 objInvoice.setDate(LocalDate.now());
@@ -497,7 +497,7 @@ public class TerminalService implements ITerminalService {
                 emailService.notifyNewTerminal(objEmailBodyData);
                 break;
             case "BANK-ACCOUNT":
-                objTerminal.setExpirationDate(null);
+                objTerminal.setExpirationDate(LocalDate.now().minusDays(1));
                 objTerminal.setPayment(false);
                 objTerminal = this.serviceDBTerminal.save(objTerminal);
                 objInvoice.setDate(LocalDate.now());

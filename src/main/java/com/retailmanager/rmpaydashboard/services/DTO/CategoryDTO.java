@@ -2,6 +2,9 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -19,4 +22,6 @@ public class CategoryDTO {
     
     private String color;
     private String position;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

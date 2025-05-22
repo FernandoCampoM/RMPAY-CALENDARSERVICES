@@ -27,7 +27,7 @@ public class UsersBusiness {
     @Column(nullable = false)
     private String username;
 
-    @Column(nullable = false,unique = true)
+    @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
