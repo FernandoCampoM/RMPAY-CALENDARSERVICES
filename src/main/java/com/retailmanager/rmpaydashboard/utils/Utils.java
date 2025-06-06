@@ -10,7 +10,7 @@ import com.retailmanager.rmpaydashboard.models.Terminal;
 
 public class Utils {
     public static void main(String[] args){
-        String texto="RM123456";
+        String texto="57917817Cmj*";
         if(texto.startsWith("RM")){
             System.out.println("Si contiene RM");
         }

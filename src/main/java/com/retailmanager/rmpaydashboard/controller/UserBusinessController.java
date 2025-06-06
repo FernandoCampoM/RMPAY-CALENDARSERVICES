@@ -13,10 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.retailmanager.rmpaydashboard.services.DTO.EmployeeAuthentication;
 import com.retailmanager.rmpaydashboard.services.DTO.EntryExitDTO;
-import com.retailmanager.rmpaydashboard.services.DTO.ShiftDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.UsersBusinessDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
-import com.retailmanager.rmpaydashboard.services.services.ShiftService.IShiftService;
 import com.retailmanager.rmpaydashboard.services.services.UsersBusinessService.IUsersBusinessService;
 
 
@@ -28,8 +26,6 @@ public class UserBusinessController {
     @Autowired
     private IUsersBusinessService usersBusinessService;
 
-    @Autowired
-    private IShiftService shiftService;
 
     @Autowired IEmailService emailService;
 
@@ -192,10 +188,7 @@ public class UserBusinessController {
         return usersBusinessService.deleteLastActivity(userBusinessId);
     }
 
-    @PostMapping("/userBusiness/activity/shift")
-    public ResponseEntity<?> openShift(@RequestHeader("Authorization") String authToken,@Valid @RequestBody ShiftDTO prmShiftDTO) {
-        return shiftService.openShift( authToken.replace("Bearer ", ""),prmShiftDTO);
-    }
+    
     /* @GetMapping("/emailtest")
     public String eailtest() {
         this.emailService.lastDayNotificationEmail("juancampo201509@gmail.com", "juancamm", "Evolución Imparable");
