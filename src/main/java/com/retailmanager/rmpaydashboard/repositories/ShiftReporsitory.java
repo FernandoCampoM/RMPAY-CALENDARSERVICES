@@ -115,12 +115,12 @@ public interface ShiftReporsitory extends CrudRepository<Shift, Long>,  PagingAn
         LocalDateTime endTime, 
         Pageable pageable
     );
-    Page<Shift> findByUserBusinessAndTerminalAndStartTimeBetweenAndStatusShiftBalance(UsersBusiness userBusiness, Terminal terminal, LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByUserBusinessAndTerminalAndStatusShiftBalance(UsersBusiness userBusiness, Terminal terminal, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByUserBusinessAndStartTimeBetweenAndStatusShiftBalance(UsersBusiness userBusiness, LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByTerminalAndStartTimeBetweenAndStatusShiftBalance(Terminal terminal, LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByUserBusinessAndStatusShiftBalance(UsersBusiness userBusiness, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByTerminalAndStatusShiftBalance(Terminal terminal, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByStartTimeBetweenAndStatusShiftBalance(LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
-    Page<Shift> findByStatusShiftBalance(Boolean statusShiftBalance, Pageable pageable); // Nuevo caso base
+    Page<Shift> findByUserBusinessAndTerminalAndStartTimeBetweenAndOpenShifBalance(UsersBusiness userBusiness, Terminal terminal, LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByUserBusinessAndTerminalAndOpenShifBalance(UsersBusiness userBusiness, Terminal terminal, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByUserBusinessAndStartTimeBetweenAndOpenShifBalance(UsersBusiness userBusiness, LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByTerminalAndStartTimeBetweenAndOpenShifBalance(Terminal terminal, LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByUserBusinessAndOpenShifBalance(UsersBusiness userBusiness, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByTerminalAndOpenShifBalance(Terminal terminal, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByStartTimeBetweenAndOpenShifBalance(LocalDateTime start, LocalDateTime end, Boolean statusShiftBalance, Pageable pageable);
+    Page<Shift> findByOpenShifBalance(Boolean statusShiftBalance, Pageable pageable); // Nuevo caso base
 }   

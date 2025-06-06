@@ -73,7 +73,7 @@ public class ShirftService implements IShiftService{
 
         // 2. Verificar si ya hay un turno abierto para este usuario y terminal
         Optional<Shift> existingOpenShift = serviceDBShift.findFirstByUserBusinessAndTerminal(userBusiness, terminal);
-        if (existingOpenShift.isPresent()) {
+        if (existingOpenShift.isPresent() && existingOpenShift.get().isOpenShifBalance()) {
             throw new EntidadYaExisteException("There is already an open shift for employee user  ID " + shiftDTO.getUserId() + " and device whith serial ID " + shiftDTO.getDeviceId());
         } 
        // 2. Verificar si ya hay un turno abierto para este usuario y terminal
@@ -145,7 +145,14 @@ public class ShirftService implements IShiftService{
         // 2. Mapear los campos actualizables del DTO a la entidad existente
         // ModelMapper puede manejar esto, pero para relaciones complejas o campos específicos,
         // es mejor hacerlo manualmente o con un mapper más customizado.
-        mapper.map(shiftDTO, existingShift); // Esto actualizará los campos escalares
+        existingShift.setBalanceFinal(shiftDTO.getBalanceFinal());
+        existingShift.setCuadreFinal(shiftDTO.getCuadreFinal());
+        existingShift.setOpenShifBalance(shiftDTO.isOpenShifBalance());
+        existingShift.setEndTime(shiftDTO.getEndTime()); // Asegurarse de que se actualice la hora de cierre
+        existingShift.setUserName(shiftDTO.getUserName());
+        existingShift.setStartTime(shiftDTO.getStartTime()); // Asegurarse de que se actualice la hora de inicio
+        existingShift.setBalanceInicial(shiftDTO.getBalanceInicial());
+        
 
         // Asegurarse de que las relaciones no se sobrescriban incorrectamente si el DTO no las trae
         // Si el DTO no trae userBusinessId o terminalId, no deberíamos cambiarlos.
@@ -255,12 +262,18 @@ public class ShirftService implements IShiftService{
                     .orElseThrow(() -> new EntidadNoExisteException("Shift with ID " + shiftDTO.getShiftId() + " does not exist."));
 
             // Si el turno ya está cerrado, lanzar una excepción
-            if (shiftToClose.getEndTime() != null) {
+            if (shiftToClose.getEndTime() != null && shiftToClose.isOpenShifBalance() == false) {
                 throw new IllegalStateException("Shift with ID " + shiftDTO.getShiftId() + " is already closed.");
             }
 
             // Actualizar los campos del turno existente con los del DTO
-            mapper.map(shiftDTO, shiftToClose); // Esto actualiza campos escalares
+            shiftToClose.setBalanceFinal(shiftDTO.getBalanceFinal());
+        shiftToClose.setCuadreFinal(shiftDTO.getCuadreFinal());
+        shiftToClose.setOpenShifBalance(shiftDTO.isOpenShifBalance());
+        shiftToClose.setEndTime(shiftDTO.getEndTime()); // Asegurarse de que se actualice la hora de cierre
+        shiftToClose.setUserName(shiftDTO.getUserName());
+        shiftToClose.setStartTime(shiftDTO.getStartTime()); // Asegurarse de que se actualice la hora de inicio
+        shiftToClose.setBalanceInicial(shiftDTO.getBalanceInicial()); // Esto actualiza campos escalares
             
 
             // Si el DTO proporciona SaleReport, actualizar o crear
@@ -293,7 +306,7 @@ public class ShirftService implements IShiftService{
 
             // Verificar si ya hay un turno abierto para este usuario y terminal (prevención de duplicados)
             Optional<Shift> existingOpenShift = serviceDBShift.findFirstByUserBusinessAndTerminal(userBusiness, terminal);
-            if (existingOpenShift.isPresent()) {
+            if (existingOpenShift.isPresent() && existingOpenShift.get().isOpenShifBalance()) {
                  throw new EntidadYaExisteException("There is already an open shift for employee user ID " + shiftDTO.getUserId() + " and device whit serial ID " + shiftDTO.getDeviceId() + ". Please close it first or provide its ID to update.");
             }
 
@@ -385,21 +398,21 @@ public class ShirftService implements IShiftService{
         // --- 3. Lógica de Búsqueda Combinada con Paginación y statusShiftBalance ---
         // Se priorizan las combinaciones más completas
         if (userBusiness != null && terminal != null && startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndStartTimeBetweenAndStatusShiftBalance(userBusiness, terminal, startDateTime, endDateTime, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndStartTimeBetweenAndOpenShifBalance(userBusiness, terminal, startDateTime, endDateTime, statusShiftBalance, pageable);
         } else if (userBusiness != null && terminal != null && startDateTime != null && endDateTime != null) {
             shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndStartTimeBetween(userBusiness, terminal, startDateTime, endDateTime, pageable);
         } else if (userBusiness != null && terminal != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndStatusShiftBalance(userBusiness, terminal, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndOpenShifBalance(userBusiness, terminal, statusShiftBalance, pageable);
         } else if (userBusiness != null && startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndStartTimeBetweenAndStatusShiftBalance(userBusiness, startDateTime, endDateTime, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByUserBusinessAndStartTimeBetweenAndOpenShifBalance(userBusiness, startDateTime, endDateTime, statusShiftBalance, pageable);
         } else if (terminal != null && startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByTerminalAndStartTimeBetweenAndStatusShiftBalance(terminal, startDateTime, endDateTime, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByTerminalAndStartTimeBetweenAndOpenShifBalance(terminal, startDateTime, endDateTime, statusShiftBalance, pageable);
         } else if (userBusiness != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndStatusShiftBalance(userBusiness, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByUserBusinessAndOpenShifBalance(userBusiness, statusShiftBalance, pageable);
         } else if (terminal != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByTerminalAndStatusShiftBalance(terminal, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByTerminalAndOpenShifBalance(terminal, statusShiftBalance, pageable);
         } else if (startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByStartTimeBetweenAndStatusShiftBalance(startDateTime, endDateTime, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByStartTimeBetweenAndOpenShifBalance(startDateTime, endDateTime, statusShiftBalance, pageable);
         } else if (userBusiness != null && terminal != null) {
             shiftsPage = serviceDBShift.findByUserBusinessAndTerminal(userBusiness, terminal, pageable);
         } else if (userBusiness != null && startDateTime != null && endDateTime != null) {
@@ -413,7 +426,7 @@ public class ShirftService implements IShiftService{
         } else if (startDateTime != null && endDateTime != null) {
             shiftsPage = serviceDBShift.findByStartTimeBetween(startDateTime, endDateTime, pageable);
         } else if (statusShiftBalance != null) { // Caso base para solo statusShiftBalance
-            shiftsPage = serviceDBShift.findByStatusShiftBalance(statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByOpenShifBalance(statusShiftBalance, pageable);
         } else {
             shiftsPage = serviceDBShift.findAll(pageable); // Obtener todos si no hay filtros
         }
@@ -427,7 +440,7 @@ public class ShirftService implements IShiftService{
    // Métodos para convertir DTO a Entidad y viceversa
     private Shift convertToEntity(ShiftDTO shiftDTO) {
         Shift shift = mapper.map(shiftDTO, Shift.class);
-
+        shift.setOpenShifBalance(shiftDTO.isOpenShifBalance());
         // ModelMapper no puede mapear automáticamente entidades relacionadas por ID
         // Debemos buscar y setear las entidades completas aquí
         if (shiftDTO.getUserId() != null) {

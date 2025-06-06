@@ -51,7 +51,7 @@ public class Shift {
     private BigDecimal cuadreFinal;
 
     @Column()
-    private boolean statusShiftBalance;
+    private boolean openShifBalance;
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "saleReportId",referencedColumnName = "id" ) // Columna de unión en la tabla "shifts"

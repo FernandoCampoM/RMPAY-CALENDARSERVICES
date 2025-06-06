@@ -46,7 +46,7 @@ public class ShiftDTO {
     
     // Si endTime es opcional al crear o actualizar, no pongas @NotNull.
     // Si siempre debe tener un valor al final, podrías ponerlo en un grupo de validación para "cerrar turno".
-    @FutureOrPresent(message = "{shift.endTime.futureOrPresent}") // Un turno no puede terminar en el pasado
+    //@FutureOrPresent(message = "{shift.endTime.futureOrPresent}") // Un turno no puede terminar en el pasado
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
 
@@ -61,7 +61,7 @@ public class ShiftDTO {
     @Digits(integer = 19, fraction = 2, message = "{shift.balanceFinal.digits}")
     private BigDecimal cuadreFinal;
     @NotNull // Los booleanos suelen ser no nulos
-    private boolean statusShiftBalance;
+    private boolean openShifBalance;
 
     // Para validar objetos anidados, usa @Valid y @NotNull
    // @NotNull(message = "{shift.saleReport.notNull}")
@@ -86,7 +86,7 @@ public class ShiftDTO {
         this.balanceInicial = shift.getBalanceInicial();
         this.balanceFinal = shift.getBalanceFinal();
         this.cuadreFinal = shift.getCuadreFinal();
-        this.statusShiftBalance = shift.isStatusShiftBalance();
+        this.openShifBalance = shift.isOpenShifBalance();
         this.userId = shift.getUserBusiness() != null ? shift.getUserBusiness().getUserBusinessId() : null; // Asumiendo que UserBusiness tiene un método getId()
         this.deviceId = shift.getTerminal() != null ? shift.getTerminal().getSerial() : null; // Asumiendo que Terminal tiene un método getSerialNumber()
     }
