@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.retailmanager.rmpaydashboard.enums.EmployeeRole;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidDateOrTime;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
@@ -31,10 +32,12 @@ import com.retailmanager.rmpaydashboard.models.UserBusiness_Category;
 import com.retailmanager.rmpaydashboard.models.UserBusiness_Product;
 import com.retailmanager.rmpaydashboard.models.UserPermission;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
+import com.retailmanager.rmpaydashboard.repositories.AvailableSchedulesRepository;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.EmployeeBusinessConfigDownloadRepository;
 import com.retailmanager.rmpaydashboard.repositories.EntryExitRepository;
 import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
+import com.retailmanager.rmpaydashboard.repositories.ScheduleCalendarRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_CategoryRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserBusiness_ProductRepository;
@@ -73,6 +76,10 @@ public class UsersBusinesService implements IUsersBusinessService{
     private UserPermissionRepository serviceDBUserPermission;
     @Autowired
     private EmployeeBusinessConfigDownloadRepository employeeBusinessConfig;
+    @Autowired
+    private ScheduleCalendarRepository serviceDBScheduleCalendar;
+    @Autowired
+    private AvailableSchedulesRepository serviceDBAvailableSchedules;
     
     /**
      * Save the UsersBusinessDTO to the database.
@@ -89,6 +96,10 @@ public class UsersBusinesService implements IUsersBusinessService{
             business=this.serviceDBBusiness.findById(businessId).orElse(null);
             UsersBusiness usersBusiness = this.mapper.map(prmUsersBusiness, UsersBusiness.class);
             usersBusiness.setUserPermissions(new ArrayList<>());
+            
+            if(EmployeeRole.fromId(usersBusiness.getRoleId())==null){
+                usersBusiness.setRoleId(EmployeeRole.USER.getId()); //Default role is 1
+            }
             if(business!=null) {
                 usersBusiness.setBusiness(business);
                 for(Long idPermission:prmUsersBusiness.getActivesPermissions()){
@@ -104,6 +115,8 @@ public class UsersBusinesService implements IUsersBusinessService{
                     usersBusiness.getUserPermissions().add(userPermission);
 
                 }
+                usersBusiness.setCreatedAt(LocalDateTime.now());
+                usersBusiness.setUpdatedAt(LocalDateTime.now());
                 usersBusiness=this.usersAppDBService.save(usersBusiness);
                 return new ResponseEntity<UsersBusinessDTO>(this.mapper.map(usersBusiness, UsersBusinessDTO.class), HttpStatus.CREATED);
             }else{
@@ -124,7 +137,11 @@ public class UsersBusinesService implements IUsersBusinessService{
                 usersBusiness.setPassword(prmUsersBusiness.getPassword());
                 usersBusiness.setEnable(prmUsersBusiness.getEnable());
                 usersBusiness.setCostHour(prmUsersBusiness.getCostHour());
+                usersBusiness.setUpdatedAt(LocalDateTime.now());
                 usersBusiness.getUserPermissions().clear();
+                if(EmployeeRole.fromId(usersBusiness.getRoleId())==null){
+                usersBusiness.setRoleId(EmployeeRole.USER.getId()); //Default role is 1
+            }
                 for(Long idPermission:prmUsersBusiness.getActivesPermissions()){
                     
                     Permission permission = this.serviceDBUPermission.findById(idPermission).orElse(null);
@@ -163,8 +180,15 @@ public class UsersBusinesService implements IUsersBusinessService{
     @Transactional
     public boolean delete(Long userBusinessId) {
         if(userBusinessId!=null) {
+            this.serviceDBScheduleCalendar.findByEmployeeId(userBusinessId).forEach(schedule -> {
+                    this.serviceDBScheduleCalendar.delete(schedule);
+                });
+            this.serviceDBAvailableSchedules.findByEmployeeId(userBusinessId).forEach(schedule -> {
+                    this.serviceDBAvailableSchedules.delete(schedule);
+            });
             UsersBusiness usersBusiness = this.usersAppDBService.findById(userBusinessId).orElse(null);
             if(usersBusiness!=null) {
+                
                 this.usersAppDBService.delete(usersBusiness);
                 return true;
             }else{
@@ -750,5 +774,37 @@ public ResponseEntity<?> updateDownloadBusinessConfiguration(Long userBusinessId
     
     return new ResponseEntity<>(true,HttpStatus.OK);
 }
+
+/**
+ * Finds all users business associated with a terminal.
+ *
+ * @param terminalId the ID of the terminal
+ * @return a ResponseEntity containing the list of UsersBusinessDTO objects
+ *         associated with the given terminal ID, or a BAD_REQUEST response
+ *         if the terminal ID does not exist in the database
+ */
+@Override
+@Transactional(readOnly = true)
+public ResponseEntity<?> findByTerminalId(String terminalId) {
+    Terminal terminal = this.serviceDBTerminal.findById(terminalId).orElse(null);
     
+    if(terminal!=null) {
+        List<UsersBusiness> usersBusiness = this.usersAppDBService.findByBusiness(terminal.getBusiness());
+        List<UsersBusinessDTO> usersBusinessDTO = this.mapper.map(usersBusiness, new TypeToken<List<UsersBusinessDTO>>(){}.getType());
+        for(int i=0;i<usersBusiness.size();i++){
+                    usersBusinessDTO.get(i).setActivesPermissions(new ArrayList<>()   );
+                    {
+                    for(UserPermission up:usersBusiness.get(i).getUserPermissions()){
+
+                        usersBusinessDTO.get(i).getActivesPermissions().add(up.getPermission().getPermissionId());
+                    }
+                    }
+                }
+        return new ResponseEntity<>(usersBusinessDTO,HttpStatus.OK);
+    }else{
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Terminal con terminalId "+terminalId+" no existe en la Base de datos");
+        throw objExeption;
+    }
+    
+}
 }

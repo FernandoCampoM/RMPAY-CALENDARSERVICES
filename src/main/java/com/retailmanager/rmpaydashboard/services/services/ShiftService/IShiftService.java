@@ -11,7 +11,7 @@ public interface IShiftService {
     public ResponseEntity<?> deleteShift(Long shiftId);
     public ResponseEntity<?> closeShift(ShiftDTO shiftDTO);
     public ResponseEntity<?> getShiftById(Long shiftId);
-    public ResponseEntity<?> getAllShifts(Long employeeId,
+    public ResponseEntity<?> getAllShifts(Long businessId,Long employeeId,
         String serialNumber,
         String startDate,
         String endDate,

@@ -77,7 +77,11 @@ public class UserBusinessController {
     @GetMapping("/userBusiness/business/{businessId}")
     public ResponseEntity<?> findByBusinessId(@Valid @PathVariable @Positive(message = "userBusinessId.positive") Long businessId) {
         return usersBusinessService.findByBusiness(businessId);
-    } 
+    }
+     @GetMapping("/userBusiness")
+    public ResponseEntity<?> findByTerminalId(@RequestParam(name = "terminalId") String terminalId) {
+        return usersBusinessService.findByTerminalId(terminalId);
+    }
 
     /**
      * A description of the entire Java function.
@@ -137,7 +141,7 @@ public class UserBusinessController {
         return usersBusinessService.getUsersBusiness(userBusinessId);
     }
     /**
-     * Updates the download category for a specific user business.
+     * Updates the download status for a specific user business.
      *
      * @param  userBusinessId  the ID of the user business
      * @return                 a ResponseEntity containing the updated user business and the HTTP status

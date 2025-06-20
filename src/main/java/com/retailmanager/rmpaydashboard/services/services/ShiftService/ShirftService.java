@@ -26,6 +26,7 @@ import com.retailmanager.rmpaydashboard.models.SaleReport;
 import com.retailmanager.rmpaydashboard.models.Shift;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.UsersBusiness;
+import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.ShiftReporsitory;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
@@ -47,6 +48,8 @@ public class ShirftService implements IShiftService{
     private UsersAppRepository usersAppDBService;
     @Autowired
     private ShiftReporsitory serviceDBShift;
+    @Autowired
+    private BusinessRepository businessRepository;
 /**
  * Creates a new shift or updates an existing open shift. This method ensures
  * that the user and terminal exist before creating or updating the shift.
@@ -346,36 +349,49 @@ public class ShirftService implements IShiftService{
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    /**
+   /**
      * Retrieves a paginated list of Shift entities that match the given criteria and returns a ResponseEntity containing the Page of ShiftDTOs.
-     * If no criteria are provided, it returns all Shifts in the database.
+     * The businessId is a mandatory filter for all queries.
      *
-     * @param employeeId the ID of the employee user to filter by
-     * @param serialNumber the serial number of the terminal to filter by
-     * @param startDate the start date and time to filter by (inclusive)
-     * @param endDate the end date and time to filter by (exclusive)
-     * @param statusShiftBalance the status of the shift balance to filter by
-     * @param pageable the Pageable object containing pagination information
-     * @return a ResponseEntity containing the Page of ShiftDTOs matching the criteria
+     * @param businessId The ID of the business to which the shifts belong (mandatory).
+     * @param employeeId the ID of the employee user to filter by (optional).
+     * @param serialNumber the serial number of the terminal to filter by (optional).
+     * @param startDate the start date and time to filter by (inclusive, optional).
+     * @param endDate the end date and time to filter by (exclusive, optional).
+     * @param openShifBalance the status of the shift balance to filter by (optional). // Vuelto a OpenShifBalance
+     * @param pageable the Pageable object containing pagination information.
+     * @return a ResponseEntity containing the Page of ShiftDTOs matching the criteria.
      */
     @Override
-    public ResponseEntity<?> getAllShifts(Long employeeId,
-        String serialNumber,
-        String startDate,
-        String endDate,
-        Boolean statusShiftBalance,
-        Pageable pageable) {
-        // --- 1. Obtención de Entidades (UsersBusiness y Terminal) ---
+    public ResponseEntity<?> getAllShifts(Long businessId, // Nuevo parámetro obligatorio
+                                            Long employeeId,
+                                            String serialNumber,
+                                            String startDate,
+                                            String endDate,
+                                            Boolean openShifBalance, // Vuelto a OpenShifBalance
+                                            Pageable pageable) {
+        // --- 1. Obtención de Entidades (Business, UsersBusiness y Terminal) ---
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new EntidadNoExisteException("Business with ID " + businessId + " does not exist."));
+
         UsersBusiness userBusiness = null;
         if (employeeId != null) {
             userBusiness = usersAppDBService.findById(employeeId)
                     .orElseThrow(() -> new EntidadNoExisteException("User Employee with ID " + employeeId + " does not exist."));
+            // Opcional: Podrías añadir una validación aquí para asegurarte de que userBusiness.getBusiness() coincida con el 'business' proporcionado.
+            // if (!userBusiness.getBusiness().equals(business)) {
+            //     throw new IllegalArgumentException("User employee does not belong to the specified business.");
+            // }
         }
 
         Terminal terminal = null;
         if (serialNumber != null && !serialNumber.isEmpty()) {
             terminal = serviceDBTerminal.findFirstBySerial(serialNumber)
                     .orElseThrow(() -> new EntidadNoExisteException("Terminal with serial " + serialNumber + " does not exist."));
+            // Opcional: Validar que el terminal pertenezca al negocio.
+            if (!terminal.getBusiness().equals(business)) {
+                 throw new IllegalArgumentException("Terminal does not belong to the specified business.");
+            }
         }
 
         // --- 2. Parseo de Fechas ---
@@ -390,51 +406,57 @@ public class ShirftService implements IShiftService{
                 endDateTime = LocalDate.parse(endDate).atTime(23, 59, 59);
             }
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Invalid date format. Please use YYYY-MM-dd for startDate and endDate.");
+            throw new IllegalArgumentException("Invalid date format. Please useAPAC-MM-dd for startDate and endDate.");
         }
 
         Page<Shift> shiftsPage; // Ahora esperamos un objeto Page
 
-        // --- 3. Lógica de Búsqueda Combinada con Paginación y statusShiftBalance ---
+        // --- 3. Lógica de Búsqueda Combinada con Paginación y openShifBalance ---
+        // Todos los métodos de repositorio ahora deben comenzar con "findByTerminal_BusinessAnd..." o similar.
+        // Dado que un Shift está relacionado con un Terminal, y un Terminal con un Business,
+        // Spring Data JPA puede inferir la condición 'findByTerminal_Business'.
+
         // Se priorizan las combinaciones más completas
-        if (userBusiness != null && terminal != null && startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndStartTimeBetweenAndOpenShifBalance(userBusiness, terminal, startDateTime, endDateTime, statusShiftBalance, pageable);
+        if (userBusiness != null && terminal != null && startDateTime != null && endDateTime != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndTerminalAndStartTimeBetweenAndOpenShifBalance(business, userBusiness, terminal, startDateTime, endDateTime, openShifBalance, pageable);
         } else if (userBusiness != null && terminal != null && startDateTime != null && endDateTime != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndStartTimeBetween(userBusiness, terminal, startDateTime, endDateTime, pageable);
-        } else if (userBusiness != null && terminal != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndTerminalAndOpenShifBalance(userBusiness, terminal, statusShiftBalance, pageable);
-        } else if (userBusiness != null && startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndStartTimeBetweenAndOpenShifBalance(userBusiness, startDateTime, endDateTime, statusShiftBalance, pageable);
-        } else if (terminal != null && startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByTerminalAndStartTimeBetweenAndOpenShifBalance(terminal, startDateTime, endDateTime, statusShiftBalance, pageable);
-        } else if (userBusiness != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndOpenShifBalance(userBusiness, statusShiftBalance, pageable);
-        } else if (terminal != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByTerminalAndOpenShifBalance(terminal, statusShiftBalance, pageable);
-        } else if (startDateTime != null && endDateTime != null && statusShiftBalance != null) {
-            shiftsPage = serviceDBShift.findByStartTimeBetweenAndOpenShifBalance(startDateTime, endDateTime, statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndTerminalAndStartTimeBetween(business, userBusiness, terminal, startDateTime, endDateTime, pageable);
+        } else if (userBusiness != null && terminal != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndTerminalAndOpenShifBalance(business, userBusiness, terminal, openShifBalance, pageable);
+        } else if (userBusiness != null && startDateTime != null && endDateTime != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndStartTimeBetweenAndOpenShifBalance(business, userBusiness, startDateTime, endDateTime, openShifBalance, pageable);
+        } else if (terminal != null && startDateTime != null && endDateTime != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndTerminalAndStartTimeBetweenAndOpenShifBalance(business, terminal, startDateTime, endDateTime, openShifBalance, pageable);
+        } else if (userBusiness != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndOpenShifBalance(business, userBusiness, openShifBalance, pageable);
+        } else if (terminal != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndTerminalAndOpenShifBalance(business, terminal, openShifBalance, pageable);
+        } else if (startDateTime != null && endDateTime != null && openShifBalance != null) {
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndStartTimeBetweenAndOpenShifBalance(business, startDateTime, endDateTime, openShifBalance, pageable);
         } else if (userBusiness != null && terminal != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndTerminal(userBusiness, terminal, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndTerminal(business, userBusiness, terminal, pageable);
         } else if (userBusiness != null && startDateTime != null && endDateTime != null) {
-            shiftsPage = serviceDBShift.findByUserBusinessAndStartTimeBetween(userBusiness, startDateTime, endDateTime, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusinessAndStartTimeBetween(business, userBusiness, startDateTime, endDateTime, pageable);
         } else if (terminal != null && startDateTime != null && endDateTime != null) {
-            shiftsPage = serviceDBShift.findByTerminalAndStartTimeBetween(terminal, startDateTime, endDateTime, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndTerminalAndStartTimeBetween(business, terminal, startDateTime, endDateTime, pageable);
         } else if (userBusiness != null) {
-            shiftsPage = serviceDBShift.findByUserBusiness(userBusiness, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndUserBusiness(business, userBusiness, pageable);
         } else if (terminal != null) {
-            shiftsPage = serviceDBShift.findByTerminal(terminal, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndTerminal(business, terminal, pageable);
         } else if (startDateTime != null && endDateTime != null) {
-            shiftsPage = serviceDBShift.findByStartTimeBetween(startDateTime, endDateTime, pageable);
-        } else if (statusShiftBalance != null) { // Caso base para solo statusShiftBalance
-            shiftsPage = serviceDBShift.findByOpenShifBalance(statusShiftBalance, pageable);
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndStartTimeBetween(business, startDateTime, endDateTime, pageable);
+        } else if (openShifBalance != null) { // Caso base para solo openShifBalance
+            shiftsPage = serviceDBShift.findByTerminal_BusinessAndOpenShifBalance(business, openShifBalance, pageable);
         } else {
-            shiftsPage = serviceDBShift.findAll(pageable); // Obtener todos si no hay filtros
+            // Caso base: solo businessId y paginación
+            shiftsPage = serviceDBShift.findByTerminal_Business(business, pageable);
         }
+
         Page<ShiftDTO> shiftDTOsPage = shiftsPage.map(ShiftDTO::new);
 
         return new ResponseEntity<>(shiftDTOsPage, HttpStatus.OK);
-    
     }
+
 
 
    // Métodos para convertir DTO a Entidad y viceversa

@@ -14,6 +14,14 @@ public interface IBusinessService {
     public boolean delete(Long businessId);
     public ResponseEntity<?> findById(Long businessId);
     public ResponseEntity<?> findByMerchantId(String merchantId);
+    /**
+     * Finds a business by its terminal id.
+     *
+     * @param terminalId the terminal id
+     * @return the business found or an error message
+     */
+    public ResponseEntity<?> findByTerminalId(String terminalId)
+    ;
     public ResponseEntity<?> getTerminals(Long businessId);
     public ResponseEntity<?> getCategories(Long businessId);
     public ResponseEntity<?> updateEnable(Long businessId, boolean enable);

@@ -18,6 +18,7 @@ import com.retailmanager.rmpaydashboard.services.DTO.ShiftDTO;
 import com.retailmanager.rmpaydashboard.services.services.ShiftService.IShiftService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequestMapping("/api/shifts") // Usar /api/shifts como base para los endpoints de turnos
@@ -104,6 +105,7 @@ public class ShiftController {
     /**
      * Endpoint para obtener una lista paginada de turnos, con filtros opcionales.
      *
+     * * @param businessId (Obligatorio) El ID del negocio al que pertenecen los turnos.
      * @param employeeId (Opcional) ID del empleado para filtrar turnos.
      * @param serialNumber (Opcional) Número de serie de la terminal para filtrar turnos.
      * @param startDate (Opcional) Fecha de inicio del rango (formato "yyyy-MM-dd").
@@ -118,12 +120,13 @@ public class ShiftController {
      */
     @GetMapping
     public ResponseEntity<?> getAllShifts(
+        @RequestParam @NotNull(message = "Business ID cannot be null") Long businessId, // Obligatorio y validado
             @RequestParam(required = false) Long employeeId,
             @RequestParam(required = false) String serialNumber,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate, 
             @RequestParam(required = false) Boolean statusShiftBalance,
             Pageable pageable) { // Spring Data JPA inyecta automáticamente el Pageable
-        return shiftService.getAllShifts(employeeId, serialNumber, startDate, endDate, statusShiftBalance, pageable);
+        return shiftService.getAllShifts(businessId, employeeId, serialNumber, startDate, endDate, statusShiftBalance, pageable);
     }
 }

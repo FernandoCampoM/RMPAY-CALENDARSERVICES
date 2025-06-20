@@ -56,15 +56,40 @@ public class BusinessController {
     public ResponseEntity<?> findAll(){
         return this.businessService.findAll();
     }
+    
     /**
-     * Find business by merchant ID.
+     * Find business by merchant ID or terminal ID. Both parameters are optional.
+     * If both are provided, the service will decide the priority or combination.
      *
-     * @param  merchantId  The merchant ID to search for
-     * @return             The response entity with the result
+     * @param merchantId The merchant ID to search for (optional).
+     * @param terminalId The terminal ID to search for (optional).
+     * @return The response entity with the result.
      */
     @GetMapping("/business")
-    public ResponseEntity<?> findByMerchantId(@Valid @RequestParam(name = "merchantId") @NotBlank(message = "El merchantId no puede estar vacío") String merchantId){
-        return this.businessService.findByMerchantId(merchantId);
+    public ResponseEntity<?> findByMerchantIdOrTerminalId(
+            @RequestParam(name = "merchantId", required = false) String merchantId, // Ahora opcional
+            @RequestParam(name = "terminalId", required = false) String terminalId // Nuevo parámetro opcional
+    ) {
+        // En este punto, tanto merchantId como terminalId pueden ser null o cadenas vacías.
+        // La validación de si son null/vacíos y la lógica de búsqueda
+        // deben delegarse al servicio.
+
+        // Si ambos son nulos, puedes devolver un error o una lista vacía,
+        // dependiendo de la lógica de tu negocio.
+        if (merchantId == null && terminalId == null) {
+            // Ejemplo: lanzar una excepción, devolver BAD_REQUEST, o una lista vacía
+            // throw new IllegalArgumentException("At least one of merchantId or terminalId must be provided.");
+            // O simplemente delegar al servicio que manejará el caso de no filtros.
+        }
+
+        if(merchantId != null && !merchantId.isBlank()) {
+            return this.businessService.findByMerchantId(merchantId);
+        } else if(terminalId != null && !terminalId.isBlank()) {
+            return this.businessService.findByTerminalId(terminalId);
+        } else {
+            // Si no se proporciona ningún filtro, puedes devolver todos los negocios
+            return this.businessService.findAll();
+        }
     }
     /**
      * Save a business entity using the provided BusinessDTO.

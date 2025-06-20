@@ -18,20 +18,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
+import com.retailmanager.rmpaydashboard.enums.EmployeeRole;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.PaymentData;
+import com.retailmanager.rmpaydashboard.models.Permission;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
+import com.retailmanager.rmpaydashboard.models.UserPermission;
+import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
+import com.retailmanager.rmpaydashboard.repositories.PermisionRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
+import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.CategoryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegsitryBusinessDTO;
@@ -52,11 +58,15 @@ public class BusinessService implements IBusinessService {
     @Autowired
     private UserRepository serviceDBUser;
     @Autowired
+    private UsersAppRepository serviceDBEmployee;
+    @Autowired
     private ServiceRepository serviceDBService;
     @Autowired
     private TerminalRepository serviceDBTerminal;
     @Autowired
     private ITerminalService terminalService;
+     @Autowired
+    private PermisionRepository serviceDBUPermission;
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
@@ -124,6 +134,35 @@ public class BusinessService implements IBusinessService {
             }
             objBusiness.setRegisterDate(LocalDate.now());
             objBusiness=this.serviceDBBusiness.save(objBusiness);
+            // Si el negocio se ha creado correctamente, 
+            //creamos el usuario administrador por defecto
+            // y le asignamos el negocio. 
+            UsersBusiness objUserBusiness=new UsersBusiness();
+            objUserBusiness.setBusiness(objBusiness);
+            objUserBusiness.setEnable(true);
+            objUserBusiness.setUsername(EmployeeRole.ADMIN.getName());
+            objUserBusiness.setPassword("1234");
+            objUserBusiness.setCostHour(0.0);
+            objUserBusiness.setCreatedAt(LocalDate.now().atStartOfDay());
+            objUserBusiness.setUpdatedAt(LocalDate.now().atStartOfDay());
+            Iterable<Permission> listPermissions = this.serviceDBUPermission.findAll();
+           List<UserPermission> userPermissionsList = new ArrayList<>();
+
+            for (Permission permission : listPermissions) {
+                UserPermission userPermission = new UserPermission();
+                userPermission.setPermission(permission); // Establece el objeto Permission
+                userPermission.setUserBusiness(objUserBusiness); // Establece el UserBusiness asociado
+                userPermission.setEnable(true); // Establece 'true' por defecto
+
+                userPermissionsList.add(userPermission);
+            }
+
+            // Finalmente, establece la lista de UserPermission en tu objUserBusiness
+            objUserBusiness.setUserPermissions(userPermissionsList);
+            objUserBusiness.setDownload(false);
+            objUserBusiness.setRoleId(EmployeeRole.ADMIN.getId());
+            objUserBusiness=this.serviceDBEmployee.save(objUserBusiness);
+
          }
         BusinessDTO businessDTO=this.mapper.map(objBusiness, BusinessDTO.class);
         if(businessDTO!=null){
@@ -293,6 +332,35 @@ public class BusinessService implements IBusinessService {
                     }
                     objBusiness.setRegisterDate(LocalDate.now());
                     objBusiness=this.serviceDBBusiness.save(objBusiness);
+                    // Si el negocio se ha creado correctamente, 
+            //creamos el usuario administrador por defecto
+            // y le asignamos el negocio. 
+            UsersBusiness objUserBusiness=new UsersBusiness();
+            objUserBusiness.setBusiness(objBusiness);
+            objUserBusiness.setEnable(true);
+            objUserBusiness.setUsername(EmployeeRole.ADMIN.getName());
+            objUserBusiness.setPassword("1234");
+            objUserBusiness.setCostHour(0.0);
+            objUserBusiness.setCreatedAt(LocalDate.now().atStartOfDay());
+            objUserBusiness.setUpdatedAt(LocalDate.now().atStartOfDay());
+            Iterable<Permission> listPermissions = this.serviceDBUPermission.findAll();
+            List<UserPermission> userPermissionsList = new ArrayList<>();
+
+            for (Permission permission : listPermissions) {
+                UserPermission userPermission = new UserPermission();
+                userPermission.setPermission(permission); // Establece el objeto Permission
+                userPermission.setUserBusiness(objUserBusiness); // Establece el UserBusiness asociado
+                userPermission.setEnable(true); // Establece 'true' por defecto
+
+                userPermissionsList.add(userPermission);
+            }
+
+            // Finalmente, establece la lista de UserPermission en tu objUserBusiness
+            objUserBusiness.setUserPermissions(userPermissionsList);
+            objUserBusiness.setDownload(false);
+            objUserBusiness.setRoleId(EmployeeRole.ADMIN.getId());
+            objUserBusiness=this.serviceDBEmployee.save(objUserBusiness);
+            // Creamos los terminales del negocio
                     objBusiness.setTerminals(new ArrayList<Terminal>());
                     BusinessDTO objBusinessDTO=new BusinessDTO();
                     if(objBusiness!=null){
@@ -932,6 +1000,19 @@ public class BusinessService implements IBusinessService {
         business.getUser().setBusiness(null);
             BusinessDTO businessDTO=this.mapper.map(business, BusinessDTO.class);
         return new ResponseEntity<BusinessDTO>(businessDTO,HttpStatus.OK);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> findByTerminalId(String terminalId) {
+        if(terminalId!=null){
+            Optional<Terminal> optional= this.serviceDBTerminal.findById(terminalId);
+            if(optional.isPresent()){
+                BusinessDTO objBusinessDTO=this.mapper.map(optional.get().getBusiness(),BusinessDTO.class);
+                return new ResponseEntity<BusinessDTO>(objBusinessDTO,HttpStatus.OK);
+            }   
+        }
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("El Terminal con terminalId "+terminalId+" no existe en la Base de datos");
+                throw objExeption;
     }
     
 }

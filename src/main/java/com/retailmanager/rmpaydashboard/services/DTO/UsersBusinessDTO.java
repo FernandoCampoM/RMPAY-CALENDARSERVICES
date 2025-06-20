@@ -1,5 +1,8 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
+import java.time.LocalDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,5 +37,10 @@ public class UsersBusinessDTO {
     private Long idBusines;
     List<Long> activesPermissions;
     private Double costHour;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updatedAt;
+    private int roleId;
     //List<UserPermissionDTO> userPermissions;
 }

@@ -8,6 +8,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\FileModel.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\UsersBusinessDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\PermissionDTO.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\SaleReport.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\BusinessConfigurationService\IBusinessConfigurationService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\ReportsServices\ReportService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\ServiceController.java
@@ -40,6 +41,7 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\UserPermission.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\Payment\data\PaymentDetailsDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\mapper\ListToJsonConverter.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\DTO\SaleReportDTO.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\services\services\PaymentMethodService\IPaymentMethosService.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\exceptionControllers\exceptions\UserDisabled.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Sys_general_config.java
@@ -196,8 +198,10 @@ D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydas
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\security\AuthCredentials.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\UserBusiness_ProductRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\config\CorsConfig.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\ShiftController.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\PaymentDataRepository.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\controller\AvailableSchedulesController.java
+D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\enums\EmployeeRole.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\enums\Rol.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\models\Product.java
 D:\Trabajo\RMPAYDASBOARD\rmpaydashboard\src\main\java\com\retailmanager\rmpaydashboard\repositories\ResellerSalesRepository.java

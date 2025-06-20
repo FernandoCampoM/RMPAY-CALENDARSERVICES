@@ -22,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
+import com.retailmanager.rmpaydashboard.enums.EmployeeRole;
 import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
@@ -30,15 +31,18 @@ import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.FileModel;
 import com.retailmanager.rmpaydashboard.models.Invoice;
 import com.retailmanager.rmpaydashboard.models.PaymentData;
+import com.retailmanager.rmpaydashboard.models.Permission;
 import com.retailmanager.rmpaydashboard.models.Service;
 import com.retailmanager.rmpaydashboard.models.Terminal;
 import com.retailmanager.rmpaydashboard.models.User;
+import com.retailmanager.rmpaydashboard.models.UsersBusiness;
 import com.retailmanager.rmpaydashboard.repositories.BusinessRepository;
 import com.retailmanager.rmpaydashboard.repositories.InvoiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.ServiceRepository;
 import com.retailmanager.rmpaydashboard.repositories.FileRepository;
 import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
+import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
@@ -60,7 +64,8 @@ public class UserService implements IUserService{
 
     @Autowired
     private UserRepository serviceDBUser;
-
+@Autowired
+    private UsersAppRepository serviceDBEmployee;
     @Autowired
     private ServiceRepository serviceDBService;
     @Autowired 
@@ -487,6 +492,7 @@ public class UserService implements IUserService{
                     }
                     
                     ResponseEntity <?> objResponseB=this.businessService.save(objBusinessDTO);
+                    
                     if(objResponseB.getStatusCode()==HttpStatus.CREATED){
                         objBusinessDTO=(BusinessDTO)objResponseB.getBody();
                         if(prmRegistry.getAdditionalTerminals()!=null && prmRegistry.getAdditionalTerminals()!=0 && objBusinessDTO!=null){
