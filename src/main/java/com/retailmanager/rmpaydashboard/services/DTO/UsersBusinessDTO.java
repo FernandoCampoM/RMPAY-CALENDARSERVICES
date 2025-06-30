@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -22,12 +23,13 @@ public class UsersBusinessDTO {
     private Long userBusinessId;
 
     @NotBlank(message = "{usersbusiness.username.empty}")
-    @Size(min = 5, message = "{usersbusiness.username.min}")
+    @Size(min = 2, message = "{usersbusiness.username.min}")
     @Size(max = 255, message = "{usersbusiness.username.max}")
     private String username;
 
     @NotBlank(message = "{usersbusiness.password.empty}")
-    @Size(min = 4, message = "{usersbusiness.password.min}")
+   @Size(min = 4, max = 4, message = "{usersbusiness.password.size}")
+    @Pattern(regexp = "\\d{4}", message = "{usersbusiness.password.digits}")
     private String password;
 
     @NotNull(message = "{usersbusiness.enable.null}")

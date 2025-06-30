@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.retailmanager.rmpaydashboard.enums.EmployeeRole;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
+import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadYaExisteException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.InvalidDateOrTime;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.UserDisabled;
 import com.retailmanager.rmpaydashboard.models.Business;
@@ -94,11 +96,17 @@ public class UsersBusinesService implements IUsersBusinessService{
         Business business = null;
         if(businessId!=null) {
             business=this.serviceDBBusiness.findById(businessId).orElse(null);
+            Optional<UsersBusiness> existingUser = this.usersAppDBService.findByPassword(prmUsersBusiness.getPassword());
+            if(existingUser.isPresent()){
+                throw new EntidadYaExisteException("El Empleado con password "+prmUsersBusiness.getPassword()+" ya existe en la Base de datos");
+            }
             UsersBusiness usersBusiness = this.mapper.map(prmUsersBusiness, UsersBusiness.class);
             usersBusiness.setUserPermissions(new ArrayList<>());
             
-            if(EmployeeRole.fromId(usersBusiness.getRoleId())==null){
-                usersBusiness.setRoleId(EmployeeRole.USER.getId()); //Default role is 1
+            if(EmployeeRole.fromId(prmUsersBusiness.getRoleId())==null){
+                usersBusiness.setRoleId(EmployeeRole.USER.getId()); //Default role is 2
+            }else{
+                usersBusiness.setRoleId(prmUsersBusiness.getRoleId());
             }
             if(business!=null) {
                 usersBusiness.setBusiness(business);
@@ -133,15 +141,21 @@ public class UsersBusinesService implements IUsersBusinessService{
         if(userBusinessId!=null) {
             UsersBusiness usersBusiness = this.usersAppDBService.findById(userBusinessId).orElse(null);
             if(usersBusiness!=null) {
+                Optional<UsersBusiness> existingUser = this.usersAppDBService.findByPassword(prmUsersBusiness.getPassword());
+                System.out.println("Existing User: " + existingUser.get().getUserBusinessId());
+                if(existingUser.isPresent() && existingUser.get().getUserBusinessId().equals(userBusinessId)==false){
+                    throw new EntidadYaExisteException("El Empleado con password "+prmUsersBusiness.getPassword()+" ya existe en la Base de datos");
+                }
                 usersBusiness.setUsername(prmUsersBusiness.getUsername());
                 usersBusiness.setPassword(prmUsersBusiness.getPassword());
                 usersBusiness.setEnable(prmUsersBusiness.getEnable());
                 usersBusiness.setCostHour(prmUsersBusiness.getCostHour());
                 usersBusiness.setUpdatedAt(LocalDateTime.now());
+                usersBusiness.setRoleId(prmUsersBusiness.getRoleId());
                 usersBusiness.getUserPermissions().clear();
                 if(EmployeeRole.fromId(usersBusiness.getRoleId())==null){
-                usersBusiness.setRoleId(EmployeeRole.USER.getId()); //Default role is 1
-            }
+                    usersBusiness.setRoleId(EmployeeRole.USER.getId()); //Default role is 2
+                }
                 for(Long idPermission:prmUsersBusiness.getActivesPermissions()){
                     
                     Permission permission = this.serviceDBUPermission.findById(idPermission).orElse(null);
@@ -239,6 +253,7 @@ public class UsersBusinesService implements IUsersBusinessService{
             UsersBusiness usersBusiness = this.usersAppDBService.findById(userBusinessId).orElse(null);
             if(usersBusiness!=null) {
                 usersBusiness.setEnable(enable);
+                usersBusiness.setUpdatedAt(LocalDateTime.now());
                 usersBusiness=this.usersAppDBService.save(usersBusiness);
                 return new ResponseEntity<Boolean>(true, HttpStatus.OK);
             }else{
