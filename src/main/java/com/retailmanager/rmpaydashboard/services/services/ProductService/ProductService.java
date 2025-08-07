@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -451,6 +452,23 @@ public class ProductService implements IProductService {
              Page<Product> result = new PageImpl<>(new ArrayList<>());
              result = this.serviceDBProducts.findProductsByBusinessId(businessId, pageable);
              Page<ProductDTO> resultDTO = result.map(product -> ProductDTO.tOProduct(product));
+             rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
+        return rta;
+    }
+    @Override
+    @Transactional
+    public ResponseEntity<?> findAllByBusinessId(Long businessId) {
+        ResponseEntity<?> rta = null;
+         if(businessId!=null){
+            Optional<Business> exist = this.serviceDBBusiness.findById(businessId);
+            if(!exist.isPresent()){
+                EntidadNoExisteException objExeption = new EntidadNoExisteException("El business con businessId "+businessId+" ya existe en la Base de datos");
+                throw objExeption;
+            }
+        }
+             List<Product> result = new ArrayList<>();
+             result = this.serviceDBProducts.findProductsByBusinessId(businessId);
+             List<ProductDTO> resultDTO = result.stream().map(product -> ProductDTO.tOProduct(product)).collect(Collectors.toList());
              rta = new ResponseEntity<>(resultDTO, HttpStatus.OK);
         return rta;
     }

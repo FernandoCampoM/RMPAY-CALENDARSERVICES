@@ -229,15 +229,15 @@ public class CategoryService implements ICategoryService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<?> findByName(String name) {
-        if(name!=null){
-            Optional<Category> optional= this.serviceDBCategory.findOneByName(name);
+    public ResponseEntity<?> findByName(String name, Long businessId) {
+        if(name!=null && businessId!=null){
+            Optional<Category> optional= this.serviceDBCategory.findByNameAndBusinessId(name, businessId);
             if(optional.isPresent()){
                 CategoryDTO objCategoryDTO=this.mapper.map(optional.get(),CategoryDTO.class);
                 return new ResponseEntity<CategoryDTO>(objCategoryDTO,HttpStatus.OK);
             }
         }
-        EntidadNoExisteException objExeption = new EntidadNoExisteException("La category con name "+name+" no existe en la Base de datos");
+        EntidadNoExisteException objExeption = new EntidadNoExisteException("La category con name "+name+" para el negocio con businessId "+businessId+" no existe en la Base de datos");
                 throw objExeption;
     }
 

@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.EntidadNoExisteException;
 import com.retailmanager.rmpaydashboard.models.Business;
@@ -38,13 +39,24 @@ import com.retailmanager.rmpaydashboard.services.DTO.ConfirmPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.InvoiceDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PaymentDataDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.PaymentHistoryReport;
+import com.retailmanager.rmpaydashboard.services.DTO.ServiceDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.doPaymentDTO;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.ATHMovil;
+import com.retailmanager.rmpaydashboard.services.services.Payment.IATHMovilService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ATHMCancelPaymentResponse;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ATHMPaymentReqData;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ATHMPaymentResponse;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.FindPaymentReqData;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.FindPaymentResponse;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ItemATHM;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
+import com.retailmanager.rmpaydashboard.utils.ConverterJson;
+import com.sendgrid.helpers.mail.objects.Email;
 
 @org.springframework.stereotype.Service
 public class InvoiceServices implements IInvoiceServices {
@@ -70,6 +82,8 @@ public class InvoiceServices implements IInvoiceServices {
     private BusinessRepository serviceDBBusiness;
     @Autowired
     private IBlackStoneService blackStoneService;
+    @Autowired
+    private IATHMovilService athMovilService;
     String msgError = "";
     @Autowired
     private TerminalRepository serviceDBTerminal;
@@ -110,6 +124,7 @@ public class InvoiceServices implements IInvoiceServices {
     @Override
     @Transactional
     public ResponseEntity<?> doPayment(doPaymentDTO prmPaymentInfo) {
+        final double stateTaxRate = 0.04;
         Double totalAmount = 0.0;
         ResponsePayment respPayment;
         String serviceReferenceNumber = null;
@@ -118,6 +133,7 @@ public class InvoiceServices implements IInvoiceServices {
         Double stateTax = 0.0;
         EmailBodyData objEmailBodyData = mapper.map(prmPaymentInfo, EmailBodyData.class);
         List<String> paymentDescription = new ArrayList<>();
+        List<ItemATHM> items = new ArrayList<>(); // se usa para informarle al cliente los items que se estan pagando en ATH Movil
         Business objBusiness = this.serviceDBBusiness.findById(prmPaymentInfo.getBusinessId()).orElse(null);
         if (objBusiness == null) {
             EntidadNoExisteException objExeption = new EntidadNoExisteException(
@@ -157,6 +173,9 @@ public class InvoiceServices implements IInvoiceServices {
                 Double amount = 0.0;
                 Service objService = listService.get(objTerminal.getIdService());
                 String descripcion = "";
+                
+                ItemATHM item = new ItemATHM(); // se usa para informarle al cliente los items que se estan pagando en ATH Movil
+                
                 if (objTerminalDB.isPrincipal()) {
                     descripcion = "Terminal Principal ID [" + objTerminal.getTerminalId() + "] - "
                             + objService.getServiceName() + ": $"
@@ -164,6 +183,13 @@ public class InvoiceServices implements IInvoiceServices {
                     amount = objService.getServiceValue();
                     objTerminal.setPrincipal(true);
                     serviceIdPrincipal = objService.getServiceId();
+                    //INFORMACIÓN PARA ATH MOVIL
+                    item.setDescription(descripcion);
+                    item.setName(objService.getServiceName());
+                    item.setPrice(String.valueOf(formato.format(objService.getServiceValue())));
+                    item.setTax(String.valueOf(objService.getServiceValue() * stateTaxRate));
+                    item.setQuantity("1");
+                    items.add(item);
                 } else {
                     objTerminal.setPrincipal(false);
                     if (prmPaymentInfo.getTerminalsNumber() <= 5) {
@@ -171,16 +197,37 @@ public class InvoiceServices implements IInvoiceServices {
                                 + objService.getServiceName() + ": $"
                                 + String.valueOf(formato.format(objService.getTerminals2to5())) + "\n";
                         amount = objService.getTerminals2to5();
+                        //INFORMACIÓN PARA ATH MOVIL
+                        item.setDescription(descripcion);
+                        item.setName(objService.getServiceName());
+                        item.setPrice(String.valueOf(formato.format(objService.getTerminals2to5())));
+                        item.setTax(String.valueOf(objService.getTerminals2to5() * stateTaxRate));
+                        item.setQuantity("1");
+                        items.add(item);
                     } else if (prmPaymentInfo.getTerminalsNumber() > 5 && prmPaymentInfo.getTerminalsNumber() < 10) {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + ": $"
                                 + String.valueOf(formato.format(objService.getTerminals6to9())) + "\n";
                         amount = objService.getTerminals6to9();
+                        //INFORMACIÓN PARA ATH MOVIL
+                            item.setDescription(descripcion);
+                            item.setName(objService.getServiceName());
+                            item.setPrice(String.valueOf(formato.format(objService.getTerminals6to9())));
+                            item.setTax(String.valueOf(objService.getTerminals6to9() * stateTaxRate));
+                            item.setQuantity("1");
+                            items.add(item);
                     } else {
                         descripcion = "Terminal Adicional ID [" + objTerminal.getTerminalId() + "] - "
                                 + objService.getServiceName() + ": $"
                                 + String.valueOf(formato.format(objService.getTerminals10())) + "\n";
                         amount = objService.getTerminals10();
+                        //INFORMACIÓN PARA ATH MOVIL
+                        item.setDescription(descripcion);
+                        item.setName(objService.getServiceName());
+                        item.setPrice(String.valueOf(formato.format(objService.getTerminals10())));
+                        item.setTax(String.valueOf(objService.getTerminals10() * stateTaxRate));
+                        item.setQuantity("1");
+                        items.add(item);
                     }
                 }
                 objTerminal.setAmount(amount);
@@ -272,6 +319,7 @@ public class InvoiceServices implements IInvoiceServices {
             objInvoice.setPaymentDescription(gson.toJson(paymentDescription));
 
             objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
+            ATHMPaymentResponse payResponse = null;
             List<String> listTerminalIds = new ArrayList<String>();
             switch (prmPaymentInfo.getPaymethod()) {
                 case "CREDIT-CARD":
@@ -373,6 +421,46 @@ public class InvoiceServices implements IInvoiceServices {
                     emailService.notifyPaymentToken(objEmailBodyData);
                     break;
                 case "ATHMOVIL":
+                    if (prmPaymentInfo.getAthPhone() == null) {
+                        HashMap<String, String> rta = new HashMap<>();
+                        rta.put("msg", "El Negocio no tiene un número de telefono para enviar el pago de ATHMovil");
+                        return new ResponseEntity<>(rta, HttpStatus.BAD_REQUEST);
+                    }
+                    if (prmPaymentInfo.getAthPhone().compareTo("") == 0) {
+                        HashMap<String, String> rta = new HashMap<>();
+                        rta.put("msg", "El Negocio no tiene un número de telefono para enviar el pago de ATHMovil");
+                        return new ResponseEntity<>(rta, HttpStatus.BAD_REQUEST);
+                    }
+                    // Se crea la data para enviar el pago a ATH Movil
+                    ATHMPaymentReqData req = new ATHMPaymentReqData();
+                    req.setEnv("production");
+                    req.setMetadata1("RETAIL MANAGER PR - RMPAY DASHBOARD");
+                    String cleanPhone = prmPaymentInfo.getAthPhone().replaceAll("\\D", "");
+                    
+                    req.setPhoneNumber(cleanPhone);
+                    req.setSubtotal(String.valueOf(objInvoice.getSubTotal()));
+                    req.setTax(String.valueOf(objInvoice.getStateTax()));
+                    req.setTimeout("5000");
+                    req.setTotal(String.valueOf(objInvoice.getTotalAmount()));
+                    req.setItems(items);
+                    
+                     try {
+                        payResponse = athMovilService.doPayment(req);
+                        if (payResponse != null && payResponse.getStatus().compareTo("success") == 0 && payResponse.getData() == null) {
+
+                            JsonObject json = new JsonObject();
+                            json.addProperty("msg", "Error al pagar con ATHMovil para el merchantId: " + objBusiness.getMerchantId());
+
+                            return new ResponseEntity<>(json, HttpStatus.NOT_ACCEPTABLE);
+                        }
+                     } catch (ConsumeAPIException e) {
+                       System.err.println("Error en el consumo de ATHMovil: CodigoHttp " + e.getHttpStatusCode() + " \n Mensje: " + e.getMessage());
+                        JsonObject json = new JsonObject();
+                        json.addProperty("msg", "Por favor comuniquese con el administrador de la página. Error: " + e.getMessage());
+
+                        return new ResponseEntity<>(json, HttpStatus.BAD_GATEWAY);
+                     }
+                    
                     for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
                         Service service = listService.get(objTerminal.getIdService());
                         Terminal objTer = this.serviceDBTerminal.findById(objTerminal.getTerminalId()).orElse(null);
@@ -395,7 +483,7 @@ public class InvoiceServices implements IInvoiceServices {
                         objTer = this.serviceDBTerminal.save(objTer);
                         listTerminalIds.add(objTerminal.getTerminalId());
                     }
-
+                    serviceReferenceNumber=gson.toJson(payResponse);
                     objInvoice.setDate(LocalDate.now());
                     objInvoice.setTime(LocalTime.now());
                     objInvoice.setPaymentMethod(prmPaymentInfo.getPaymethod());
@@ -406,10 +494,12 @@ public class InvoiceServices implements IInvoiceServices {
                     objInvoice.setInProcess(true);
                     objInvoice.setTerminalIds(
                             listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
-                    objInvoice = serviceDBInvoice.save(objInvoice);
-                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
                     objEmailBodyData.setTerminalsDoPayment(prmPaymentInfo.getTerminalsDoPayment());
-                    emailService.notifyPaymentATHMovil(objEmailBodyData);
+                    objInvoice.setATHMPaymentDetails(gson.toJson(objEmailBodyData));
+                            objInvoice = serviceDBInvoice.save(objInvoice);
+                    //objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                    
+                    //emailService.notifyPaymentATHMovil(objEmailBodyData);
                     break;
                 case "BANK-ACCOUNT":
                     for (TerminalsDoPaymentDTO objTerminal : prmPaymentInfo.getTerminalsDoPayment()) {
@@ -753,6 +843,7 @@ public class InvoiceServices implements IInvoiceServices {
                 objInvoice.setReferenceNumber(prmPaymentInfo.getObservation());
             }
         }
+        
         String terminalsIds = objInvoice.getTerminalIds();
         if (prmPaymentInfo.getConfirm()) {
 
@@ -800,6 +891,9 @@ public class InvoiceServices implements IInvoiceServices {
             } else {
                 objInvoice.setReferenceNumber("PAGO RECHAZADO");
             }
+        }
+        if(objInvoice.getPaymentDescription() != null && objInvoice.getPaymentDescription().contains("PAGO CANCELADO POR EL USUARIO")) {
+            objInvoice.setReferenceNumber("PAGO CANCELADO POR EL USUARIO");
         }
         objInvoice = this.invoiceRepository.save(objInvoice);
         InvoiceDTO objInvoiceDTO = this.mapper.map(objInvoice, InvoiceDTO.class);
@@ -1003,6 +1097,179 @@ public class InvoiceServices implements IInvoiceServices {
             return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return new ResponseEntity<>(true, HttpStatus.OK);
+    }
+
+/**
+ * Checks the status of an ATH Movil payment for a given invoice ID.
+ *
+ * @param invoiceId the ID of the invoice to check the payment status for
+ * @return a ResponseEntity containing the FindPaymentResponse if successful,
+ *         or an error message if an exception occurs
+ * @throws EntidadNoExisteException if the invoice with the given ID does not
+ *                                  exist in the database
+ */
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> checkStatusATHM(Long invoiceId) {
+        Invoice invoice = this.invoiceRepository.findById(invoiceId).orElse(null);
+            if(invoice==null){
+                throw new EntidadNoExisteException("La Factura con invoiceId " + invoiceId + " no existen en la base de datos");
+            }
+            ATHMPaymentResponse pr=ConverterJson.convertStr2RespPaymentATHM(invoice.getReferenceNumber());
+            FindPaymentReqData request=new FindPaymentReqData();
+            request.setEcommerceId(pr.getData().getEcommerceId());
+            
+           
+            try{
+                 FindPaymentResponse resposne=athMovilService.findPayment(request);
+                 return new ResponseEntity<>(resposne,HttpStatus.OK);
+            } catch (ConsumeAPIException ex) {
+                        System.err.println("Error en el consumo de ATHMovil: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: " + ex.getMessage());
+                        HashMap<String, String> map = new HashMap<>();
+                        map.put("msg", "Error en el consumo de ATHMovil: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: " + ex.getMessage());
+
+                        return new ResponseEntity<>(map, HttpStatus.BAD_GATEWAY);
+                    }
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> confirmTransactionATHM(Long invoiceId) {
+         
+            Invoice invoice = this.serviceDBInvoice.findById(invoiceId).orElse(null);
+            if(invoice==null){
+                throw new EntidadNoExisteException("La Factura con invoiceId " + invoiceId + " no existen en la base de datos");
+            }
+            if(invoice.isInProcess()==false ){
+                HashMap<String, String> json = new HashMap<>();
+                json.put("msg", "El pago ya ha sido confirmado o cancelado");
+                return new ResponseEntity<>(json,HttpStatus.BAD_REQUEST);
+            }
+            ATHMPaymentResponse pr=ConverterJson.convertStr2RespPaymentATHM(invoice.getReferenceNumber());
+            try{
+                 FindPaymentResponse resposne=athMovilService.confirmAuthorization(pr.getData().getAuth_token());
+                 if(resposne!=null){
+                     if("success".equals(resposne.getStatus()) && "COMPLETED".equals(resposne.getData().getEcommerceStatus())){
+                         EmailBodyData paymentInfoForEmail = ConverterJson.convertStr2EmailBodyData(invoice.getATHMPaymentDetails());
+                         System.out.println("ATHMPaymentResponse.token: "+pr.getData().getAuth_token());
+                         invoice.setATHMPaymentDetails(gson.toJson(resposne));
+                         invoice.setInProcess(false);
+                         invoice.setReferenceNumber(resposne.getData().getReferenceNumber());
+                         invoice = this.serviceDBInvoice.save(invoice);
+                         
+                         paymentInfoForEmail.setReferenceNumber(resposne.getData().getReferenceNumber());
+                         //Ejecuta la confirmación del pago,se reutiliza la logica ya implementada
+                         ConfirmPaymentDTO confirmPaymentDTO = new ConfirmPaymentDTO();
+                            confirmPaymentDTO.setConfirm(true);
+                            confirmPaymentDTO.setObservation("");
+                         this.confirmOrRejectPaymnt(invoiceId, confirmPaymentDTO);
+                         paymentInfoForEmail.setInvoiceNumber(invoice.getInvoiceNumber());
+                         this.emailService.notifyPaymentATHMovil(paymentInfoForEmail);
+                        return new ResponseEntity<>(invoice,HttpStatus.OK);
+                     }
+                 }
+                 invoice.setInProcess(false);
+                 if(resposne==null)
+                    invoice.setReferenceNumber("PAGO NO PROCESADO - ATHM NO RESPONDIO");
+                 else
+                    invoice.setReferenceNumber("PAGO NO PROCESADO: "+resposne.getStatus()+" "+resposne.getMessage()+"-"+resposne.getErrorcode());
+                 invoice = this.serviceDBInvoice.save(invoice);
+                 return new ResponseEntity<>(invoice,HttpStatus.REQUEST_TIMEOUT);
+            } catch (ConsumeAPIException ex) {
+
+                        System.err.println("Error en el consumo de ATHMovil EN com.retailmanager.rmpaydashboard.services.services.InvoiceServices.confirmTransactionATHM: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: " + ex.getMessage());
+                        HashMap<String, String> json = new HashMap<>();
+                        json.put("msg", "Error en el consumo de ATHMovil: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: " + ex.getMessage());
+
+                        return new ResponseEntity<>(json,HttpStatus.BAD_GATEWAY);
+                    }
+    }
+
+
+
+
+    /**
+     * Cancela un pago en la API de ATH Móvil.
+     * @param invoiceId El identificador de la factura a cancelar.
+     * @return La respuesta de la API con el resultado de la cancelación.
+     * @throws EntidadNoExisteException Si la factura con el identificador
+     *                                  especificado no existe en la base de datos.
+     * @throws ConsumeAPIException Si ocurre un error al consumir la API.
+     */
+    @Override
+    @Transactional  
+    public ResponseEntity<?> cancelTransactionATHM(Long invoiceId) {
+        
+            Invoice invoice = this.serviceDBInvoice.findById(invoiceId).orElse(null);
+            if(invoice==null){
+                throw new EntidadNoExisteException("La Factura con invoiceId " + invoiceId + " no existen en la base de datos");
+            }
+            if(invoice.getReferenceNumber() != null && invoice.getReferenceNumber().contains("PAGO CANCELADO POR EL USUARIO") && invoice.isInProcess() == false){
+                HashMap<String, String> json = new HashMap<>();
+                json.put("msg", "El pago ya ha sido cancelado");
+                return new ResponseEntity<>(json,HttpStatus.BAD_REQUEST);
+            }
+            try{
+                ATHMPaymentResponse pr=ConverterJson.convertStr2RespPaymentATHM(invoice.getReferenceNumber());
+                FindPaymentReqData request=new FindPaymentReqData();
+                request.setEcommerceId(pr.getData().getEcommerceId());
+                FindPaymentResponse rsp2=athMovilService.findPayment(request);
+                if(rsp2!=null && rsp2.getData().getEcommerceStatus().equals("CANCEL")){
+                         EmailBodyData paymentInfoForEmail = ConverterJson.convertStr2EmailBodyData(invoice.getATHMPaymentDetails());
+                         
+                         invoice.setATHMPaymentDetails(gson.toJson(rsp2));
+                         invoice.setInProcess(false);
+                         invoice.setReferenceNumber("PAGO CANCELADO POR EL USUARIO");
+                         invoice = this.serviceDBInvoice.save(invoice);
+                         paymentInfoForEmail.setReferenceNumber(invoice.getReferenceNumber());
+                         emailService.notifyPaymentATHMovil(paymentInfoForEmail);
+                         //Ejecuta la confirmación del pago,se reutiliza la logica ya implementada
+                          ConfirmPaymentDTO confirmPaymentDTO = new ConfirmPaymentDTO();
+                          confirmPaymentDTO.setConfirm(false);
+                          confirmPaymentDTO.setObservation("");
+                         this.confirmOrRejectPaymnt(invoiceId, confirmPaymentDTO);
+                          return new ResponseEntity<>(invoice,HttpStatus.OK);
+                }else{
+                 ATHMCancelPaymentResponse resposne=athMovilService.cancel(request);
+                 rsp2=athMovilService.findPayment(request);
+                 if(resposne!=null){
+                     if("success".equals(resposne.getStatus()) ){
+                         EmailBodyData paymentInfoForEmail = ConverterJson.convertStr2EmailBodyData(invoice.getATHMPaymentDetails());
+                         
+                         invoice.setATHMPaymentDetails(gson.toJson(rsp2));
+                         invoice.setInProcess(false);
+                         invoice.setReferenceNumber("PAGO CANCELADO POR EL USUARIO");
+                         invoice = this.serviceDBInvoice.save(invoice);
+                         
+                         paymentInfoForEmail.setReferenceNumber(invoice.getReferenceNumber());
+                         emailService.notifyPaymentATHMovil(paymentInfoForEmail);
+                         //Ejecuta la confirmación del pago,se reutiliza la logica ya implementada
+                          ConfirmPaymentDTO confirmPaymentDTO = new ConfirmPaymentDTO();
+                          confirmPaymentDTO.setConfirm(false);
+                          confirmPaymentDTO.setObservation("");
+                         this.confirmOrRejectPaymnt(invoiceId, confirmPaymentDTO);
+                          return new ResponseEntity<>(invoice,HttpStatus.OK);
+                     }
+                 }}
+                        HashMap<String, String> json = new HashMap<>();
+                        json.put("msg", "El pago no pudo ser cancelado: "+(rsp2!=null?rsp2.getMessage():"No se pudo obtener el estado del pago"));
+                        System.err.println("Error en la cancelación del Pago: "+json.get("msg"));
+                 return new ResponseEntity<>(json,HttpStatus.BAD_GATEWAY);
+            } catch (ConsumeAPIException ex) {
+                        System.err.println("Error en el consumo de ATHMovil: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: " + ex.getMessage());
+                        JsonObject json = new JsonObject();
+                        json.addProperty("msg", "Error en el consumo de ATHMovil: CodigoHttp " + ex.getHttpStatusCode() + " \n Mensje: " + ex.getMessage());
+
+                        return new ResponseEntity<>(json,HttpStatus.BAD_GATEWAY);
+                    }
+            catch (Exception ex) {
+                        System.err.println("Error en la cancelación del Pago  Mensaje: " + ex.getMessage());
+                        JsonObject json = new JsonObject();
+                        json.addProperty("msg", "Error en la cancelación del Pago  Mensaje: " + ex.getMessage());
+
+                        return new ResponseEntity<>(json,HttpStatus.BAD_GATEWAY);
+                    }
     }
 
 }

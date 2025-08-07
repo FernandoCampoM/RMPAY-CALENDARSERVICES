@@ -75,8 +75,9 @@ public class CategoryController {
      * @return        response entity with the found category
      */
     @GetMapping("/categories")
-    public ResponseEntity<?> findByName(@Valid @RequestParam(name = "name") @NotBlank(message = "name.notBlank") String name) {
-        return categoryService.findByName(name);
+    public ResponseEntity<?> findByName(@Valid @RequestParam(name = "name") @NotBlank(message = "name.notBlank") String name, 
+            @Valid @RequestParam(name = "businessId") @Positive(message = "businessId.positive") Long businessId) {
+        return categoryService.findByName(name, businessId);
     }
 
     /**
