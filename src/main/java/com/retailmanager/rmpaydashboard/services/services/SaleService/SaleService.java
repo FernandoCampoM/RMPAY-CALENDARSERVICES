@@ -3,6 +3,7 @@ package com.retailmanager.rmpaydashboard.services.services.SaleService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -97,7 +98,17 @@ public class SaleService implements ISaleService {
             throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
         }
         List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndBusiness("SALE", business);
-        List<SaleDTO> salesDTO = mapper.map(sales, new TypeToken<List<SaleDTO>>() {}.getType());
+
+        
+
+List<SaleDTO> salesDTO = sales.stream()
+    .map(sale -> {
+        SaleDTO saleDTO = SaleDTO.fromEntity(sale);
+        // ... añade todos los demás campos
+        return saleDTO;
+    })
+    .collect(Collectors.toList());
+
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
 
@@ -115,7 +126,13 @@ public class SaleService implements ISaleService {
             throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
         }
         List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndSaleStatusAndBusiness("SALE", "SUCCEED", business);
-        List<SaleDTO> salesDTO = mapper.map(sales, new TypeToken<List<SaleDTO>>() {}.getType());
+       List<SaleDTO> salesDTO = sales.stream()
+    .map(sale -> {
+        SaleDTO saleDTO = SaleDTO.fromEntity(sale);
+        // ... añade todos los demás campos
+        return saleDTO;
+    })
+    .collect(Collectors.toList());
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
 
@@ -136,7 +153,13 @@ public class SaleService implements ISaleService {
         }
         
         List<Sale> sales = this.serviceDBSale.findBySaleEndDateBetweenAndSaleTransactionTypeAndSaleStatusAndBusiness(startDate, endDate, "SALE", "SUCCEED", business);
-        List<SaleDTO> salesDTO = mapper.map(sales, new TypeToken<List<SaleDTO>>() {}.getType());
+        List<SaleDTO> salesDTO = sales.stream()
+    .map(sale -> {
+        SaleDTO saleDTO = SaleDTO.fromEntity(sale);
+        // ... añade todos los demás campos
+        return saleDTO;
+    })
+    .collect(Collectors.toList());
         return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
     }
     

@@ -1,11 +1,13 @@
 package com.retailmanager.rmpaydashboard.services.services.UserService;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -22,6 +24,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.retailmanager.rmpaydashboard.enums.EmployeeRole;
 import com.retailmanager.rmpaydashboard.enums.Rol;
 import com.retailmanager.rmpaydashboard.exceptionControllers.exceptions.ConsumeAPIException;
@@ -44,6 +47,7 @@ import com.retailmanager.rmpaydashboard.repositories.TerminalRepository;
 import com.retailmanager.rmpaydashboard.repositories.UserRepository;
 import com.retailmanager.rmpaydashboard.repositories.UsersAppRepository;
 import com.retailmanager.rmpaydashboard.services.DTO.BusinessDTO;
+import com.retailmanager.rmpaydashboard.services.DTO.InvoiceDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.RegistryDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalDTO;
 import com.retailmanager.rmpaydashboard.services.DTO.TerminalsDoPaymentDTO;
@@ -51,7 +55,12 @@ import com.retailmanager.rmpaydashboard.services.DTO.UserDTO;
 import com.retailmanager.rmpaydashboard.services.services.BusinessService.IBusinessService;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.EmailBodyData;
 import com.retailmanager.rmpaydashboard.services.services.EmailService.IEmailService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.IATHMovilService;
 import com.retailmanager.rmpaydashboard.services.services.Payment.IBlackStoneService;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ATHMPaymentReqData;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ATHMPaymentResponse;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ItemATHM;
+import com.retailmanager.rmpaydashboard.services.services.Payment.data.ItemATHM;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponseJSON;
 import com.retailmanager.rmpaydashboard.services.services.Payment.data.ResponsePayment;
 import com.retailmanager.rmpaydashboard.services.services.ResellerServices.IResellerService;
@@ -77,8 +86,8 @@ public class UserService implements IUserService{
 
     @Autowired
     private IResellerService resellerService;
-
-    DecimalFormat formato = new DecimalFormat("#.##");
+    DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+    DecimalFormat formato = new DecimalFormat("#.##", symbols );
     @Autowired
     @Qualifier("mapperbase")
     private ModelMapper mapper;
@@ -94,6 +103,9 @@ public class UserService implements IUserService{
     @Autowired
     private ITerminalService terminalService;
     Gson gson = new Gson();
+
+    @Autowired
+    private IATHMovilService athMovilService;
     /**
      * Save user data into the database and return the response entity
      *
@@ -341,6 +353,7 @@ public class UserService implements IUserService{
         Double amount=0.0;
         Double comisiones=0.0;
         Double stateTax=0.0;
+        Double stateTaxRate=0.04;
         ResponsePayment respPayment;
         Double aditionalTerminalsValue=0.0;
         String serviceReferenceNumber=null;
@@ -349,7 +362,7 @@ public class UserService implements IUserService{
         EmailBodyData objEmailBodyData=mapper.map(prmRegistry, EmailBodyData.class);
         objEmailBodyData.setDiscount(0.0);
         objEmailBodyData.setTerminalsDoPayment(new ArrayList<>());
-        
+        List<ItemATHM> items = new ArrayList<>();
         Optional<User> exist = this.serviceDBUser.findOneByUsername(prmRegistry.getUsername());
             if(exist.isPresent()){
                 EntidadYaExisteException objExeption = new EntidadYaExisteException("El Usuario con username "+prmRegistry.getUsername()+" ya existe en la Base de datos");
@@ -382,6 +395,14 @@ public class UserService implements IUserService{
                 descripcion+=": $"+String.valueOf(formato.format(objService.getServiceValue()))+"\n";
                 amount=objService.getServiceValue();
                 comisiones=objService.getReferralPayment();
+                //INFORMACIÓN PARA ATH MOVIL
+                ItemATHM item = new ItemATHM();
+                    item.setDescription(descripcion);
+                    item.setName(objService.getServiceName());
+                    item.setPrice(String.valueOf(formato.format(objService.getServiceValue())));
+                    item.setTax(String.valueOf(formato.format(objService.getServiceValue() * stateTaxRate)));
+                    item.setQuantity("1");
+                    items.add(item);
                 //Calculo del valor de los terminales
                 if(prmRegistry.getAdditionalTerminals()<=5){
                     aditionalTerminalsValue=objService.getTerminals2to5();
@@ -389,20 +410,44 @@ public class UserService implements IUserService{
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals2to5();
                     comisiones+=(prmRegistry.getAdditionalTerminals()-1)*objService.getReferralPayment2to5();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals2to5());
+                     //INFORMACIÓN PARA ATH MOVIL
+                    ItemATHM item1 = new ItemATHM();
+                    item1.setDescription(descripcion);
+                    item1.setName(objService.getServiceName());
+                    item1.setPrice(String.valueOf(formato.format(objService.getServiceValue())));
+                    item1.setTax(String.valueOf(formato.format(objService.getServiceValue() * stateTaxRate)));
+                    item1.setQuantity("1");
+                    items.add(item1);
                 }else if(prmRegistry.getAdditionalTerminals()>5 && prmRegistry.getAdditionalTerminals()<10){
                     descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals2to5()))+"\n";
                     aditionalTerminalsValue=objService.getTerminals6to9();
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals6to9();
                     comisiones+=(prmRegistry.getAdditionalTerminals()-1)*objService.getReferralPayment6to9();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals6to9());
+                     //INFORMACIÓN PARA ATH MOVIL
+                    ItemATHM item1 = new ItemATHM();
+                    item1.setDescription(descripcion);
+                    item1.setName(objService.getServiceName());
+                    item1.setPrice(String.valueOf(formato.format(objService.getServiceValue())));
+                    item1.setTax(String.valueOf(formato.format(objService.getServiceValue() * stateTaxRate)));
+                    item1.setQuantity("1");
+                    items.add(item1);
                 }else{
                     descripcion+="Terminales Adicionales: $"+prmRegistry.getAdditionalTerminals()+" X $"+String.valueOf(formato.format(objService.getTerminals10()))+"\n";
                     aditionalTerminalsValue=objService.getTerminals10();
                     amount+=(prmRegistry.getAdditionalTerminals()-1)*objService.getTerminals10();
                     comisiones+=(prmRegistry.getAdditionalTerminals()-1)*objService.getReferralPayment10();
                     objEmailBodyData.setAdditionalTerminalsValue(objService.getTerminals10());
+                     //INFORMACIÓN PARA ATH MOVIL
+                    ItemATHM item1 = new ItemATHM();
+                    item1.setDescription(descripcion);
+                    item1.setName(objService.getServiceName());
+                    item1.setPrice(String.valueOf(formato.format(objService.getServiceValue())));
+                    item1.setTax(String.valueOf(formato.format(objService.getServiceValue() * stateTaxRate)));
+                    item1.setQuantity("1");
+                    items.add(item1);
                 }
-                stateTax=amount*0.04;
+                stateTax=amount*    stateTaxRate;
                 objEmailBodyData.setSubTotal(amount);
                 objEmailBodyData.setStateTax(stateTax);
                 amount=amount+stateTax;
@@ -509,6 +554,7 @@ public class UserService implements IUserService{
                             List<String> listTerminalIds=new ArrayList<String>();
                             List<String> paymentDescription=new ArrayList<>();
                             paymentDescription.add( descripcion);
+                            ATHMPaymentResponse payResponse = null;
                             switch (prmRegistry.getPaymethod()){
                                 case "CREDIT-CARD":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
@@ -561,6 +607,44 @@ public class UserService implements IUserService{
                                     emailService.notifyPaymentCreditCard(objEmailBodyData);
                                 break;
                                 case "ATHMOVIL":
+                                    if (prmRegistry.getAthPhone() == null) {
+                                        HashMap<String, String> rta = new HashMap<>();
+                                        rta.put("msg", "El Negocio no tiene un número de telefono para enviar el pago de ATHMovil");
+                                        return new ResponseEntity<>(rta, HttpStatus.BAD_REQUEST);
+                                    }
+                                    if (prmRegistry.getAthPhone().compareTo("") == 0) {
+                                        HashMap<String, String> rta = new HashMap<>();
+                                        rta.put("msg", "El Negocio no tiene un número de telefono para enviar el pago de ATHMovil");
+                                        return new ResponseEntity<>(rta, HttpStatus.BAD_REQUEST);
+                                    }
+                                     // Se crea la data para enviar el pago a ATH Movil
+                                    ATHMPaymentReqData req = new ATHMPaymentReqData();
+                                    req.setEnv("production");
+                                    req.setMetadata1("RETAIL MANAGER PR - RMPAY DASHBOARD");
+                                    String cleanPhone = prmRegistry.getAthPhone().replaceAll("\\D", "");
+
+                                    req.setPhoneNumber(cleanPhone);
+                                    req.setSubtotal(String.valueOf(formato.format(objInvoice.getSubTotal())));
+                                    req.setTax(String.valueOf(formato.format(objInvoice.getStateTax())));
+                                    req.setTimeout("5000");
+                                    req.setTotal(String.valueOf(formato.format(objInvoice.getTotalAmount())));
+                                    req.setItems(items);
+                                    try {
+                                        payResponse = athMovilService.doPayment(req);
+                                        if (payResponse != null && payResponse.getStatus().compareTo("success") == 0 && payResponse.getData() == null) {
+
+                                            JsonObject json = new JsonObject();
+                                            json.addProperty("msg", "Error al pagar con ATHMovil para el merchantId: " + objBusiness.getMerchantId());
+
+                                            return new ResponseEntity<>(json, HttpStatus.NOT_ACCEPTABLE);
+                                        }
+                                    } catch (ConsumeAPIException e) {
+                                    System.err.println("Error en el consumo de ATHMovil: CodigoHttp " + e.getHttpStatusCode() + " \n Mensje: " + e.getMessage());
+                                        JsonObject json = new JsonObject();
+                                        json.addProperty("msg", "Por favor comuniquese con el administrador de la página. Error: " + e.getMessage());
+
+                                        return new ResponseEntity<>(json, HttpStatus.BAD_GATEWAY);
+                                    }
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {
                                         TerminalsDoPaymentDTO objTerminalsDoPaymentDTO=new TerminalsDoPaymentDTO();
                                         Terminal objTerminal=new Terminal();
@@ -602,15 +686,18 @@ public class UserService implements IUserService{
                                     objInvoice.setPaymentMethod(prmRegistry.getPaymethod());
                                     objInvoice.setTerminals(prmRegistry.getAdditionalTerminals());
                                     objInvoice.setBusinessId(objBusinessDTO.getBusinessId());
+                                    serviceReferenceNumber=gson.toJson(payResponse);
                                     objInvoice.setReferenceNumber(serviceReferenceNumber);
                                     objInvoice.setServiceId(prmRegistry.getServiceId());
                                     objInvoice.setInProcess(true);
                                     objInvoice.setTerminalIds(listTerminalIds.toString().replace("[", "").replace("]", "").replace(" ", ""));
+                                    objInvoice.setATHMPaymentDetails(gson.toJson(objEmailBodyData));
                                     objInvoice=serviceDBInvoice.save(objInvoice);
                                     this.resellerService.addResellerSales(prmRegistry.getIdReseller(), prmRegistry.getMerchantId(),amount , comisiones, objInvoice, descripcion);
-                                    objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
+                                    prmRegistry.setPaymentResume(mapper.map(objInvoice, InvoiceDTO.class));
+                                    //objEmailBodyData.setInvoiceNumber(objInvoice.getInvoiceNumber());
 
-                                    emailService.notifyPaymentATHMovil(objEmailBodyData);
+                                    //emailService.notifyPaymentATHMovil(objEmailBodyData);
                                     break;
                                 case "BANK-ACCOUNT":
                                     for (int i = 0; i < prmRegistry.getAdditionalTerminals(); i++) {

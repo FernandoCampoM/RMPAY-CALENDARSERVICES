@@ -2,6 +2,8 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 
 import java.time.LocalDate;
 
+import com.retailmanager.rmpaydashboard.models.Sale;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -69,4 +71,29 @@ public class SaleDTO {
     @NotNull(message = "{sale.tipAmount.notNull}")
     @PositiveOrZero(message = "{sale.tipAmount.positiveOrZero}")
     private Double tipAmount;
+
+
+    public static SaleDTO fromEntity(Sale sale) {
+        SaleDTO saleDTO = new SaleDTO();
+        saleDTO.setSaleID(sale.getSaleID());
+        saleDTO.setSaleCreationDate(sale.getSaleCreationDate());
+        saleDTO.setSaleEndDate(sale.getSaleEndDate());
+        saleDTO.setItems(sale.getItems());
+        saleDTO.setSaleSubtotal(sale.getSaleSubtotal());
+        saleDTO.setSaleStateTaxAmount(sale.getSaleStateTaxAmount());
+        saleDTO.setSaleCityTaxAmount(sale.getSaleCityTaxAmount());
+        saleDTO.setSaleReduceTax(sale.getSaleReduceTax());
+        saleDTO.setSaleTotalAmount(sale.getSaleTotalAmount());
+        saleDTO.setSaleTransactionType(sale.getSaleTransactionType());
+        saleDTO.setSaleMachineID(sale.getSaleMachineID());
+        saleDTO.setSaleIvuNumber(sale.getSaleIvuNumber());
+        saleDTO.setSaleStatus(sale.getSaleStatus());
+        saleDTO.setSaleChange(sale.getSaleChange());
+        saleDTO.setUserId(sale.getUserId());
+        saleDTO.setBusinessId(sale.getBusiness().getBusinessId());
+        saleDTO.setSaleToRefund(sale.getSaleToRefund());
+        saleDTO.setTerminalId(sale.getTerminal().getTerminalId());
+        saleDTO.setTipAmount(sale.getTipAmount());
+        return saleDTO;
+    }
 }

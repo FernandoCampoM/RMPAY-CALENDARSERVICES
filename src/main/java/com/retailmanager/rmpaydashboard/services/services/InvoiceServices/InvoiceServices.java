@@ -1116,6 +1116,10 @@ public class InvoiceServices implements IInvoiceServices {
             if(invoice==null){
                 throw new EntidadNoExisteException("La Factura con invoiceId " + invoiceId + " no existen en la base de datos");
             }
+            if(invoice.isInProcess()==false ){
+                FindPaymentResponse athmCancelPaymentResponse = ConverterJson.convertStr2RespDetTransactionATHM(invoice.getATHMPaymentDetails());
+                return new ResponseEntity<>(athmCancelPaymentResponse,HttpStatus.OK);
+            }
             ATHMPaymentResponse pr=ConverterJson.convertStr2RespPaymentATHM(invoice.getReferenceNumber());
             FindPaymentReqData request=new FindPaymentReqData();
             request.setEcommerceId(pr.getData().getEcommerceId());
