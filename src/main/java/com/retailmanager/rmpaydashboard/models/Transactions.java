@@ -1,55 +1,44 @@
 package com.retailmanager.rmpaydashboard.models;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity // Reemplaza TABLE6_NAME con el nombre real de tu tabla en la base de datos
+@Entity 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class Transactions {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(columnDefinition = "varchar(255)")
+    private String id = "";
 
-    @Column(nullable = false)
-    private String date;
+    @Column(columnDefinition = "varchar(max)")
+    private String account = "";
 
-    @Column(nullable = false)
-    private String paymentType;
-
-    @Column(nullable = false)
     private Double amount;
+     @Column(columnDefinition = "varchar(max)")
+    private String authCode;
+ @Column(columnDefinition = "varchar(max)")
+    private String batchNo;
 
-    @Column
-    private String state;
-
-    
+    private String cardType;
 
     private Double changeChash;
 
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String refId = "";
+    private LocalDateTime date;
+ @Column(columnDefinition = "varchar(max)")
+    private String entryMode;
+ @Column(columnDefinition = "varchar(max)")
+    private String globalUId;
+    private String paymentType;
+ @Column(columnDefinition = "varchar(max)")
+    private String refId;
 
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String account = "";
-
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String cardType = "";
-
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String authCode = "";
-
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String batchNo = "";
-
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String entryMode = "";
-
-    @Column(columnDefinition = "TEXT DEFAULT ''")
-    private String globalUid = "";
+    private String state;
 
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "saleId", nullable = false)

@@ -51,7 +51,7 @@ public class Sale {
     private String saleTransactionType;
 
     @Column(name = "saleMachineID")
-    private Integer saleMachineID;
+    private String saleMachineID;
 
     @Column(name = "saleIvuNumber")
     private String saleIvuNumber;
@@ -73,6 +73,8 @@ public class Sale {
 
     @Column(nullable = false, columnDefinition = "float default 0")
     private Double tipAmount;
+    @Column(nullable = false, columnDefinition = "float default 0")
+    private Double tipPercentage;
 
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "businessId")
@@ -107,6 +109,7 @@ public class Sale {
         saleDTO.setUserId(this.getUserId());
         saleDTO.setSaleToRefund(this.getSaleToRefund());
         saleDTO.setTipAmount(this.getTipAmount());
+        saleDTO.setTipPercentage(this.getTipPercentage());
         saleDTO.setBusinessId(this.getBusiness().getBusinessId());
         saleDTO.setTerminalId(this.getTerminal().getTerminalId());
         return saleDTO;

@@ -49,7 +49,7 @@ public class SaleDTO {
     @NotBlank(message = "{saleTransactionType.notBlank}")
     private String saleTransactionType;
 
-    private Integer saleMachineID;
+    private String saleMachineID;
 
     private String saleIvuNumber;
 
@@ -71,7 +71,7 @@ public class SaleDTO {
     @NotNull(message = "{sale.tipAmount.notNull}")
     @PositiveOrZero(message = "{sale.tipAmount.positiveOrZero}")
     private Double tipAmount;
-
+private Double tipPercentage;
 
     public static SaleDTO fromEntity(Sale sale) {
         SaleDTO saleDTO = new SaleDTO();
@@ -94,6 +94,7 @@ public class SaleDTO {
         saleDTO.setSaleToRefund(sale.getSaleToRefund());
         saleDTO.setTerminalId(sale.getTerminal().getTerminalId());
         saleDTO.setTipAmount(sale.getTipAmount());
+        saleDTO.setTipPercentage(sale.getTipPercentage());
         return saleDTO;
     }
 }

@@ -523,7 +523,7 @@ public class ReportService implements IReportService {
         if(transactions!=null && transactions.size()>0){
             for(Transactions transaction:transactions){
                 TransactionDTO transactionDTO = this.mapper.map(transaction, TransactionDTO.class);
-                transactionDTO.setInfoSale(transaction.getSale().toDTO());
+                //transactionDTO.setInfoSale(transaction.getSale().toDTO());
 
                 transactionsDTOs.add(transactionDTO);
             }
