@@ -139,5 +139,44 @@ public class TransactionsService implements ITransactionService {
         TransactionDTO transactionDTO = TransactionDTO.fromTransactions(transaction);
         return new ResponseEntity<>(transactionDTO, HttpStatus.OK);
     }
+
+    /**
+     * Updates a transaction in the database.
+     *
+     * @param transactionId the ID of the transaction to update
+     * @param transactionDTO the updated transaction information
+     * @return a ResponseEntity containing the updated transaction or an error message
+     * @throws EntidadNoExisteException if the transaction with the given ID does not exist in the database
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<?> updateTransaction(String transactionId, TransactionDTO transactionDTO) {
+        
+        Sale sale = this.saleRepository.findById(transactionDTO.getSaleId())
+                .orElseThrow(() -> new EntidadNoExisteException("La venta con id "+transactionDTO.getSaleId()+" no existe en la base de datos"));
+
+        Transactions transaction = this.transactionsRepository.findById(transactionId)
+                .orElseThrow(() -> new EntidadNoExisteException("La transacción con id "+transactionId+" no existe en la base de datos"));
+        transaction.setAccount(transactionDTO.getAccount());
+        transaction.setAmount(transactionDTO.getAmount());
+        transaction.setDate(transactionDTO.getDate());
+        transaction.setAuthCode(transactionDTO.getAuthCode());
+        transaction.setBatchNo(transactionDTO.getBatchNo());
+        transaction.setCardType(transactionDTO.getCardType());
+        transaction.setChangeChash(transactionDTO.getChangeChash());
+        transaction.setEntryMode(transactionDTO.getEntryMode());
+        transaction.setGlobalUId(transactionDTO.getGlobalUId());
+        transaction.setPaymentType(transactionDTO.getPaymentType());
+        transaction.setRefId(transactionDTO.getRefId());
+        transaction.setRemoto(transactionDTO.getRemoto());
+        transaction.setState(transactionDTO.getState());
+        
+
+
+        transaction.setSale(sale);
+        transaction=this.transactionsRepository.save(transaction);
+        TransactionDTO transactionDTOrta=TransactionDTO.fromTransactions(transaction);
+        return new ResponseEntity<>(transactionDTOrta, HttpStatus.OK);
+    }
     
 }

@@ -29,6 +29,10 @@ public class SaleController {
     public ResponseEntity<?> addSale(@Valid @RequestBody SaleDTO saleDTO) {
         return saleService.addSale(saleDTO);
     }
+    @PutMapping("/sales/{saleId}")
+    public ResponseEntity<?> updateSale(@PathVariable String saleId, @Valid @RequestBody SaleDTO saleDTO) {
+        return saleService.UpdateSale(saleId, saleDTO);
+    }
 
     /**
      * Get all sales for the given merchant ID.

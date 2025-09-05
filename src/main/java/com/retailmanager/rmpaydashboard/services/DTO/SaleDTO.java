@@ -16,7 +16,7 @@ import lombok.Setter;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class SaleDTO {
 
-    private Long saleID;
+    private String saleID;
 
 
     @NotBlank(message = "{saleCreationDate.notBlank}")
@@ -73,6 +73,9 @@ public class SaleDTO {
     private Double tipAmount;
 private Double tipPercentage;
 
+ @NotNull(message = "{sale.remoto.notnull}")
+ private Integer remoto;
+
     public static SaleDTO fromEntity(Sale sale) {
         SaleDTO saleDTO = new SaleDTO();
         saleDTO.setSaleID(sale.getSaleID());
@@ -95,6 +98,7 @@ private Double tipPercentage;
         saleDTO.setTerminalId(sale.getTerminal().getTerminalId());
         saleDTO.setTipAmount(sale.getTipAmount());
         saleDTO.setTipPercentage(sale.getTipPercentage());
+        saleDTO.setRemoto(sale.getRemoto());
         return saleDTO;
     }
 }

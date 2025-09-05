@@ -42,7 +42,9 @@ public class TransactionDTO {
  private String state;
 
  @NotNull(message = "{transaction.saleId.notnull}")
- private Long saleId;
+ private String saleId;
+ @NotNull(message = "{transaction.remoto.notnull}")
+ private Integer remoto;
     
 public Transactions toTransactions(){
     Transactions transaction = new Transactions();
@@ -59,6 +61,7 @@ public Transactions toTransactions(){
     transaction.setPaymentType(this.paymentType);
     transaction.setRefId(this.refId);
     transaction.setState(this.state);
+    transaction.setRemoto(this.remoto);
     return transaction;
 }
 public static TransactionDTO fromTransactions(Transactions transaction){
@@ -77,6 +80,7 @@ public static TransactionDTO fromTransactions(Transactions transaction){
     transactionDTO.setRefId(transaction.getRefId());
     transactionDTO.setState(transaction.getState());
     transactionDTO.setSaleId(transaction.getSale().getSaleID());
+    transactionDTO.setRemoto(transaction.getRemoto());
     return transactionDTO;
 }
     // Constructor, getters y setters

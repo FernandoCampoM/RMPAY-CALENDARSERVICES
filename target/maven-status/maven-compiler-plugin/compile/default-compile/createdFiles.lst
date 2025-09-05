@@ -139,7 +139,6 @@ com\retailmanager\rmpaydashboard\repositories\BusinessRepository.class
 com\retailmanager\rmpaydashboard\repositories\TerminalRepository.class
 com\retailmanager\rmpaydashboard\services\services\TerminalService\TerminalService.class
 com\retailmanager\rmpaydashboard\repositories\ProductRepository.class
-com\retailmanager\rmpaydashboard\services\services\SaleService\SaleService$4.class
 com\retailmanager\rmpaydashboard\models\Shift.class
 com\retailmanager\rmpaydashboard\controller\AvailableSchedulesController.class
 com\retailmanager\rmpaydashboard\models\Product.class
@@ -209,7 +208,6 @@ com\retailmanager\rmpaydashboard\config\AplicationConfig.class
 com\retailmanager\rmpaydashboard\services\DTO\TerminalDTO.class
 com\retailmanager\rmpaydashboard\models\Permission.class
 com\retailmanager\rmpaydashboard\models\Business.class
-com\retailmanager\rmpaydashboard\services\services\SaleService\SaleService$3.class
 com\retailmanager\rmpaydashboard\services\DTO\PermissionDTO.class
 com\retailmanager\rmpaydashboard\services\DTO\TerminalsDoPaymentDTO.class
 com\retailmanager\rmpaydashboard\services\services\FileServices\FileService.class
@@ -217,7 +215,6 @@ com\retailmanager\rmpaydashboard\models\AvailableSchedules.class
 com\retailmanager\rmpaydashboard\services\services\EmailService\EmailConfigProjection.class
 com\retailmanager\rmpaydashboard\repositories\ServiceRepository.class
 com\retailmanager\rmpaydashboard\repositories\ScheduleCalendarRepository.class
-com\retailmanager\rmpaydashboard\services\services\SaleService\SaleService$2.class
 com\retailmanager\rmpaydashboard\models\Terminal.class
 com\retailmanager\rmpaydashboard\services\services\InvoiceServices\IInvoiceServices.class
 com\retailmanager\rmpaydashboard\services\services\PaymentMethodService\IPaymentMethosService.class

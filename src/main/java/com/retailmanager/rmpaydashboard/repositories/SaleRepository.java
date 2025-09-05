@@ -10,7 +10,7 @@ import com.retailmanager.rmpaydashboard.models.Business;
 import com.retailmanager.rmpaydashboard.models.ItemForSale;
 import com.retailmanager.rmpaydashboard.models.Sale;
 
-public interface SaleRepository extends CrudRepository<Sale, Long>  {
+public interface SaleRepository extends CrudRepository<Sale, String>  {
     /**
      * Obtiene una lista de ventas por identificador de comercio.
      *

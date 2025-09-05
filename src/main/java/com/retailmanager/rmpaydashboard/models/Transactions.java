@@ -40,6 +40,8 @@ public class Transactions {
 
     private String state;
 
+    private Integer remoto;
+
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "saleId", nullable = false)
     private Sale sale;

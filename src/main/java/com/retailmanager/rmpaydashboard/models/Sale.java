@@ -19,9 +19,9 @@ import jakarta.persistence.*;
 public class Sale {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    
     @Column(name = "saleID")
-    private Long saleID;
+    private String saleID;
 
     @Column(name = "saleCreationDate", nullable = false)
     private String saleCreationDate;
@@ -75,6 +75,8 @@ public class Sale {
     private Double tipAmount;
     @Column(nullable = false, columnDefinition = "float default 0")
     private Double tipPercentage;
+
+    private Integer remoto;
 
     @ManyToOne(cascade=CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "businessId")

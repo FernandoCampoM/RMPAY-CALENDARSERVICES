@@ -35,6 +35,10 @@ public class TransactionsController {
     public ResponseEntity<?> saveTransaction(@Valid @RequestBody TransactionDTO transactionDTO) {
         return transactionService.saveTransaction(transactionDTO);
     }
+    @PutMapping("/{transactionId}")
+    public ResponseEntity<?> updateTransaction(@PathVariable String transactionId, @Valid @RequestBody TransactionDTO transactionDTO) {
+        return transactionService.updateTransaction(transactionId, transactionDTO);
+    }
 
     /**
      * Save multiple transactions.
