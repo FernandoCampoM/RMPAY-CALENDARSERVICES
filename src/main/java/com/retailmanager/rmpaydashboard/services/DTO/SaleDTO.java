@@ -1,7 +1,9 @@
 package com.retailmanager.rmpaydashboard.services.DTO;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.retailmanager.rmpaydashboard.models.Sale;
 
 import jakarta.validation.constraints.NotBlank;
@@ -18,11 +20,11 @@ public class SaleDTO {
 
     private String saleID;
 
-
-    @NotBlank(message = "{saleCreationDate.notBlank}")
-    private String saleCreationDate;
-
-    private LocalDate saleEndDate;
+   
+     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime saleCreationDate;
+     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime saleEndDate;
 
     private String items;
 

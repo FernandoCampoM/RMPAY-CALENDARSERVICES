@@ -178,5 +178,34 @@ public class TransactionsService implements ITransactionService {
         TransactionDTO transactionDTOrta=TransactionDTO.fromTransactions(transaction);
         return new ResponseEntity<>(transactionDTOrta, HttpStatus.OK);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getTransactionsByMerchantId(String merchantId, String terminalId, LocalDateTime startDate,
+            LocalDateTime endDate) {
+       if(!this.businessRepository.findOneByMerchantId(merchantId).isPresent()) {
+            throw new EntidadNoExisteException("El negocio con merchantId " + merchantId + " no existe en la base de datos");
+        }
+        List<Transactions> transactions = new ArrayList<>();
+        if(startDate!=null && endDate!=null){
+            transactions = this.transactionsRepository.getTransactionsByMerchantIdAndTerminalIdAndDateBetween(merchantId, terminalId, startDate, endDate);
+        }else{
+            transactions = this.transactionsRepository.getTransactionsByMerchantIdAndTerminalId(merchantId, terminalId);
+        }
+        List<TransactionDTO> transactionDTOs = transactions.stream().map(TransactionDTO::fromTransactions).collect(Collectors.toList());
+        return new ResponseEntity<>(transactionDTOs, HttpStatus.OK);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> updateStatus(String transactionId, String status) {
+        
+        Transactions transaction = this.transactionsRepository.findById(transactionId)
+                .orElseThrow(() -> new EntidadNoExisteException("La transacción con id "+transactionId+" no existe en la base de datos"));
+       transaction.setState(status);
+        transaction=this.transactionsRepository.save(transaction);
+        TransactionDTO transactionDTOrta=TransactionDTO.fromTransactions(transaction);
+        return new ResponseEntity<>(transactionDTOrta, HttpStatus.OK);
+    }
     
 }

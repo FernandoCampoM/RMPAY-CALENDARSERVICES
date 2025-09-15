@@ -9,9 +9,11 @@ import com.retailmanager.rmpaydashboard.services.DTO.SaleDTO;
 public interface ISaleService {
     public ResponseEntity<?> addSale(SaleDTO saleDTO);
     public ResponseEntity<?> UpdateSale(String saleId, SaleDTO saleDTO);
+    public ResponseEntity<?> UpdateStatus(String saleId, String status);
     //public void closeSale(int id, String status, String endData) ;
     public ResponseEntity<?> getAllSales(String merchantId);
-    
+    public ResponseEntity<?> getAllSales(String merchantId,String terminalId);
+
     public ResponseEntity<?> getCompletedSales(String merchantId);
     public ResponseEntity<?> getCompletedSalesByDateRange(String merchantId,LocalDate startDate, LocalDate endDate);
 }

@@ -39,6 +39,8 @@ public interface SaleRepository extends CrudRepository<Sale, String>  {
      */
     //
     public List<Sale> findBySaleTransactionTypeAndBusiness(String saleTransactionType, Business business);
+    @Query("SELECT s FROM Sale s WHERE s.saleTransactionType = :saleTransactionType AND s.terminal.terminalId = :terminalId AND s.business.merchantId = :merchantId")
+    public List<Sale> findByMerchantIdAndTerminalId(String saleTransactionType, String terminalId, String merchantId);
     /**
      * Obtiene las ventas entre dos fechas y por tipo de transacción y estado e identificador de comercio.
      *

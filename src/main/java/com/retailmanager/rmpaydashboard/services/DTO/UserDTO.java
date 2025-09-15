@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.springframework.lang.NonNull;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.retailmanager.rmpaydashboard.enums.Rol;
 
 import lombok.AllArgsConstructor;
@@ -35,7 +36,6 @@ public class UserDTO {
     private boolean enable;
     //@NotEmpty(message = "{user.phone.empty}")
     private String phone;
-    
     private LocalDate registerDate;
     private LocalDate lastLogin;
     private List<BusinessDTO> business;

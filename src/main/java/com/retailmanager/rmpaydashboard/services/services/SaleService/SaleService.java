@@ -249,7 +249,50 @@ List<SaleDTO> salesDTO = sales.stream()
                 terminal.setLastTransmision(LocalDate.now());
                 serviceDBTerminal.save(terminal);
                 
-                return new ResponseEntity<>(saleDTO,HttpStatus.CREATED);
+                return new ResponseEntity<>(saleDTO,HttpStatus.OK);
+            }catch(Exception e){
+                return new ResponseEntity<>("Error: "+e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+        return new ResponseEntity<>("Error",HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAllSales(String merchantId, String terminalId) {
+        Business business= this.serviceDBBusiness.findOneByMerchantId(merchantId).orElse(null);
+        if(business==null){
+            throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
+        }
+        List<Sale> sales = this.serviceDBSale.findByMerchantIdAndTerminalId("SALE", terminalId, merchantId);
+
+        List<SaleDTO> salesDTO = sales.stream()
+            .map(sale -> {
+        SaleDTO saleDTO = SaleDTO.fromEntity(sale);
+        // ... añade todos los demás campos
+        return saleDTO;
+    })
+    .collect(Collectors.toList());
+
+        return new ResponseEntity<List<SaleDTO>>(salesDTO,HttpStatus.OK);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> UpdateStatus(String saleId, String status) {
+         
+        Sale sale = this.serviceDBSale.findById(saleId).orElse(null);
+        if(sale==null){
+            throw new EntidadNoExisteException("La venta con saleID "+saleId+" no existe en la Base de datos");
+        }
+        
+        
+        sale.setSaleStatus(status  );
+        if(sale!=null){
+            try{
+                sale=this.serviceDBSale.save(sale);
+                SaleDTO saleDTO=SaleDTO.fromEntity(sale);
+                return new ResponseEntity<>(saleDTO,HttpStatus.OK);
             }catch(Exception e){
                 return new ResponseEntity<>("Error: "+e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
             }

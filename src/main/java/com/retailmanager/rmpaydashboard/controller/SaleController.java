@@ -33,6 +33,10 @@ public class SaleController {
     public ResponseEntity<?> updateSale(@PathVariable String saleId, @Valid @RequestBody SaleDTO saleDTO) {
         return saleService.UpdateSale(saleId, saleDTO);
     }
+    @PutMapping("/sales/{saleId}/status/{status}")
+    public ResponseEntity<?> updateSaleStatus(@PathVariable String saleId, @PathVariable String status) {
+        return saleService.UpdateStatus(saleId, status);
+    }
 
     /**
      * Get all sales for the given merchant ID.
@@ -41,7 +45,11 @@ public class SaleController {
      * @return         	description of return value
      */
     @GetMapping("/sales")
-    public ResponseEntity<?> getAllSales(@RequestParam(name = "merchantId") @Valid String merchantId) {
+    public ResponseEntity<?> getAllSales(@RequestParam(name = "merchantId") @Valid String merchantId,
+                                         @RequestParam( required = false) String terminalId) {
+                                            if(terminalId!=null && !terminalId.isEmpty()){
+                                                return saleService.getAllSales(merchantId, terminalId);
+                                            }
         return saleService.getAllSales(merchantId);
     }
 

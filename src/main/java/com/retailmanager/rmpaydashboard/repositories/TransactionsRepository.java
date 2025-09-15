@@ -16,6 +16,10 @@ public interface  TransactionsRepository extends CrudRepository<Transactions, St
 
     @Query( "select t from Transactions t where t.sale.business.merchantId=:merchantId and t.date between :startDate and :endDate")
     public List<Transactions> getTransactionsByMerchantIdAndDateBetween(String merchantId, LocalDateTime startDate, LocalDateTime endDate);
+    @Query( "select t from Transactions t where t.sale.business.merchantId=:merchantId and t.sale.terminal.terminalId=:terminalId and t.date between :startDate and :endDate")
+    public List<Transactions> getTransactionsByMerchantIdAndTerminalIdAndDateBetween(String merchantId, String terminalId, LocalDateTime startDate, LocalDateTime endDate);
+    @Query( "select t from Transactions t where t.sale.business.merchantId=:merchantId and t.sale.terminal.terminalId=:terminalId")
+    public List<Transactions> getTransactionsByMerchantIdAndTerminalId(String merchantId, String terminalId);
     @Query( "select t from Transactions t where t.sale.business.businessId=:businessId and t.date between :startDate and :endDate")
     public List<Transactions> getTransactionsByBusinessIdAndDateBetween(Long businessId, LocalDateTime startDate, LocalDateTime endDate);
 }

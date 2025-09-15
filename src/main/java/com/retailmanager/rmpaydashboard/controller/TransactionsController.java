@@ -39,6 +39,10 @@ public class TransactionsController {
     public ResponseEntity<?> updateTransaction(@PathVariable String transactionId, @Valid @RequestBody TransactionDTO transactionDTO) {
         return transactionService.updateTransaction(transactionId, transactionDTO);
     }
+    @PutMapping("/{transactionId}/status/{status}")
+    public ResponseEntity<?> updateTransactionStatus(@PathVariable String transactionId, @PathVariable String status) {
+        return transactionService.updateStatus(transactionId, status);
+    }
 
     /**
      * Save multiple transactions.
@@ -62,10 +66,15 @@ public class TransactionsController {
     @GetMapping("/merchant/{merchantId}")
     public ResponseEntity<?> getTransactionsByMerchantId(
             @Valid @PathVariable @NotBlank(message = "El merchantId no puede estar vacío") String merchantId,
-            @RequestParam("startDate") @NotNull LocalDate startDate,
-            @RequestParam("endDate") @NotNull LocalDate endDate) {
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+            @RequestParam(required=false)  String terminalId,
+            @RequestParam( required = false)  LocalDate startDate,
+            @RequestParam( required = false)  LocalDate endDate) {
+        
+        LocalDateTime startDateTime = (startDate != null) ? startDate.atStartOfDay() : null;
+        LocalDateTime endDateTime = (endDate != null) ? endDate.atTime(23, 59, 59) : null;
+        if(terminalId!=null && !terminalId.isEmpty()){
+            return transactionService.getTransactionsByMerchantId(merchantId, terminalId, startDateTime, endDateTime);
+        }
         return transactionService.getTransactionsByMerchantId(merchantId, startDateTime, endDateTime);
     }
 

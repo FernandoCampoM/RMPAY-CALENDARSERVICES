@@ -2,6 +2,7 @@ package com.retailmanager.rmpaydashboard.services.DTO;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.retailmanager.rmpaydashboard.models.Transactions;
 
 import jakarta.validation.constraints.NotBlank;
@@ -27,7 +28,7 @@ public class TransactionDTO {
  private String cardType;
 
  private Double changeChash;
-
+@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
  private LocalDateTime date;
 
  private String entryMode;
