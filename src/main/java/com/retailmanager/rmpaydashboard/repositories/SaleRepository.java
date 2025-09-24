@@ -39,8 +39,11 @@ public interface SaleRepository extends CrudRepository<Sale, String>  {
      */
     //
     public List<Sale> findBySaleTransactionTypeAndBusiness(String saleTransactionType, Business business);
+    public List<Sale> findByBusiness( Business business);
     @Query("SELECT s FROM Sale s WHERE s.saleTransactionType = :saleTransactionType AND s.terminal.terminalId = :terminalId AND s.business.merchantId = :merchantId")
     public List<Sale> findByMerchantIdAndTerminalId(String saleTransactionType, String terminalId, String merchantId);
+    @Query("SELECT s FROM Sale s WHERE s.terminal.terminalId = :terminalId AND s.business.merchantId = :merchantId")
+    public List<Sale> findByMerchantIdAndTerminalId( String terminalId, String merchantId);
     /**
      * Obtiene las ventas entre dos fechas y por tipo de transacción y estado e identificador de comercio.
      *
@@ -67,7 +70,7 @@ public interface SaleRepository extends CrudRepository<Sale, String>  {
                 "  (SELECT sum(saleTotalAmount) \r\n" + 
                 "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as totalSales,\r\n" + 
                 "  \r\n" + 
-                "  (SELECT sum(saleToRefund) \r\n" + 
+                "  (SELECT sum(saleTotalAmount) \r\n" + 
                 "  FROM [RMPAY].[dbo].[Sale] where saleEndDate BETWEEN :startDate AND :endDate AND saleTransactionType IN ('REFUND','PARTIAL_REFUND') AND saleStatus IN ('REFUNDED','PARTIAL_REFUNDED') and businessId=:businessId )as totalRefund,\r\n" + 
                 "\r\n" + 
                 "  (SELECT sum(saleStateTaxAmount)\r\n" + 
@@ -87,7 +90,7 @@ public interface SaleRepository extends CrudRepository<Sale, String>  {
                 "  (SELECT sum(saleTotalAmount) \r\n" + 
                 "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType='SALE'AND saleStatus='SUCCEED' and businessId=:businessId ) as totalSales,\r\n" + 
                 "  \r\n" + 
-                "  (SELECT sum(saleToRefund) \r\n" + 
+                "  (SELECT sum(saleTotalAmount) \r\n" + 
                 "  FROM [RMPAY].[dbo].[Sale] where YEAR(saleEndDate) = :year AND saleTransactionType IN ('REFUND','PARTIAL_REFUND') AND saleStatus IN ('REFUNDED','PARTIAL_REFUNDED') and businessId=:businessId )as totalRefund,\r\n" + 
                 "\r\n" + 
                 "  (SELECT sum(saleStateTaxAmount)\r\n" + 

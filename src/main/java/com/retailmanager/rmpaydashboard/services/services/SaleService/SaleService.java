@@ -100,7 +100,7 @@ public class SaleService implements ISaleService {
         if(business==null){
             throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
         }
-        List<Sale> sales = this.serviceDBSale.findBySaleTransactionTypeAndBusiness("SALE", business);
+        List<Sale> sales = this.serviceDBSale.findByBusiness( business);
 
         
 
@@ -264,8 +264,8 @@ List<SaleDTO> salesDTO = sales.stream()
         if(business==null){
             throw new EntidadNoExisteException("El Business con merchantId "+merchantId+" no existe en la Base de datos");
         }
-        List<Sale> sales = this.serviceDBSale.findByMerchantIdAndTerminalId("SALE", terminalId, merchantId);
-
+        List<Sale> sales = this.serviceDBSale.findByMerchantIdAndTerminalId(terminalId, merchantId);
+       
         List<SaleDTO> salesDTO = sales.stream()
             .map(sale -> {
         SaleDTO saleDTO = SaleDTO.fromEntity(sale);

@@ -69,8 +69,8 @@ public class Sale {
     //@Column(name = "merchantId", nullable = false)
     //private String merchantId;
 
-    @Column(name = "saleToRefund")
-    private Integer saleToRefund;
+    @Column(name = "saleToRefund",columnDefinition = "varchar(MAX)")
+    private String saleToRefund;
 
     @Column(nullable = false, columnDefinition = "float default 0")
     private Double tipAmount;
