@@ -1,4 +1,4 @@
-# RMPAYDASHBOARD
+# RMPAYCALENDARSERVICES
  RMPY CALENDAR SERVICES ofrece herramientas y recursos de API que le permiten gestioanar y sincronizar los servicios de Calendario para DASBOARD DE RMPAY
  La documentación de los servicios se encuenra en 
  ```plaintext

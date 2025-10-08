@@ -1,7 +1,0 @@
-Product Id,Barcode,Code,Name,Description,Cost,Price,Category,Estatal Tax,Municipal Tax,Inventory Level,Minimum Level,Maximum Level,Enable
-3,XZY789,A123,Product A,Description A,15.0,25.0,Electronics Update,true,false,120,15,180,true
-4,LMN456,B456,Product B,Description B,18.0,30.0,Electronics Update,true,false,90,20,150,true
-5,PQR123,C789,Product C,Description C,20.0,35.0,Electronics Update,true,false,80,18,160,true
-6,ABC567,D012,Product D,Description D,22.0,40.0,Electronics Update,true,false,110,25,140,true
-7,XYZ890,E345,Product E,Description E,25.0,45.0,Electronics Update,true,false,95,22,170,true
-2,ABC1233,P1234,Product Name,Product Description,10.0,20.0,Electronics Update,true,false,100,10,200,true
