@@ -79,11 +79,16 @@ public class ScheduleCalendarController {
      * @param employeeId the ID of the employee
      * @return the ResponseEntity containing all schedule calendars for the specified employee
      */
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<?> getAll( @RequestParam(name = "employeeId", required = false) @Positive(message = "employeeId.positive") Long employeeId,
     @RequestParam(name = "businessId", required = false) @Positive(message = "businessId.positive") Long businessId) {
         if(businessId != null) return scheduleCalendarService.getAllByBusinessId(businessId);
         if(employeeId != null) return scheduleCalendarService.getAll(employeeId);
         return scheduleCalendarService.getAll(employeeId);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAll() {
+        return scheduleCalendarService.getAll();
     }
 }

@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.modelmapper.ModelMapper; 
+import com.retailmanager.rmpayCalendar.services.DTO.AvailableSchedulesDTO;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -146,6 +147,14 @@ public class ScheduleCalendarService implements IScheduleCalendarService {
     .collect(Collectors.toList()); 
         
         return new ResponseEntity<Iterable<ScheduleCalendarDTO>>(listScheduleCalendarDTO, HttpStatus.OK);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAll() {
+        return ResponseEntity.ok(StreamSupport.stream(scheduleDBService.findAll().spliterator(), true)
+                .map(e -> this.mapper.map(e, ScheduleCalendarDTO.class))
+                .collect(Collectors.toList()));
     }
 
 @Override

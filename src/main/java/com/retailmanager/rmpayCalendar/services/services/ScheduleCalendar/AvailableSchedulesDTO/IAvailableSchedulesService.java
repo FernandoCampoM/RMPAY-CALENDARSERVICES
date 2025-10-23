@@ -10,5 +10,6 @@ public interface IAvailableSchedulesService {
     public boolean delete(Long asId);
     public ResponseEntity<?> findById(Long serviceId);
     public ResponseEntity<?> getAll(Long employeeId);
+    ResponseEntity<?> getAll();
     public ResponseEntity<?> getAllByBusinessId(Long prmBusinessId);
 }

@@ -1,6 +1,7 @@
 package com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar.AvailableSchedulesDTO;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -98,6 +99,17 @@ public class AvailableSchedulesService implements IAvailableSchedulesService {
             .collect(Collectors.toList());
         return new ResponseEntity<>(scheduleDTOs, HttpStatus.OK);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAll(){
+        return ResponseEntity.ok(StreamSupport.stream(availableSchedulesRepository.findAll().spliterator(), true)
+                .map(e -> this.mapper.map(e, AvailableSchedulesDTO.class))
+                .collect(Collectors.toList()));
+
+    }
+
+
 @Override
 @Transactional(readOnly = true)
 public ResponseEntity<?> getAllByBusinessId(Long businessId) {
