@@ -8,8 +8,9 @@ import java.nio.file.Paths;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-
+@EnableJpaAuditing
 @SpringBootApplication
 public class RmpaydashboardApplication {
 

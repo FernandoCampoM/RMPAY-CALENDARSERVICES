@@ -14,4 +14,5 @@ public class AvailableSchedulesDTO {
     private String title;
     private String duration; // Ejemplo: "01:30"
     private Long employeeID; // Relación con UsersBusiness
+    private String color;
 }
