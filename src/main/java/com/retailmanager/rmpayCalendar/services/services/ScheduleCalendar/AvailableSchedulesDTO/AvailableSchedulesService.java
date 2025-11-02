@@ -134,6 +134,7 @@ public ResponseEntity<?> update(Long asId, AvailableSchedulesDTO prmSchedule) {
         }
         objSchedule.setDuration(prmSchedule.getDuration());
         objSchedule.setTitle(prmSchedule.getTitle());
+        objSchedule.setColor(prmSchedule.getColor());
         availableSchedulesRepository.save(objSchedule);
         AvailableSchedulesDTO objScheduleCalendarDTO=this.mapper.map(objSchedule, AvailableSchedulesDTO.class);
         //objScheduleCalendarDTO.setEmployeeId(objSchedule.getEmployee().getUserBusinessId());
