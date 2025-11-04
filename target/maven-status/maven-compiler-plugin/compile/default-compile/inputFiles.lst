@@ -10,9 +10,7 @@ D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\controller\ScheduleCalendarController.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\models\AvailableSchedules.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\ErrorUtils.java
-D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\repositories\Sys_general_configRepository.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\services\DTO\AvailableSchedulesDTO.java
-D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\security\Token.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\services\DTO\ScheduleCalendarDTO.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\ConfigurationNotFoundException.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\Error.java
@@ -28,9 +26,7 @@ D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\repositories\ScheduleCalendarRepository.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\services\mapper\Mapper.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\utils\Utils.java
-D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\models\Sys_general_config.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\services\services\ScheduleCalendar\AvailableSchedulesDTO\AvailableSchedulesService.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\services\services\ScheduleCalendar\IScheduleCalendarService.java
-D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\security\AuthCredentials.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\models\ScheduleCalendar.java
 D:\Trabajo\RMPAY-CALENDARSERVICES\src\main\java\com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\InvalidToken.java

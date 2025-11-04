@@ -1,5 +1,7 @@
 package com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar.AvailableSchedulesDTO;
 
+import java.time.LocalDate;
+
 import org.springframework.http.ResponseEntity;
 
 import com.retailmanager.rmpayCalendar.services.DTO.AvailableSchedulesDTO;

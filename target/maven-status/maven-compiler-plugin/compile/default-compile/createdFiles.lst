@@ -1,11 +1,9 @@
 com\retailmanager\rmpayCalendar\enums\Rol.class
 com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\InvalidToken.class
 com\retailmanager\rmpayCalendar\enums\EmployeeRole.class
-com\retailmanager\rmpayCalendar\repositories\Sys_general_configRepository.class
 com\retailmanager\rmpayCalendar\controller\ScheduleCalendarController.class
 com\retailmanager\rmpayCalendar\services\mapper\ListToJsonConverter.class
 com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\ErrorUtils.class
-com\retailmanager\rmpayCalendar\models\Sys_general_config.class
 com\retailmanager\rmpayCalendar\config\CorsConfig.class
 com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\ConsumeAPIException.class
 com\retailmanager\rmpayCalendar\services\DTO\ScheduleCalendarDTO.class
@@ -27,7 +25,6 @@ com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\ConfigurationNot
 com\retailmanager\rmpayCalendar\services\DTO\AvailableSchedulesDTO.class
 com\retailmanager\rmpayCalendar\RmpaydashboardApplication.class
 com\retailmanager\rmpayCalendar\controller\AvailableSchedulesController.class
-com\retailmanager\rmpayCalendar\security\AuthCredentials.class
 com\retailmanager\rmpayCalendar\config\CorsConfig$1.class
 com\retailmanager\rmpayCalendar\utils\Utils.class
 com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\UserDisabled.class
@@ -36,4 +33,3 @@ com\retailmanager\rmpayCalendar\services\services\ScheduleCalendar\ScheduleCalen
 com\retailmanager\rmpayCalendar\exceptionControllers\exceptions\EntidadYaExisteException.class
 com\retailmanager\rmpayCalendar\services\services\ScheduleCalendar\AvailableSchedulesDTO\AvailableSchedulesService.class
 com\retailmanager\rmpayCalendar\repositories\AvailableSchedulesRepository.class
-com\retailmanager\rmpayCalendar\security\Token.class

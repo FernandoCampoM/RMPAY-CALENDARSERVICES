@@ -1,26 +1,26 @@
 version: '3.8'
 services:
-  RMPAYsqlserver19:
+  RMPAYCalendarsqlserver19:
     image: mcr.microsoft.com/mssql/server:2019-latest
     restart: always
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: Colombia@602
     ports:
-      - "14334:1433"
+      - "14335:1433"
     volumes:
       - ./sql_data:/var/opt/mssql/data
   spring-boot-app:
-    container_name: RMPAYService
-    image: rmpayservice
+    container_name: RMPAYCalendarservice
+    image: RMPAYCalendarservice
     restart: always
     environment:
-      SQL_URL: jdbc:sqlserver://RMPAYsqlserver19:1433;database=RMPAY;TrustServerCertificate=True
+      SQL_URL: jdbc:sqlserver://RMPAYCalendarsqlserver19:1433;database=RMPAYCalendar;TrustServerCertificate=True
       SQL_USER: SA
       SQL_PASSWORD: Colombia@602
       spring_profiles_active: docker
       hibernate_ddl_auto: create
     ports:
-      - "9094:9092"
+      - "9194:9092"
     volumes:
       - ./images:/workspace/images

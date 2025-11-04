@@ -1,5 +1,7 @@
 package com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -136,6 +138,19 @@ public class ScheduleCalendarService implements IScheduleCalendarService {
  * @param employeeId the ID of the employee for whom to retrieve ScheduleCalendar entries
  * @return a ResponseEntity containing a list of ScheduleCalendarDTO objects with HTTP status OK
  */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAll(Long employeeId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+        Iterable<ScheduleCalendar> listScheduleCalendar=scheduleDBService.findByEmployeeId(employeeId, startDateTime, endDateTime);
+        List<ScheduleCalendarDTO> listScheduleCalendarDTO = StreamSupport
+    .stream(listScheduleCalendar.spliterator(), false) // Convierte el Iterable en un Stream
+    .map(schedule -> mapper.map(schedule, ScheduleCalendarDTO.class)) // Mapea cada elemento
+    .collect(Collectors.toList()); 
+        
+        return new ResponseEntity<Iterable<ScheduleCalendarDTO>>(listScheduleCalendarDTO, HttpStatus.OK);
+    }
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<?> getAll(Long employeeId) {
