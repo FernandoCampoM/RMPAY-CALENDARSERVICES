@@ -37,7 +37,7 @@ public class AvailableSchedules {
     @Column(nullable = false)
     private String duration; // Ejemplo: "01:30" (HH:mm)
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT '#0d6efd'")
     private String color = "#0d6efd";
 
     private Long employeeID;
