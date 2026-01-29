@@ -34,3 +34,4 @@ target/surefire-reports/2025-03-05T11-33-57_317.dumpstream
 target/RMPAYservice.jar.original
 target/surefire-reports/com.retailmanager.rmpaydashboard.RmpaydashboardApplicationTests.txt
 target/surefire-reports/TEST-com.retailmanager.rmpaydashboard.RmpaydashboardApplicationTests.xml
+target/classes/localhost.p12
