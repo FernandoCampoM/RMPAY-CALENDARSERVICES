@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.http.ResponseEntity;
 
-import com.retailmanager.rmpayCalendar.models.ScheduleCalendar;
+import com.retailmanager.rmpayCalendar.db1.entity.ScheduleCalendar;
 import com.retailmanager.rmpayCalendar.services.DTO.ScheduleCalendarDTO;
 
 public interface IScheduleCalendarService {

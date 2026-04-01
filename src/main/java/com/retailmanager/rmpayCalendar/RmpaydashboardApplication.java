@@ -5,18 +5,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import com.retailmanager.rmpayCalendar.backgroundRoutines.ShopifyRoutines;
+
 @EnableJpaAuditing
 @SpringBootApplication
+@EnableRabbit
 public class RmpaydashboardApplication {
+
+    
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext context=SpringApplication.run(RmpaydashboardApplication.class, args);
 		createIfNoExistsFolder();
+        ShopifyRoutines routines=new ShopifyRoutines(context);
+        routines.start();
 
 	}
 	private static void createIfNoExistsFolder() {
