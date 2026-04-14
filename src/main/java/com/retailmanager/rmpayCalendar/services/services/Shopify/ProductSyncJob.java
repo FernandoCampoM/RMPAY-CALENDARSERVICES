@@ -19,6 +19,6 @@ public class ProductSyncJob {
 
         List<PosProduct> products = posClientService.getAllProducts();
 
-        productSyncService.processProducts(products);
+        productSyncService.processProducts(products.subList(0, 5));
     }
 }

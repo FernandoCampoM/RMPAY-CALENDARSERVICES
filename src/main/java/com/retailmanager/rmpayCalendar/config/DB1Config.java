@@ -29,12 +29,14 @@ import jakarta.persistence.EntityManagerFactory;
 )
 public class DB1Config {
 
-    @Primary
-    @Bean
-    @ConfigurationProperties(prefix = "spring.datasource.db1")
-    public DataSource db1DataSource() {
-        return DataSourceBuilder.create().build();
-    }
+   @Primary
+@Bean
+@ConfigurationProperties(prefix = "spring.datasource.db1")
+public DataSource db1DataSource() {
+    return DataSourceBuilder.create()
+            .type(com.zaxxer.hikari.HikariDataSource.class)
+            .build();
+}
 
     @Primary
     @Bean
@@ -45,8 +47,8 @@ public class DB1Config {
 
         // 🔥 CONFIGURACIÓN CLAVE
         properties.put("hibernate.hbm2ddl.auto", "update");
-        properties.put("hibernate.dialect", "org.hibernate.dialect.SQLServer2012Dialect");
-        properties.put("hibernate.show_sql", true);
+        properties.put("hibernate.dialect", "org.hibernate.dialect.SQLServerDialect");
+        properties.put("hibernate.show_sql", false);
         properties.put("hibernate.format_sql", true);
 
         return builder

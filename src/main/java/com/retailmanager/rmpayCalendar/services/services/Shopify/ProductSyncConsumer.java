@@ -23,7 +23,8 @@ public class ProductSyncConsumer {
     private final IShopifyService shopifyService;
     private final ProductSyncRepository repository;
 
-    @RabbitListener(queues = "shopify.product.queue")
+                        // TODO:DESCOMENTAR SI SE USAN COLAS
+    //@RabbitListener(queues = "shopify.product.queue") 
     public void process(ProductSyncEvent event) {
 
         PosProduct product = event.getProduct();

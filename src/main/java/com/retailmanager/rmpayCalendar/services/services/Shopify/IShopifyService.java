@@ -10,5 +10,6 @@ public interface IShopifyService {
     public void updateProduct(PosProduct product, ProductSync sync);
 
     public void updateInventory(String inventoryItemId, int quantity);
+    public void publishProductInAllChannels(String productId);
 public ShopifyResponse findBySku(String sku);
 }

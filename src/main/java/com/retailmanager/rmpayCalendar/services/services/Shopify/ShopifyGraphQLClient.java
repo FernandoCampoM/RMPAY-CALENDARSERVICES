@@ -46,4 +46,26 @@ public class ShopifyGraphQLClient {
 
         return response.getBody();
     }
+    @SuppressWarnings("null")
+    public String execute(String query, Map<String, Object> variables) {
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("X-Shopify-Access-Token", token);
+
+    Map<String, Object> body = Map.of(
+        "query", query,
+        "variables", variables
+    );
+    System.out.println("body: "+body);
+    System.out.println("body: "+body.toString());
+    HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+    ResponseEntity<String> response =
+            restTemplate.postForEntity(url, request, String.class);
+
+    log.info("Shopify response: {}", response.getBody());
+
+    return response.getBody();
+}
 }

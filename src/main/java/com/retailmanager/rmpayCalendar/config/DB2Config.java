@@ -28,11 +28,13 @@ import jakarta.persistence.EntityManagerFactory;
 )
 public class DB2Config {
 
-    @Bean
-    @ConfigurationProperties(prefix = "spring.datasource.db2")
-    public DataSource db2DataSource() {
-        return DataSourceBuilder.create().build();
-    }
+@Bean
+@ConfigurationProperties(prefix = "spring.datasource.db2")
+public DataSource db2DataSource() {
+    return DataSourceBuilder.create()
+            .type(com.zaxxer.hikari.HikariDataSource.class)
+            .build();
+}
 
     @Bean
     public LocalContainerEntityManagerFactoryBean db2EntityManagerFactory(
@@ -41,9 +43,9 @@ public class DB2Config {
         Map<String, Object> properties = new HashMap<>();
 
         // 🔥 CONFIGURACIÓN CLAVE PARA DB EXTERNA / LEGACY
-        properties.put("hibernate.hbm2ddl.auto", "updates"); // 🚨 NO TOCAR LA DB
-        properties.put("hibernate.dialect", "org.hibernate.dialect.SQLServer2012Dialect");
-        properties.put("hibernate.show_sql", true);
+        properties.put("hibernate.hbm2ddl.auto", "update"); // 🚨 NO TOCAR LA DB
+        properties.put("hibernate.dialect", "org.hibernate.dialect.SQLServerDialect");
+        properties.put("hibernate.show_sql", false);
         properties.put("hibernate.format_sql", true);
 
         return builder

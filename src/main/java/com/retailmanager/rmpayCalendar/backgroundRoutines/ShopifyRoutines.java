@@ -14,12 +14,15 @@ public class ShopifyRoutines extends Thread {
         productSyncJob=context.getBean(ProductSyncJob.class);
     }
     public void run(){
-        System.out.println("RUTINA DE SINCORNIZACION DE SHOPIFY COMENZANDO...");
+        System.out.println("<<<<<<RUTINA DE SINCORNIZACION DE SHOPIFY COMENZANDO...>>>>>>>>");
        //Obtener fecha y hora actual
          Calendar now = Calendar.getInstance();
          // Establece la hora y el minuto en que deseas que se dispare el evento
-        int hour = 1;   // Hora en formato de 24 horas
+        int hour = 1;
+        hour = now.get(Calendar.HOUR_OF_DAY);   // Hora en formato de 24 horas
         int minute = 0; // Minuto
+        minute = now.get(Calendar.MINUTE)+1;
+        System.out.println(">>>>>>>>>>>>>><<<<<<<<<<<La hora programada es: " + hour + ":" + minute);
         // Calcula la próxima fecha en que se debe disparar el evento
         Calendar nextExecutionTime = Calendar.getInstance();
         nextExecutionTime.set(Calendar.HOUR_OF_DAY, hour);
