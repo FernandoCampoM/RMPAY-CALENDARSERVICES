@@ -186,7 +186,6 @@ public class ProductSyncService {
                 shopifyService.updateInventory(response.getInventoryItemId(), product.getCurrentStock());
                 shopifyService.publishProductInAllChannels(response.getProductId());
 
-
                 // 🔥 2. GUARDAR EN DB
                 ProductSync sync = new ProductSync();
                 sync.setProductCode(product.getProductCode());
