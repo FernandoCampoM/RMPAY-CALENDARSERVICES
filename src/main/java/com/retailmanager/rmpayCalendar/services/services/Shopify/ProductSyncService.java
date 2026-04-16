@@ -13,6 +13,7 @@ import com.retailmanager.rmpayCalendar.db2.repository.ProductSyncRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
 import com.retailmanager.rmpayCalendar.enums.SyncAction;
 import com.retailmanager.rmpayCalendar.models.ShopifyResponse;
+import com.retailmanager.rmpayCalendar.services.DTO.ShopifyPublication;
 import com.retailmanager.rmpayCalendar.utils.HashUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +35,9 @@ public class ProductSyncService {
         Boolean isFirstRun = isFirstRunS == null ? false : (isFirstRunS.equals("true") ? true : false);
 
         LocalDateTime now = LocalDateTime.now();
-
+        
         for (PosProduct product : products) {
-
+            
             String hash = HashUtils.generateProductHash(product);
 
             ProductSync existing = repository.findByProductCode(product.getProductCode());
@@ -62,6 +63,14 @@ public class ProductSyncService {
                         sync.setLastSeen(LocalDateTime.now());
 
                         repository.save(sync);
+                        shopifyService.updateInventory(found.getInventoryItemId(), product.getCurrentStock());
+                        List<String> channels = shopifyService.getPublicationIdsByProduct(found.getProductId());
+                        List<ShopifyPublication> publications = shopifyService.getAvailablePublications();
+                        for (ShopifyPublication publication : publications) {
+                            if (!channels.contains(publication.getId())) {
+                                shopifyService.publishProduct(found.getProductId(), publication.getId());
+                            }
+                        }
 
                     } else {
 
@@ -86,6 +95,8 @@ public class ProductSyncService {
                         event.setAction(SyncAction.CREATE);
                         event.setHash(hash);
                         process(event);
+
+
                 }
 
             } else if (!existing.getHash().equals(hash)) {
@@ -100,6 +111,13 @@ public class ProductSyncService {
                         event.setAction(SyncAction.UPDATE);
                         event.setHash(hash);
                         process(event);
+                        List<String> channels = shopifyService.getPublicationIdsByProduct(existing.getShopifyProductId());
+                        List<ShopifyPublication> publications = shopifyService.getAvailablePublications();
+                        for (ShopifyPublication publication : publications) {
+                            if (!channels.contains(publication.getId())) {
+                                shopifyService.publishProduct(existing.getShopifyProductId(), publication.getId());
+                            }
+                        }
             }
         }
         if(isFirstRun) {

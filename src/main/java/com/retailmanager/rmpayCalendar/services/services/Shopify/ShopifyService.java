@@ -98,34 +98,123 @@ public ShopifyResponse createProduct(PosProduct product) {
         return parseProductSetResponse(response);
 
     } catch (Exception e) {
-        log.error("Error creando producto en Shopify", e);
+        System.out.println("Error en com.retailmanager.rmpayCalendar.services.services.Shopify.ShopifyService.createProduct: " + e.getMessage());
+        log.error("Error en com.retailmanager.rmpayCalendar.services.services.Shopify.ShopifyService.createProduct", e);
         throw new RuntimeException("Error creando producto en Shopify", e);
     }
 }
 
-    @Override
+@Override
 public void updateProduct(PosProduct product, ProductSync sync) {
+    try {
 
-    String mutation = String.format("""
-        mutation {
-          productVariantUpdate(input: {
-            id: "%s",
-            price: "%s"
-          }) {
-            productVariant {
+        String mutation = """
+        mutation productSet($input: ProductSetInput!, $sync: Boolean!) {
+          productSet(synchronous: $sync, input: $input) {
+            product {
               id
+              title
+              variants(first: 1) {
+                edges {
+                  node {
+                    id
+                    price
+                    barcode
+                  }
+                }
+              }
+            }
+            userErrors {
+              field
+              message
             }
           }
         }
-        """,
-        sync.getShopifyVariantId(),
-        product.getPrice()
-    );
+        """;
 
-    try {
-        executeWithRetry(mutation);
+        Map<String, Object> variables = Map.of(
+            "sync", true,
+            "input", Map.of(
+                "id", sync.getShopifyProductId(),
+                "title", product.getProductName(),
+
+                // 🔥 OBLIGATORIO cuando hay variants
+                "productOptions", List.of(
+                    Map.of(
+                        "name", "Title",
+                        "values", List.of(
+                            Map.of("name", product.getProductName())
+                        )
+                    )
+                ),
+
+                "variants", List.of(
+                    Map.of(
+                        "id", sync.getShopifyVariantId(),
+                        "price", product.getPrice(),
+                        "barcode", product.getBarCode() == null ? "" : product.getBarCode(),
+
+                        "optionValues", List.of(
+                            Map.of(
+                                "optionName", "Title",
+                                "name", product.getProductName()
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        String response = client.execute(mutation, variables);
+
+        validateUserErrors(response);
+
     } catch (Exception e) {
+        log.error("Error actualizando producto en Shopify", e);
         throw new RuntimeException("Error actualizando producto", e);
+    }
+}
+public void updateVariant(PosProduct product, ProductSync sync) {
+    try {
+
+        String mutation = """
+        mutation productVariantUpdate($input: ProductVariantInput!) {
+          productVariantUpdate(input: $input) {
+            productVariant {
+              id
+              price
+              barcode
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+        """;
+
+        Map<String, Object> variables = Map.of(
+            "input", Map.of(
+                "id", sync.getShopifyVariantId(),
+                "price", product.getPrice(),
+                "barcode", product.getBarCode() == null ? "" : product.getBarCode()
+            )
+        );
+
+        String response = client.execute(mutation, variables);
+
+        // 🔥 opcional: validar errores
+        validateUserErrors(response);
+
+    } catch (Exception e) {
+        log.error("Error actualizando variante en Shopify", e);
+        throw new RuntimeException("Error actualizando variante", e);
+    }
+}
+private void validateUserErrors(String response) {
+    if (response.contains("userErrors") && !response.contains("\"userErrors\":[]")) {
+        log.error("Errores en respuesta de Shopify: {}", response);
+        throw new RuntimeException("Shopify retornó errores");
     }
 }
 
@@ -515,7 +604,7 @@ public List<ShopifyPublication> getPublications() {
          * @param productId El ID del producto a publicar
          * @param publicationId El ID de la publicaci n en la que se va a publicar el producto
          */
-
+@Override
 public void publishProduct(String productId, String publicationId) {
     try {
 
@@ -587,6 +676,128 @@ public void publishProductInAllChannels(String productId) {
 
     } catch (Exception e) {
         throw new RuntimeException("Error publicando producto en todos los canales", e);
+    }
+}
+
+        /**
+         * Obtiene la lista de IDs de publicaciones para un producto dado.
+         * @param productId El ID del producto del que se desean obtener las publicaciones.
+         * @return La lista de IDs de publicaciones del producto.
+         * @throws RuntimeException Si ocurre un error al obtener la lista de publicaciones.
+         */
+        @Override
+public List<String> getPublicationIdsByProduct(String productId) {
+    try {
+
+        String query = """
+            query getProductPublications($id: ID!) {
+              product(id: $id) {
+                resourcePublications(first: 10) {
+                  edges {
+                    node {
+                      publication {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+        """;
+
+        Map<String, Object> variables = Map.of(
+            "id", productId
+        );
+
+        String response = client.execute(query, variables);
+
+        JsonNode edges = new ObjectMapper()
+            .readTree(response)
+            .path("data")
+            .path("product")
+            .path("resourcePublications")
+            .path("edges");
+
+        List<String> publicationIds = new ArrayList<>();
+
+        if (edges.isArray()) {
+            for (JsonNode edge : edges) {
+                String pubId = edge
+                    .path("node")
+                    .path("publication")
+                    .path("id")
+                    .asText();
+
+                if (pubId != null && !pubId.isEmpty()) {
+                    publicationIds.add(pubId);
+                }
+            }
+        }
+
+        return publicationIds;
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error obteniendo publications del producto", e);
+    }
+}
+public List<ShopifyPublication> getAvailablePublications(){
+
+    if(publications == null) {
+        publications = getPublications();
+    }else if(publications.size() == 0) {
+        publications = getPublications();
+    }
+
+    return publications;
+}
+        /**
+         * Obtiene una lista de las 10 últimas órdenes
+         * @return Una cadena JSON con la lista de órdenes
+         * @throws RuntimeException Si ocurre un error al obtener la lista de órdenes
+         */
+@Override
+public String getRecentOrders() {
+    try {
+
+        String query = """
+            query {
+              orders(first: 10, sortKey: CREATED_AT, reverse: true) {
+                edges {
+                  node {
+                    id
+                    name
+                    createdAt
+                    totalPriceSet { shopMoney { amount } }
+                    subtotalPriceSet { shopMoney { amount } }
+                    totalDiscountsSet { shopMoney { amount } }
+                    customer {
+                      firstName
+                      phone
+                    }
+                    billingAddress {
+                      address1
+                    }
+                    lineItems(first: 20) {
+                      edges {
+                        node {
+                          name
+                          quantity
+                          originalUnitPriceSet {
+                            shopMoney { amount }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+        """;
+
+        return client.execute(query, null);
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error obteniendo órdenes", e);
     }
 }
 }

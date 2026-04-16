@@ -57,8 +57,6 @@ public class ShopifyGraphQLClient {
         "query", query,
         "variables", variables
     );
-    System.out.println("body: "+body);
-    System.out.println("body: "+body.toString());
     HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
     ResponseEntity<String> response =
