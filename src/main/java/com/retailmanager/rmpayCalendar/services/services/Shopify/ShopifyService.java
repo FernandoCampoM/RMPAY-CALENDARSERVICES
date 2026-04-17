@@ -20,16 +20,26 @@ import com.retailmanager.rmpayCalendar.db2.entity.ProductSync;
 import com.retailmanager.rmpayCalendar.models.ShopifyResponse;
 import com.retailmanager.rmpayCalendar.services.DTO.ShopifyPublication;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class ShopifyService implements IShopifyService {
     @Autowired
     private  ShopifyGraphQLClient client;
-    @Value("${shopify.location-id}")
+    //@Value("${shopify.location-id}")
 private String LOCATION_ID;
     private final Semaphore semaphore = new Semaphore(2);
     private List<ShopifyPublication> publications = new ArrayList<>();
+    @PostConstruct
+    public void init() {
+        try {
+            this.LOCATION_ID=getShopLocationId();
+            System.out.println("✅ Location inicializado");
+        } catch (Exception e) {
+            System.out.println("⚠️ No se pudo inicializar el token al arranque");
+        }
+    }
 
     @Override
 public ShopifyResponse createProduct(PosProduct product) {
@@ -63,6 +73,7 @@ public ShopifyResponse createProduct(PosProduct product) {
             "sync", true,
             "input", Map.of(
                 "title", product.getProductName(),
+                "descriptionHtml", product.getWebDesc(),
                 "productType", product.getCategory(),
                 "vendor", "Mi Empresa",
                 "tags", List.of(product.getDepartment()),
@@ -137,6 +148,7 @@ public void updateProduct(PosProduct product, ProductSync sync) {
             "input", Map.of(
                 "id", sync.getShopifyProductId(),
                 "title", product.getProductName(),
+                "descriptionHtml", product.getWebDesc(),
 
                 // 🔥 OBLIGATORIO cuando hay variants
                 "productOptions", List.of(
@@ -164,12 +176,14 @@ public void updateProduct(PosProduct product, ProductSync sync) {
                 )
             )
         );
-
+        System.out.println("📦 Datos enviados a Shopify: " + variables);
+        System.out.println("📦 Mutation: " + mutation);
         String response = client.execute(mutation, variables);
 
         validateUserErrors(response);
 
     } catch (Exception e) {
+        System.out.println("Error actualizando producto en Shopify: " + e.getMessage());
         log.error("Error actualizando producto en Shopify", e);
         throw new RuntimeException("Error actualizando producto", e);
     }
@@ -222,7 +236,9 @@ private void validateUserErrors(String response) {
 public void updateInventory(String inventoryItemId, int quantity) {
 
     try {
-        
+        if(LOCATION_ID==null){
+            LOCATION_ID=getShopLocationId();
+        }
         // 1. Obtener inventario actual
         int currentQuantity = getCurrentInventory(inventoryItemId);
         if(currentQuantity == quantity) return;
@@ -756,13 +772,14 @@ public List<ShopifyPublication> getAvailablePublications(){
          * @throws RuntimeException Si ocurre un error al obtener la lista de órdenes
          */
 @Override
-public String getRecentOrders() {
+public String getNewOrders(String lastSyncDate) {
     try {
 
         String query = """
-            query {
-              orders(first: 10, sortKey: CREATED_AT, reverse: true) {
+            query getOrders($query: String!) {
+              orders(first: 50, sortKey: CREATED_AT, reverse: false, query: $query) {
                 edges {
+                  cursor
                   node {
                     id
                     name
@@ -777,7 +794,7 @@ public String getRecentOrders() {
                     billingAddress {
                       address1
                     }
-                    lineItems(first: 20) {
+                    lineItems(first: 50) {
                       edges {
                         node {
                           name
@@ -785,19 +802,90 @@ public String getRecentOrders() {
                           originalUnitPriceSet {
                             shopMoney { amount }
                           }
+                          variant {
+                            sku 
+                          }
                         }
                       }
                     }
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                }
+              }
+            }
+        """;
+
+        // 🔥 Filtro de fecha dinámica (IMPORTANTE: con Z)
+        String filter = "created_at:>" + lastSyncDate;
+
+        Map<String, Object> variables = Map.of(
+            "query", filter
+        );
+
+        return client.execute(query, variables);
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error obteniendo órdenes nuevas", e);
+    }
+}
+
+public String getShopLocationId() {
+    try {
+
+        String query = """
+            query {
+              locations(first: 10) {
+                edges {
+                  node {
+                    id
+                    name
                   }
                 }
               }
             }
         """;
 
-        return client.execute(query, null);
+        String response = client.execute(query);
+
+        JsonNode edges = new ObjectMapper()
+                .readTree(response)
+                .path("data")
+                .path("locations")
+                .path("edges");
+
+        String fallbackId = null;
+
+        if (edges.isArray()) {
+            for (JsonNode edge : edges) {
+
+                JsonNode node = edge.path("node");
+
+                String name = node.path("name").asText();
+                String id = node.path("id").asText();
+
+                // 🔥 Guardamos el primero como fallback
+                if (fallbackId == null && id != null && !id.isEmpty()) {
+                    fallbackId = id;
+                }
+
+                // 🔥 Si encontramos el ideal → retornamos
+                if ("Shop location".equalsIgnoreCase(name)) {
+                    return id;
+                }
+            }
+        }
+
+        // 🔥 Si no existe "Shop location", devolvemos el primero
+        if (fallbackId != null) {
+            return fallbackId;
+        }
+
+        throw new RuntimeException("No se encontraron locations");
 
     } catch (Exception e) {
-        throw new RuntimeException("Error obteniendo órdenes", e);
+        throw new RuntimeException("Error obteniendo Location ID", e);
     }
 }
 }

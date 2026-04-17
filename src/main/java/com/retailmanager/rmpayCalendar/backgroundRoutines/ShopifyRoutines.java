@@ -6,12 +6,15 @@ import java.util.TimerTask;
 
 import org.springframework.context.ConfigurableApplicationContext;
 
+import com.retailmanager.rmpayCalendar.services.services.Shopify.InvoiceSyncJob;
 import com.retailmanager.rmpayCalendar.services.services.Shopify.ProductSyncJob;
 
 public class ShopifyRoutines extends Thread {
     ProductSyncJob productSyncJob;
+    InvoiceSyncJob invoiceSyncJob;
     public ShopifyRoutines(ConfigurableApplicationContext context){
         productSyncJob=context.getBean(ProductSyncJob.class);
+        invoiceSyncJob=context.getBean(InvoiceSyncJob.class);
     }
     public void run(){
         System.out.println("<<<<<<RUTINA DE SINCORNIZACION DE SHOPIFY COMENZANDO...>>>>>>>>");
@@ -40,14 +43,15 @@ public class ShopifyRoutines extends Thread {
             @Override
             public void run() {
                 // Coloca aquí el código que deseas que se ejecute en el evento diario
-                
+                System.out.println("🔥 RUTINA DE SINCORNIZACION DE SHOPIFY EJECUTANDOSE...");
                 productSyncJob.execute();
+                invoiceSyncJob.execute();
             }
         };
 
         // Crea un Timer y programa el TimerTask para que se ejecute todos los días a la misma hora
         Timer timer = new Timer();
-        timer.schedule(task, initialDelay, 24 * 60 * 60 * 1000); // 24 horas en milisegundos
+        timer.schedule(task, initialDelay, 5 * 60 * 1000); // 24 horas en milisegundos
 
         // Espera indefinidamente para que el programa no finalice inmediatamente
         try {

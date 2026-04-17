@@ -17,6 +17,6 @@ public interface IShopifyService {
     public List<String> getPublicationIdsByProduct(String productId);
     public List<ShopifyPublication> getAvailablePublications();
     public void publishProduct(String productId, String publicationId) ;
-    public String getRecentOrders();
+    public String getNewOrders(String lastSyncDate);
 public ShopifyResponse findBySku(String sku);
 }

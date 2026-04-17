@@ -13,8 +13,24 @@ public interface Sys_general_configRepository extends CrudRepository<Sys_general
     @Query(value = "SELECT configvalue FROM ShopifyServiceDB.dbo.Sys_general_config WHERE configlabel = 'config.isFirstRun'", nativeQuery = true)
     String getIsFirstRun();
 
+    
+
     @Modifying
 @Transactional
 @Query(value = "UPDATE ShopifyServiceDB.dbo.Sys_general_config SET configvalue = :value WHERE configlabel = 'config.isFirstRun'", nativeQuery = true)
-int updateIsFirstRun(@Param("value") String value);
+void  updateIsFirstRun(@Param("value") String value);
+@Query(value = "SELECT configvalue FROM ShopifyServiceDB.dbo.Sys_general_config WHERE configlabel = 'config.lastSyncDate'", nativeQuery = true)
+String getLastSyncDate();
+@Modifying
+@Transactional
+@Query(value = "UPDATE ShopifyServiceDB.dbo.Sys_general_config SET configvalue = :value WHERE configlabel = 'config.lastSyncDate'", nativeQuery = true)
+void  updateLastSyncDate(@Param("value") String value);
+@Modifying
+@Transactional
+@Query(value = "INSERT INTO ShopifyServiceDB.dbo.Sys_general_config (configlabel, configname, configvalue) VALUES ('config.lastSyncDate', 'LAST SYNC DATE',   (SELECT FORMAT(GETUTCDATE(), 'yyyy-MM-ddTHH:mm:ss') + 'Z'))", nativeQuery = true)
+void initializeLastSyncDate();
+@Modifying
+@Transactional
+@Query(value = "INSERT INTO ShopifyServiceDB.dbo.Sys_general_config (configlabel, configname, configvalue) VALUES ('config.isFirstRun', 'IS FIRST RUN', 'true')", nativeQuery = true)
+void initializeIsFirstRun();
 }

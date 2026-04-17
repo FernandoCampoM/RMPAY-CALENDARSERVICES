@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -50,72 +51,326 @@ public class InvoiceSyncService {
     private Sys_general_configRepository configRepository;
     @Autowired
     private PosClientService posClientService;
+    private Map<String, Object> mapOrderFromQueryToInvoice(JsonNode order) {
+
+    Map<String, Object> invoice = new HashMap<>();
+
+    String orderName = order.path("name").asText("").replace("#", "");
+
+    double subtotal = order.path("subtotalPriceSet")
+            .path("shopMoney")
+            .path("amount").asDouble(0);
+
+    double total = order.path("totalPriceSet")
+            .path("shopMoney")
+            .path("amount").asDouble(0);
+
+    double discount = order.path("totalDiscountsSet")
+            .path("shopMoney")
+            .path("amount").asDouble(0);
+
+    // 🧾 HEADER
+    invoice.put("Factura", "KTEST" + orderName);
+    invoice.put("OrdenNumero", orderName);
+    invoice.put("Cliente", "0000");
+
+    // 🔥 FECHAS (GraphQL usa createdAt)
+    String createdAt = order.path("createdAt").asText();
+
+    OffsetDateTime dateTime = OffsetDateTime.parse(createdAt);
+
+    String fecha = dateTime.toLocalDate().toString();
+    String hora = dateTime.toLocalDateTime().withNano(0).toString();
+
+    invoice.put("Fecha", fecha);
+    invoice.put("Hora", hora);
+
+    invoice.put("Vendedor", 1);
+    invoice.put("Via", 1);
+    invoice.put("Terminos", 1);
+    invoice.put("Transaccion", 50);
+    invoice.put("Salesman", 1);
+    invoice.put("EstadoActual", 1);
+
+    invoice.put("ClienteOrdenNum", orderName);
+
+    invoice.put("Subtotal", subtotal);
+    invoice.put("Descuento", discount);
+    invoice.put("Total", total);
+
+    invoice.put("CityTax", 0.0);
+    invoice.put("StateTax", 0.0);
+
+    // 🧾 ITEMS (GraphQL cambia estructura)
+    List<Map<String, Object>> items = new ArrayList<>();
+
+    int totalPiezas = 0;
+
+    for (JsonNode edge : order.path("lineItems").path("edges")) {
+
+        JsonNode item = edge.path("node");
+
+        double price = item.path("originalUnitPriceSet")
+                .path("shopMoney")
+                .path("amount").asDouble(0);
+
+        int qty = item.path("quantity").asInt(0);
+
+        totalPiezas += qty;
+
+        Map<String, Object> detail = new HashMap<>();
+        String sku = item.path("variant").path("sku").asText();
+
+if (sku == null || sku.isEmpty()) {
+    sku = item.path("name").asText("SIN-SKU");
+}
+
+        detail.put("FacturaNumero", "KTEST" + orderName);
+        detail.put("Referencia", sku);
+        detail.put("CantidadOrdenada", qty);
+        detail.put("CantidadDespachada", qty);
+        detail.put("Precio", price);
+        detail.put("Costo", 0.0);
+        detail.put("TotalF", price * qty);
+        detail.put("UnidadID", 1);
+        detail.put("Descuento", 0.0);
+        detail.put("CityTx", 0.0);
+        detail.put("StateTx", 0.0);
+
+        items.add(detail);
+    }
+
+    invoice.put("NumeroPiezas", totalPiezas);
+
+    // 👤 Cliente
+    JsonNode customer = order.path("customer");
+    JsonNode billing = order.path("billingAddress");
+
+    invoice.put("Nombre", customer.path("firstName").asText("Caja Registradora"));
+    invoice.put("Telefono", customer.path("phone").asText(""));
+    invoice.put("Direccion1", billing.path("address1").asText(""));
+
+    // 💳 PAGOS DINÁMICOS
+double paidCash = 0.0;
+double paidDebit = 0.0;
+double paidCredit = 0.0;
+double paidCheck = 0.0;
+double paidAth = 0.0;
+
+JsonNode gateways = order.path("paymentGatewayNames");
+
+// Si no viene info → fallback a efectivo
+if (!gateways.isArray() || gateways.size() == 0) {
+    paidCash = total;
+} else {
+    for (JsonNode gatewayNode : gateways) {
+
+        String gateway = gatewayNode.asText("").toLowerCase();
+
+        if (gateway.contains("visa") || gateway.contains("mastercard") || gateway.contains("credit")) {
+            paidCredit += total;
+
+        } else if (gateway.contains("debit")) {
+            paidDebit += total;
+
+        } else if (gateway.contains("cash")) {
+            paidCash += total;
+
+        } else if (gateway.contains("ath")) {
+            paidAth += total;
+
+        } else if (gateway.contains("check")) {
+            paidCheck += total;
+
+        } else {
+            // 🔥 fallback inteligente
+            paidCash += total;
+        }
+    }
+}
+
+// Asignar al invoice
+invoice.put("PaidCash", paidCash);
+invoice.put("PaidDebitCard", paidDebit);
+invoice.put("PaidCreditCard", paidCredit);
+invoice.put("PaidCheck", paidCheck);
+invoice.put("PaidAthMovil", paidAth);
+
+    invoice.put("NCF", "");
+    invoice.put("Puntos", 0.0);
+    invoice.put("CompanyID", "1");
+
+    invoice.put("Items", items);
+
+    return invoice;
+}
 
     private Map<String, Object> mapOrderToInvoice(JsonNode order) {
 
-        Map<String, Object> invoice = new HashMap<>();
+    Map<String, Object> invoice = new HashMap<>();
 
-        invoice.put("Factura", order.path("name").asText());
-        invoice.put("OrdenNumero", order.path("name").asText());
-        invoice.put("Cliente", "0000");
+    // 🔹 Limpieza del número de orden (#9999 → 9999)
+    String orderName = order.path("name").asText("").replace("#", "");
 
-        invoice.put("Fecha", order.path("created_at").asText());
-        invoice.put("Hora", order.path("created_at").asText());
+    double subtotal = order.path("subtotal_price").asDouble(0);
+    double discount = order.path("total_discounts").asDouble(0);
+    double total = order.path("total_price").asDouble(0);
+    double tax = order.path("total_tax").asDouble(0);
 
-        invoice.put("Subtotal", order.path("subtotal_price").asDouble());
-        invoice.put("Descuento", order.path("total_discounts").asDouble());
-        invoice.put("Total", order.path("total_price").asDouble());
+    // 🧾 HEADER
+    invoice.put("Factura", "K" + orderName);
+    invoice.put("OrdenNumero", orderName);
+    invoice.put("Cliente", "0000");
 
-        invoice.put("Nombre", order.path("customer").path("first_name").asText(""));
-        invoice.put("Telefono", order.path("customer").path("phone").asText(""));
-        invoice.put("Direccion1", order.path("billing_address").path("address1").asText(""));
+    // ⚠️ POS suele querer fecha simple (no ISO completo)
+    String createdAt = order.path("created_at").asText();
 
-        // 💳 PAGOS
-        double total = order.path("total_price").asDouble();
-        invoice.put("PaidCash", total); // puedes mejorar luego
+// Convertir formato Shopify → quitar zona horaria
+OffsetDateTime dateTime = OffsetDateTime.parse(createdAt);
 
-        // 🧾 ITEMS
-        List<Map<String, Object>> items = new ArrayList<>();
+// Fecha (solo fecha)
+String fecha = dateTime.toLocalDate().toString();
 
-        for (JsonNode item : order.path("line_items")) {
+// Hora (datetime completo sin zona)
+String hora = dateTime.toLocalDateTime().withNano(0).toString();
 
-            double price = item.path("price").asDouble();
-            int qty = item.path("quantity").asInt();
+invoice.put("Fecha", fecha);
+invoice.put("Hora", hora);
 
-            Map<String, Object> detail = new HashMap<>();
-            detail.put("Nombre", item.path("name").asText());
-            detail.put("CantidadOrdenada", qty);
-            detail.put("CantidadDespachada", qty);
-            detail.put("Precio", price);
-            detail.put("TotalF", price * qty);
+    invoice.put("Vendedor", 1);
+    invoice.put("Via", 1);
+    invoice.put("Terminos", 1);
+    invoice.put("Transaccion", 50);
+    invoice.put("Salesman", 1);
+    invoice.put("EstadoActual", 1);
 
-            items.add(detail);
+    invoice.put("ClienteOrdenNum", orderName);
+
+    invoice.put("Subtotal", subtotal);
+    invoice.put("Descuento", discount);
+    invoice.put("Total", total);
+
+    // 🔥 Impuestos
+    invoice.put("CityTax", 0.0);
+    invoice.put("StateTax", tax);
+
+    // 🔢 Número de piezas
+    invoice.put("NumeroPiezas", order.path("line_items").size());
+
+    // 👤 Cliente
+    JsonNode customer = order.path("customer");
+    JsonNode billing = order.path("billing_address");
+
+    invoice.put("Nombre", customer.path("first_name").asText("Caja Registradora"));
+    invoice.put("Telefono", billing.path("phone").asText(""));
+    invoice.put("Direccion1", billing.path("address1").asText(""));
+
+    // 💳 PAGOS (simple por ahora)
+    invoice.put("PaidCash", total);
+    invoice.put("PaidDebitCard", 0.0);
+    invoice.put("PaidCreditCard", 0.0);
+    invoice.put("PaidCheck", 0.0);
+    invoice.put("PaidAthMovil", 0.0);
+
+    invoice.put("NCF", "");
+    invoice.put("Puntos", 0.0);
+    invoice.put("CompanyID", "1");
+
+    // 🧾 ITEMS
+    List<Map<String, Object>> items = new ArrayList<>();
+
+    for (JsonNode item : order.path("line_items")) {
+
+        double price = item.path("price").asDouble(0);
+        int qty = item.path("quantity").asInt(0);
+
+        Map<String, Object> detail = new HashMap<>();
+
+        detail.put("FacturaNumero", "K" + orderName);
+
+        // 🔥 Usa SKU si existe
+        String sku = item.path("sku").asText();
+        if (sku == null || sku.isEmpty()) {
+            sku = item.path("name").asText("SIN-SKU");
         }
 
-        invoice.put("Items", items);
+        detail.put("Referencia", sku);
 
-        return invoice;
+        detail.put("CantidadOrdenada", qty);
+        detail.put("CantidadDespachada", qty);
+        detail.put("Precio", price);
+        detail.put("Costo", 0.0);
+        detail.put("TotalF", price * qty);
+        detail.put("UnidadID", 1);
+        detail.put("Descuento", 0.0);
+
+        // 🔥 Impuestos por ítem (simple)
+        detail.put("CityTx", 0.0);
+        detail.put("StateTx", 0.0);
+
+        items.add(detail);
     }
 
-    public void syncOrdersToPOS() throws JsonMappingException, JsonProcessingException {
+    invoice.put("Items", items);
 
-        String response = shopifyService.getRecentOrders();
+    return invoice;
+}
+    public void syncOrdersToPOS(String lastSyncDate) throws Exception {
 
-        JsonNode orders = new ObjectMapper()
-                .readTree(response)
-                .path("data")
-                .path("orders")
-                .path("edges");
+    String response = shopifyService.getNewOrders(lastSyncDate);
 
-        for (JsonNode edge : orders) {
+    JsonNode orders = new ObjectMapper()
+            .readTree(response)
+            .path("data")
+            .path("orders")
+            .path("edges");
 
-            JsonNode order = edge.path("node");
+    for (JsonNode edge : orders) {
 
-            Map<String, Object> invoice = mapOrderToInvoice(order);
+        JsonNode order = edge.path("node");
+        String orderId = order.path("id").asText();
+        if(orderId == null || orderId.isEmpty()) {
+            continue;
+        }
+        if(repository.existsById(orderId)) {
+            System.out.println("⚠️ Orden duplicada: " + orderId);
+            continue;
+        }
+        try {
 
+            // 🚫 1. Intento de inserción primero (clave primaria protege)
+            repository.save(
+                new ProcessedOrder(orderId, LocalDateTime.now())
+            );
+
+        } catch (Exception e) {
+            // 🔥 Ya existe → duplicado
+            System.out.println("⚠️ Orden duplicada: " + orderId);
+            continue;
+        }
+
+        try {
+            // 🧾 MAPEAR
+            Map<String, Object> invoice = mapOrderFromQueryToInvoice(order);
+
+            // 🚀 ENVIAR
             posClientService.sendInvoiceToPOS(invoice);
+
+            System.out.println("✅ Orden procesada: " + orderId);
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            System.out.println("❌ Error enviando orden: " + orderId);
+            System.out.println("❌ Error: " + e.getMessage());
+            // 🔥 IMPORTANTE: rollback manual
+            if(!message.contains("Invoice already exists")) {
+                repository.deleteById(orderId);    
+            }
+            
+
         }
     }
+}
 
     private boolean verifyHmac(String data, String hmacHeader) {
         try {

@@ -31,6 +31,9 @@ public class PosProduct {
     @JsonProperty("BarCode2")
     private String barCode2;
 
+    @JsonProperty("WebDesc")
+    private String webDesc;
+
     @JsonProperty("Category")
     private String category;
 
