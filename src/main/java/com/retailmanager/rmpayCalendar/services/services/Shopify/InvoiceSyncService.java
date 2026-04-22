@@ -70,7 +70,7 @@ public class InvoiceSyncService {
             .path("amount").asDouble(0);
 
     // 🧾 HEADER
-    invoice.put("Factura", "KTEST" + orderName);
+    invoice.put("Factura", "K" + orderName);
     invoice.put("OrdenNumero", orderName);
     invoice.put("Cliente", "0000");
 
@@ -125,7 +125,7 @@ if (sku == null || sku.isEmpty()) {
     sku = item.path("name").asText("SIN-SKU");
 }
 
-        detail.put("FacturaNumero", "KTEST" + orderName);
+        detail.put("FacturaNumero", "K" + orderName);
         detail.put("Referencia", sku);
         detail.put("CantidadOrdenada", qty);
         detail.put("CantidadDespachada", qty);
