@@ -22,8 +22,27 @@ public class ShopifyWebhookController {
     public ResponseEntity<?> receiveOrder(
             @RequestHeader("X-Shopify-Hmac-Sha256") String hmac,
             @RequestBody String payload) {
-
+                System.out.println("📦 Payload recibido: " + payload);
+                System.out.println("📦 HMAC recibido: " + hmac);
        return invoiceSyncService.receiveOrder(hmac, payload);
+       
+    }
+    @PostMapping("/orders/cancelled")
+    public ResponseEntity<?> receiveCancelledOrder(
+            @RequestHeader("X-Shopify-Hmac-Sha256") String hmac,
+            @RequestBody String payload) {
+                System.out.println("📦 Payload recibido: " + payload);
+                System.out.println("📦 HMAC recibido: " + hmac);
+       return invoiceSyncService.receiveCancelledOrder(hmac, payload);
+       
+    }
+    @PostMapping("/refunds")
+    public ResponseEntity<?> receiveRefund(
+            @RequestHeader("X-Shopify-Hmac-Sha256") String hmac,
+            @RequestBody String payload) {
+                System.out.println("📦 Payload recibido: " + payload);
+                System.out.println("📦 HMAC recibido: " + hmac);
+       return invoiceSyncService.receiveRefund(hmac, payload);
        
     }
 }

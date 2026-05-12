@@ -1,5 +1,6 @@
 package com.retailmanager.rmpayCalendar.db2.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -19,6 +20,11 @@ public class ProcessedOrder {
     private String id;
 
     private LocalDateTime processedAt;
+     
+     
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String JSONRecibed;
+    private String eventType;
+    @Column(precision = 19, scale = 2)
+    private BigDecimal totalAmount;
 }

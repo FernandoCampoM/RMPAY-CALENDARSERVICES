@@ -1,12 +1,14 @@
 package com.retailmanager.rmpayCalendar.services.services.Shopify;
 
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.channels.Pipe.SourceChannel;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -15,6 +17,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -317,7 +320,7 @@ invoice.put("Hora", hora);
     return invoice;
 }
     public void syncOrdersToPOS(String lastSyncDate) throws Exception {
-
+     System.out.println("📦 Sincronizando ordenes...");   
     String response = shopifyService.getNewOrders(lastSyncDate);
 
     JsonNode orders = new ObjectMapper()
@@ -325,51 +328,174 @@ invoice.put("Hora", hora);
             .path("data")
             .path("orders")
             .path("edges");
-
+        System.out.println("📦 Ordenes recibidas: " + orders.size());
     for (JsonNode edge : orders) {
 
         JsonNode order = edge.path("node");
+
         String orderId = order.path("id").asText();
-        if(orderId == null || orderId.isEmpty()) {
+
+        if (orderId == null || orderId.isEmpty()) {
             continue;
         }
-        if(repository.existsById(orderId)) {
+
+        // 🔥 ESTADO FINANCIERO
+        String financialStatus = order.path("displayFinancialStatus").asText();
+
+        // 🔥 VALIDACIÓN DUPLICADOS
+        if (repository.existsById(orderId)) {
+
             System.out.println("⚠️ Orden duplicada: " + orderId);
             continue;
         }
-        try {
 
-            // 🚫 1. Intento de inserción primero (clave primaria protege)
+        try {
+            String eventType = resolveEventType(order);
+            BigDecimal total =
+    new BigDecimal(
+        order
+            .path("totalPriceSet")
+            .path("shopMoney")
+            .path("amount")
+            .asText("0")
+    );
+            // 🔥 PROTECCIÓN DUPLICADOS
             repository.save(
-                new ProcessedOrder(orderId, LocalDateTime.now(),order.toString())
+                new ProcessedOrder(
+                    orderId,
+                    LocalDateTime.now(),
+                    order.toString(),
+                    eventType, total
+                )
             );
 
         } catch (Exception e) {
-            // 🔥 Ya existe → duplicado
+
             System.out.println("⚠️ Orden duplicada: " + orderId);
             continue;
         }
 
         try {
-            // 🧾 MAPEAR
-            Map<String, Object> invoice = mapOrderFromQueryToInvoice(order);
 
-            // 🚀 ENVIAR
-            posClientService.sendInvoiceToPOS(invoice);
+            switch (financialStatus) {
 
-            System.out.println("✅ Orden procesada: " + orderId);
+                // ✅ VENTA NORMAL
+                case "PAID":
+
+                    // 🧾 MAPEAR
+                    Map<String, Object> invoice =
+                            mapOrderFromQueryToInvoice(order);
+
+                    // 🚀 ENVIAR
+                    posClientService.sendInvoiceToPOS(invoice);
+
+                    System.out.println("✅ Orden PAID procesada: " + orderId);
+
+                    break;
+
+                // 🔥 PAGO PARCIAL
+                case "PARTIALLY_PAID":
+
+                    // TODO:
+                    // manejar orden parcialmente pagada
+
+                    System.out.println("⚠️ Orden PARTIALLY_PAID detectada: " + orderId);
+repository.deleteById(orderId);
+                    break;
+
+                // 🔥 REEMBOLSO PARCIAL
+                case "PARTIALLY_REFUNDED":
+
+                    // TODO:
+                    // manejar devolución parcial
+
+                    System.out.println("⚠️ Orden PARTIALLY_REFUNDED detectada: " + orderId);
+repository.deleteById(orderId);
+                    break;
+
+                // 🔥 REEMBOLSO TOTAL
+                case "REFUNDED":
+
+                    // TODO:
+                    // revertir venta / generar nota crédito
+
+                    System.out.println("⚠️ Orden REFUNDED detectada: " + orderId);
+repository.deleteById(orderId);
+                    break;
+
+                // 🔥 ANULADA
+                case "VOIDED":
+
+                    // TODO:
+                    // manejar orden anulada
+
+                    System.out.println("⚠️ Orden VOIDED detectada: " + orderId);
+repository.deleteById(orderId);
+                    break;
+
+                default:
+
+                    System.out.println(
+                        "⚠️ Estado financiero no manejado: "
+                        + financialStatus
+                        + " | Orden: "
+                        + orderId
+                    );
+                    repository.deleteById(orderId);
+                    break;
+            }
 
         } catch (Exception e) {
+
             String message = e.getMessage();
+
             System.out.println("❌ Error enviando orden: " + orderId);
             System.out.println("❌ Error: " + e.getMessage());
-            // 🔥 IMPORTANTE: rollback manual
-            if(!message.contains("Invoice already exists")) {
-                repository.deleteById(orderId);    
-            }
-            
 
+            // 🔥 ROLLBACK MANUAL
+            if (message == null ||
+                !message.contains("Invoice already exists")) {
+
+                repository.deleteById(orderId);
+            }
         }
+    }
+}
+private String resolveEventType(JsonNode order) {
+
+    String financialStatus =
+        order.path("displayFinancialStatus").asText("");
+
+    boolean cancelled =
+        !order.path("cancelledAt").isNull()
+        && !order.path("cancelledAt").asText().isEmpty();
+
+    if (cancelled) {
+        return "CANCELLED";
+    }
+
+    switch (financialStatus.toUpperCase()) {
+
+        case "PAID":
+            return "PAID";
+
+        case "PARTIALLY_PAID":
+            return "PARTIALLY_PAID";
+
+        case "PARTIALLY_REFUNDED":
+            return "PARTIALLY_REFUNDED";
+
+        case "REFUNDED":
+            return "REFUNDED";
+
+        case "VOIDED":
+            return "VOIDED";
+
+        case "PENDING":
+            return "PENDING";
+
+        default:
+            return "UNKNOWN";
     }
 }
 
@@ -392,58 +518,277 @@ invoice.put("Hora", hora);
     }
 
     public ResponseEntity<?> receiveOrder(
-            String hmac,
-            String payload) {
-        System.out.println("📦 Payload recibido: " + payload);
-        try {
-            // TODO: DESCOMENTAR EN PRODUCCION
-            // 🔐 1. Validar que viene de Shopify
-            
-             if (!verifyHmac(payload, hmac)) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-             }
+        String hmac,
+        String payload) {
 
-            System.out.println("✅ Webhook recibido");
+    System.out.println("📦 Payload recibido: " + payload);
 
-            // 🔄 2. Convertir JSON
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode order = mapper.readTree(payload);
+    try {
 
-            // 🔑 3. Obtener ID único de la orden
-            String orderId = order.path("admin_graphql_api_id").asText();
-
-            if (orderId == null || orderId.isEmpty()) {
-                throw new RuntimeException("Order ID inválido");
-            }
-
-            // 🚫 4. Validar duplicados
-            if (repository.existsById(orderId)) {
-                System.out.println("⚠️ Orden duplicada: " + orderId);
-                return ResponseEntity.ok().build();
-            }
-
-            // 🧾 5. Mapear a factura
-            Map<String, Object> invoice = mapOrderToInvoice(order);
-
-            // 🚀 6. Enviar al POS
-            posClientService.sendInvoiceToPOS(invoice);
-
-            // 💾 7. Marcar como procesada (SOLO si todo salió bien)
-            repository.save(new ProcessedOrder(orderId, LocalDateTime.now(), payload));
-
-            System.out.println("✅ Orden procesada correctamente: " + orderId);
-            HashMap<String, Object> response = new HashMap<>();
-            response.put("orderId", orderId);
-            response.put("success", true);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            HashMap<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-
+        // TODO: DESCOMENTAR EN PRODUCCION
+        // 🔐 Validar Shopify
+        
+        if (!verifyHmac(payload, hmac)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        
+
+        System.out.println("✅ Webhook recibido");
+
+        // 🔄 Convertir JSON
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode order = mapper.readTree(payload);
+
+        // 🔑 ID ORDEN
+        String orderId = order.path("admin_graphql_api_id").asText();
+
+        if (orderId == null || orderId.isEmpty()) {
+            throw new RuntimeException("Order ID inválido");
+        }
+
+        // 🔥 ESTADO FINANCIERO
+        String financialStatus = order.path("financial_status").asText();
+
+        // 🚫 SOLO PROCESAR PAGADAS
+        if (!"paid".equalsIgnoreCase(financialStatus)) {
+
+            System.out.println(
+                "⚠️ Orden ignorada por estado financiero: "
+                + financialStatus
+            );
+
+            return ResponseEntity.ok().build();
+        }
+
+        // 🚫 DUPLICADOS
+        if (repository.existsById(orderId)) {
+
+            System.out.println("⚠️ Orden duplicada: " + orderId);
+
+            return ResponseEntity.ok().build();
+        }
+
+        // 🧾 MAPEAR
+        Map<String, Object> invoice = mapOrderToInvoice(order);
+        String eventType = resolveEventType(order);
+        // 🚀 ENVIAR POS
+        posClientService.sendInvoiceToPOS(invoice);
+         BigDecimal total = new BigDecimal(
+            order.path("total_price").asText("0")
+        );
+        // 💾 GUARDAR PROCESADA
+        repository.save(
+            new ProcessedOrder(
+                orderId,
+                LocalDateTime.now(),
+                payload,
+                eventType, 
+                total
+            )
+        );
+
+        System.out.println("✅ Orden procesada correctamente: " + orderId);
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("orderId", orderId);
+        response.put("success", true);
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
+    } catch (Exception e) {
+
+        e.printStackTrace();
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}
+public ResponseEntity<?> receiveCancelledOrder(
+        String hmac,
+        String payload) {
+
+    System.out.println("📦 Cancelled payload recibido: " + payload);
+
+    try {
+
+        // 🔐 VALIDAR SHOPIFY
+        if (!verifyHmac(payload, hmac)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode order = mapper.readTree(payload);
+
+        String orderId = order.path("admin_graphql_api_id").asText();
+
+        if (orderId == null || orderId.isEmpty()) {
+            throw new RuntimeException("Order ID inválido");
+        }
+
+        // 🔥 VALIDAR SI EXISTE EN POS
+        boolean exists = repository.existsById(orderId);
+
+        if (!exists) {
+
+            System.out.println(
+                "⚠️ Orden cancelada ignorada porque no existe en POS: "
+                + orderId
+            );
+
+            return ResponseEntity.ok().build();
+        }
+
+        // TODO:
+        // 🔥 ANULAR FACTURA EN POS
+
+        // TODO:
+        // 🔥 RESTAURAR INVENTARIO SI APLICA
+
+        System.out.println("✅ Orden cancelada procesada: " + orderId);
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("orderId", orderId);
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
+    } catch (Exception e) {
+
+        e.printStackTrace();
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+public ResponseEntity<?> receiveRefund(
+        String hmac,
+        String payload) {
+
+    System.out.println("📦 Refund payload recibido: " + payload);
+
+    try {
+
+        // 🔐 VALIDAR SHOPIFY
+        if (!verifyHmac(payload, hmac)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode refund = mapper.readTree(payload);
+
+        // 🔥 ORDER ID
+        String orderId = refund.path("order_id").asText();
+
+        if (orderId == null || orderId.isEmpty()) {
+            throw new RuntimeException("Order ID inválido");
+        }
+
+        String shopifyOrderId =
+                "gid://shopify/Order/" + orderId;
+
+        // 🔥 VALIDAR EXISTE EN POS
+        Optional<ProcessedOrder> processedOrderOpt =
+                repository.findById(shopifyOrderId);
+
+        if (processedOrderOpt.isEmpty()) {
+
+            System.out.println(
+                "⚠️ Refund ignorado porque orden no existe en POS: "
+                + orderId
+            );
+
+            return ResponseEntity.ok().build();
+        }
+
+        // 🔥 PAYLOAD ORIGINAL
+        ProcessedOrder processedOrder =
+                processedOrderOpt.get();
+
+       
+
+        // 🔥 TOTAL ORIGINAL
+        double originalTotal =
+                processedOrder.getTotalAmount().doubleValue();
+
+        // 🔥 TOTAL REFUND
+        double refundTotal = 0;
+
+        JsonNode transactions = refund.path("transactions");
+
+        if (transactions.isArray()) {
+
+            for (JsonNode tx : transactions) {
+
+                String kind = tx.path("kind").asText();
+
+                if ("refund".equalsIgnoreCase(kind)) {
+
+                    refundTotal += tx.path("amount").asDouble();
+                }
+            }
+        }
+
+        System.out.println("💰 Original total: " + originalTotal);
+        System.out.println("💸 Refund total: " + refundTotal);
+
+        // 🔥 FULL O PARTIAL
+        boolean fullRefund =
+                refundTotal >= originalTotal;
+
+        if (fullRefund) {
+
+            // TODO:
+            // 🔥 PROCESAR REFUND TOTAL EN POS
+
+            System.out.println(
+                "⚠️ FULL REFUND detectado para orden: "
+                + orderId
+            );
+
+        } else {
+
+            // TODO:
+            // 🔥 PROCESAR REFUND PARCIAL EN POS
+
+            System.out.println(
+                "⚠️ PARTIAL REFUND detectado para orden: "
+                + orderId
+            );
+        }
+
+        HashMap<String, Object> response =
+                new HashMap<>();
+
+        response.put("success", true);
+        response.put("orderId", orderId);
+        response.put("refundTotal", refundTotal);
+        response.put("fullRefund", fullRefund);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (Exception e) {
+
+        e.printStackTrace();
+
+        HashMap<String, Object> response =
+                new HashMap<>();
+
+        response.put("success", false);
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
+}
 }

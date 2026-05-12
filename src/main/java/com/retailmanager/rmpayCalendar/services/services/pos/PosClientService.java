@@ -90,6 +90,7 @@ public class PosClientService {
         System.out.println("📦 ItemsImported: " + jsonResponse.path("ItemsImported").asInt());
 
     } catch (Exception e) {
+        System.out.println("❌ Error enviando al POS:"+e.getMessage());
         throw new RuntimeException("Error enviando al POS"+ e.getMessage(), e);
     }
 }

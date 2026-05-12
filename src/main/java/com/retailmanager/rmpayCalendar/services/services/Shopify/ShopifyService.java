@@ -773,6 +773,7 @@ public List<ShopifyPublication> getAvailablePublications(){
          */
 @Override
 public String getNewOrders(String lastSyncDate) {
+
     try {
 
         String query = """
@@ -781,43 +782,79 @@ public String getNewOrders(String lastSyncDate) {
                 edges {
                   cursor
                   node {
+
                     id
                     name
                     createdAt
-                    totalPriceSet { shopMoney { amount } }
-                    subtotalPriceSet { shopMoney { amount } }
-                    totalDiscountsSet { shopMoney { amount } }
+
+                    displayFinancialStatus
+                    cancelledAt
+
+                    totalPriceSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    subtotalPriceSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    totalDiscountsSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    refunds {
+                      id
+                      createdAt
+                    }
+
                     customer {
                       firstName
                       phone
                     }
+
                     billingAddress {
                       address1
                     }
+
                     lineItems(first: 50) {
                       edges {
                         node {
+
                           name
                           quantity
+
                           originalUnitPriceSet {
-                            shopMoney { amount }
+                            shopMoney {
+                              amount
+                            }
                           }
+
                           variant {
-                            sku 
+                            sku
                           }
+
                         }
                       }
                     }
+
                   }
                 }
+
                 pageInfo {
                   hasNextPage
                 }
+
               }
             }
         """;
 
-        // 🔥 Filtro de fecha dinámica (IMPORTANTE: con Z)
+        // 🔥 FILTRO DINÁMICO
         String filter = "created_at:>" + lastSyncDate;
 
         Map<String, Object> variables = Map.of(
