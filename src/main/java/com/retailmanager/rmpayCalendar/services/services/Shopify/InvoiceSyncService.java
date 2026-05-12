@@ -19,6 +19,7 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.hibernate.query.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -340,7 +341,7 @@ invoice.put("Hora", hora);
 
             // 🚫 1. Intento de inserción primero (clave primaria protege)
             repository.save(
-                new ProcessedOrder(orderId, LocalDateTime.now())
+                new ProcessedOrder(orderId, LocalDateTime.now(),order.toString())
             );
 
         } catch (Exception e) {
@@ -428,7 +429,7 @@ invoice.put("Hora", hora);
             posClientService.sendInvoiceToPOS(invoice);
 
             // 💾 7. Marcar como procesada (SOLO si todo salió bien)
-            repository.save(new ProcessedOrder(orderId, LocalDateTime.now()));
+            repository.save(new ProcessedOrder(orderId, LocalDateTime.now(), payload));
 
             System.out.println("✅ Orden procesada correctamente: " + orderId);
             HashMap<String, Object> response = new HashMap<>();

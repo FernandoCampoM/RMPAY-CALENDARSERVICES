@@ -170,18 +170,20 @@ public class ProductSyncService {
         }
     }
 
-    public void processDeletedProducts() {
+    public void processDeletedProducts(List<ProductSync> oldProducts) {
 
-        LocalDateTime limit = LocalDateTime.now().minusHours(1);
-
-        List<ProductSync> oldProducts = repository.findAllByLastSeenBefore(limit);
+      
 
         for (ProductSync product : oldProducts) {
-            log.info("PRODUCT_NOT_IN_POS | code={}", product.getProductCode());
-            // TODO
-            // aquí puedes:
-            // 1. poner stock en 0
-            // 2. o desactivar producto en Shopify
+
+            // 🔥 ELIMINAR PRODUCTO DE SHOPIFY
+            ShopifyResponse response = shopifyService.deleteProduct(product);
+            if(response != null && response.getProductId() != null) {
+               
+               product.setDeleted(true);
+               repository.save(product);
+               log.info("PRODUCT_DELETED_IN_SHOPIFY | code={}", product.getProductCode());
+            }
         }
     }
 

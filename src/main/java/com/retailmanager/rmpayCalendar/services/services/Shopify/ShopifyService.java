@@ -888,4 +888,156 @@ public String getShopLocationId() {
         throw new RuntimeException("Error obteniendo Location ID", e);
     }
 }
+
+@Override
+public ShopifyResponse deleteProduct(ProductSync sync) {
+
+    try {
+
+        // 🔥 VALIDACIÓN DEFENSIVA
+        if (sync == null) {
+            throw new IllegalArgumentException("ProductSync no puede ser null");
+        }
+
+        if (sync.getShopifyProductId() == null || sync.getShopifyProductId().isBlank()) {
+            throw new IllegalArgumentException(
+                "El producto no tiene shopifyProductId"
+            );
+        }
+
+        // 🔥 MUTATION GRAPHQL
+        String mutation = """
+        mutation productDelete($input: ProductDeleteInput!) {
+          productDelete(input: $input) {
+            deletedProductId
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+        """;
+
+        // 🔥 VARIABLES
+        Map<String, Object> variables = Map.of(
+            "input", Map.of(
+                "id", sync.getShopifyProductId()
+            )
+        );
+
+        log.info(
+            "SHOPIFY_DELETE_PRODUCT_START | productCode={} | shopifyProductId={}",
+            sync.getProductCode(),
+            sync.getShopifyProductId()
+        );
+
+        // 🔥 EJECUCIÓN
+        String response = client.execute(mutation, variables);
+
+        log.info(
+            "SHOPIFY_DELETE_PRODUCT_RESPONSE | productCode={} | response={}",
+            sync.getProductCode(),
+            response
+        );
+
+        // 🔥 PARSEAR RESPUESTA
+        ShopifyResponse shopifyResponse = parseDeleteResponse(response);
+
+        // 🔥 VALIDAR userErrors
+        if (shopifyResponse.hasErrors()) {
+
+            log.error(
+                "SHOPIFY_DELETE_PRODUCT_USER_ERROR | productCode={} | errors={}",
+                sync.getProductCode(),
+                shopifyResponse.getErrors()
+            );
+            if (shopifyResponse.getErrors().size() > 0) {
+                if(!shopifyResponse.getErrors().get(0).contains("Product does not exist")){
+                   throw new RuntimeException(
+                shopifyResponse.getErrors().get(0)
+            );
+                }
+            }
+        }
+
+        // 🔥 VALIDAR deletedProductId
+        if (shopifyResponse.getProductId() == null) {
+
+            log.warn(
+                "SHOPIFY_DELETE_PRODUCT_NOT_FOUND | productCode={} | shopifyProductId={}",
+                sync.getProductCode(),
+                sync.getShopifyProductId()
+            );
+
+            return shopifyResponse;
+        }
+
+        log.info(
+            "SHOPIFY_DELETE_PRODUCT_SUCCESS | productCode={} | deletedProductId={}",
+            sync.getProductCode(),
+            shopifyResponse.getProductId()
+        );
+
+        return shopifyResponse;
+
+    } catch (Exception e) {
+
+        log.error(
+            "SHOPIFY_DELETE_PRODUCT_ERROR | productCode={} | error={}",
+            sync != null ? sync.getProductCode() : "UNKNOWN",
+            e.getMessage(),
+            e
+        );
+
+        throw new RuntimeException(
+            "Error eliminando producto en Shopify",
+            e
+        );
+    }
+    
+}
+private ShopifyResponse parseDeleteResponse(String response) throws Exception {
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    JsonNode root = mapper.readTree(response);
+
+    JsonNode deleteNode =
+        root.path("data")
+            .path("productDelete");
+
+    ShopifyResponse result = new ShopifyResponse();
+
+    // 🔥 deletedProductId
+    JsonNode deletedId =
+        deleteNode.path("deletedProductId");
+
+    if (!deletedId.isMissingNode() && !deletedId.isNull()) {
+        result.setProductId(deletedId.asText());
+    }
+
+    // 🔥 userErrors
+    JsonNode errors =
+        deleteNode.path("userErrors");
+
+    if (errors.isArray() && !errors.isEmpty()) {
+
+        List<String> userErrors = new ArrayList<>();
+
+        for (JsonNode error : errors) {
+
+            String field =
+                error.path("field").toString();
+
+            String message =
+                error.path("message").asText();
+
+            userErrors.add(field + " -> " + message);
+        }
+
+        result.setErrors(userErrors);
+    }
+
+    return result;
+}
 }

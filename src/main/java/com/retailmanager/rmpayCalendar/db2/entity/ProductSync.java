@@ -2,6 +2,7 @@ package com.retailmanager.rmpayCalendar.db2.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -25,4 +26,8 @@ public class ProductSync {
 
     private LocalDateTime lastSync;
      private LocalDateTime lastSeen;
+    @Column(nullable = false, columnDefinition = "BIT DEFAULT 0")
+     private Boolean deleted = false;
+
+private LocalDateTime deletedAt;
 }

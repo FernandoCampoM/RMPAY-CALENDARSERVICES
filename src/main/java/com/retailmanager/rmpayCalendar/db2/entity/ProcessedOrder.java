@@ -2,6 +2,7 @@ package com.retailmanager.rmpayCalendar.db2.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -18,4 +19,6 @@ public class ProcessedOrder {
     private String id;
 
     private LocalDateTime processedAt;
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String JSONRecibed;
 }
