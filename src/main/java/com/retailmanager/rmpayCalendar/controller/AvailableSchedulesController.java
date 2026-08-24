@@ -1,10 +1,6 @@
 package com.retailmanager.rmpayCalendar.controller;
 
 
-import com.retailmanager.rmpayCalendar.services.DTO.AvailableSchedulesDTO;
-import com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar.AvailableSchedulesDTO.IAvailableSchedulesService;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -17,6 +13,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.retailmanager.rmpayCalendar.services.DTO.AvailableSchedulesDTO;
+import com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar.AvailableSchedulesDTO.IAvailableSchedulesService;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 
 @RestController
 @RequestMapping("/api/availableSchedules")
@@ -46,7 +48,7 @@ public class AvailableSchedulesController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@Valid @PathVariable @Positive(message = "asId.positive") Long id,
-                                    @Valid @RequestBody AvailableSchedulesDTO prmService) {
+                                     @Valid @RequestBody AvailableSchedulesDTO prmService) {
         return availableSchedulesService.update(id, prmService);
     }
 
@@ -79,9 +81,9 @@ public class AvailableSchedulesController {
      * @param businessId the ID of the business
      * @return the ResponseEntity containing all available schedules for the specified employee or business
      */
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<?> getAll(@RequestParam(name = "employeeId", required = false) @Positive(message = "employeeId.positive") Long employeeId,
-                                    @RequestParam(name = "businessId", required = false) @Positive(message = "businessId.positive") Long businessId) {
+                                     @RequestParam(name = "businessId", required = false) @Positive(message = "businessId.positive") Long businessId) {
         if (businessId != null) {
             return availableSchedulesService.getAllByBusinessId(businessId);
         }
@@ -89,10 +91,5 @@ public class AvailableSchedulesController {
             return availableSchedulesService.getAll(employeeId);
         }
         return ResponseEntity.badRequest().body("Either employeeId or businessId must be provided.");
-    }
-
-    @GetMapping
-    public ResponseEntity<?> getAll() {
-        return availableSchedulesService.getAll();
     }
 }

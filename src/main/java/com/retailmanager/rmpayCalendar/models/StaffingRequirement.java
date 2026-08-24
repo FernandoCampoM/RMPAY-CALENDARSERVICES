@@ -10,23 +10,28 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
- @Entity
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AvailableSchedules {
+public class StaffingRequirement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long asId;
+    private Long id;
 
     @Column(nullable = false)
-    private String title;
+    private String startTime; // "HH:mm"
 
     @Column(nullable = false)
-    private String duration; // Ejemplo: "01:30" (HH:mm)
+    private String endTime;   // "HH:mm"
 
-    private Long employeeID;
+    private Integer monRequired;
+    private Integer tueRequired;
+    private Integer wedRequired;
+    private Integer thuRequired;
+    private Integer friRequired;
+    private Integer satRequired;
+    private Integer sunRequired;
 }

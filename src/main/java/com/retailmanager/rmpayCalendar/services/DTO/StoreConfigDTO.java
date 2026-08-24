@@ -9,9 +9,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AvailableSchedulesDTO {
-    private Long asId;
-    private String title;
-    private String duration; // Ejemplo: "01:30"
-    private Long employeeID; // Relación con UsersBusiness
+public class StoreConfigDTO {
+    private Long id;
+    private Integer dayOfWeek;
+    private Boolean isOpen;
+    private String openTime;
+    private String closeTime;
 }

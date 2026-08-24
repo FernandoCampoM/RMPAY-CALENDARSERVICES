@@ -10,23 +10,23 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
- @Entity
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AvailableSchedules {
+public class StoreConfig {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long asId;
+    private Long id;
 
     @Column(nullable = false)
-    private String title;
+    private Integer dayOfWeek; // 0 = Monday, 6 = Sunday
 
-    @Column(nullable = false)
-    private String duration; // Ejemplo: "01:30" (HH:mm)
+    private Boolean isOpen;
 
-    private Long employeeID;
+    private String openTime;   // "HH:mm"
+
+    private String closeTime;  // "HH:mm"
 }
