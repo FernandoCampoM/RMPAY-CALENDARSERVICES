@@ -6,12 +6,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.retailmanager.rmpayCalendar.admin.service.ShopifyCatalogClient;
+import com.retailmanager.rmpayCalendar.admin.service.SyncSettingsService;
 import com.retailmanager.rmpayCalendar.db2.entity.PosProduct;
 import com.retailmanager.rmpayCalendar.db2.entity.ProductSync;
 import com.retailmanager.rmpayCalendar.db2.entity.ProductSyncEvent;
 import com.retailmanager.rmpayCalendar.db2.repository.ProductSyncRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
 import com.retailmanager.rmpayCalendar.enums.SyncAction;
+import com.retailmanager.rmpayCalendar.enums.SyncMaster;
 import com.retailmanager.rmpayCalendar.models.ShopifyResponse;
 import com.retailmanager.rmpayCalendar.services.DTO.ShopifyPublication;
 import com.retailmanager.rmpayCalendar.utils.HashUtils;
@@ -29,23 +32,48 @@ public class ProductSyncService {
     private ProductSyncProducer producer;
     @Autowired
     private Sys_general_configRepository configRepository;
+    // NUEVO: modo rey y bloqueo de altas (panel admin)
+    @Autowired
+    private SyncSettingsService syncSettings;
+    // NUEVO: búsqueda de variantes por código de barras
+    @Autowired
+    private ShopifyCatalogClient catalogClient;
 
+    /**
+     * MODIFICADO (aprobado): respeta el modo rey (sync.master) y el bloqueo de altas (sync.createEnabled).
+     *  - Producto sin vínculo: solo se crea/vincula si RM es el rey y la conciliación está cerrada.
+     *    Siempre se busca antes en Shopify por SKU y por código de barras (ya no se omite en la primera ejecución).
+     *  - Producto vinculado con cambios: si RM es el rey se actualiza todo; si no, solo el stock.
+     *  - Un error en un producto se registra y no detiene el resto.
+     */
     public void processProducts(List<PosProduct> products) {
         String isFirstRunS = configRepository.getIsFirstRun();
         Boolean isFirstRun = isFirstRunS == null ? false : (isFirstRunS.equals("true") ? true : false);
 
         LocalDateTime now = LocalDateTime.now();
-        
+        SyncMaster master = syncSettings.getMaster();
+        boolean createEnabled = syncSettings.isCreateEnabled();
+
         for (PosProduct product : products) {
-            
+          try {
+
             String hash = HashUtils.generateProductHash(product);
 
             ProductSync existing = repository.findByProductCode(product.getProductCode());
 
             if (existing == null) {
-                if (!isFirstRun) {
-                    // 🔥 CONSULTA FALLBACK EN SHOPIFY
+                if (master != SyncMaster.RM || !createEnabled) {
+                    // Queda para la pantalla de conciliación
+                    log.debug("SYNC_SKIP_CREATE | code={} | master={} | createEnabled={}",
+                            product.getProductCode(), master, createEnabled);
+                    continue;
+                }
+                {
+                    // 🔥 CONSULTA FALLBACK EN SHOPIFY (por SKU y luego por código de barras)
                     ShopifyResponse found = shopifyService.findBySku(product.getProductCode());
+                    if (found == null) {
+                        found = catalogClient.findByBarcode(product.getBarCode());
+                    }
                     //TODO: Revisar como proceder cuando el producto ya existe pero 
                     // el inventario de shopify es diferen a la de RM
                     if (found != null) {
@@ -84,25 +112,21 @@ public class ProductSyncService {
                         event.setHash(hash);
                         process(event);
                     }
-                } else {
-
-                    // 🔥 CREAR NORMAL TODO:DESCOMENTAR SI SE USAN COLAS
-                    //producer.send(product, SyncAction.CREATE, hash);
-
-                    //TODO:comentar si se usa colas
-                        ProductSyncEvent event = new ProductSyncEvent();
-                        event.setProduct(product);
-                        event.setAction(SyncAction.CREATE);
-                        event.setHash(hash);
-                        process(event);
-
-
                 }
 
-            } else if (!existing.getHash().equals(hash)) {
+            } else if (!hash.equals(existing.getHash())) {
 
                 existing.setLastSeen(now);
                 repository.save(existing);
+
+                if (master != SyncMaster.RM) {
+                    // Shopify o nadie es el rey: precio y descripción no se tocan, el stock siempre va RM → Shopify
+                    shopifyService.updateInventory(existing.getShopifyInventoryItemId(), product.getCurrentStock());
+                    existing.setHash(hash);
+                    existing.setLastSync(LocalDateTime.now());
+                    repository.save(existing);
+                    continue;
+                }
                 //TODO:DESCOMENTAR SI SE USAN COLAS
                 //producer.send(product, SyncAction.UPDATE, hash);
                 //TODO:comentar si se usa colas
@@ -119,6 +143,9 @@ public class ProductSyncService {
                             }
                         }
             }
+          } catch (Exception e) {
+            log.error("SYNC_PRODUCT_ERROR | code={} | error={}", product.getProductCode(), e.getMessage());
+          }
         }
         if(isFirstRun) {
             configRepository.updateIsFirstRun("false");

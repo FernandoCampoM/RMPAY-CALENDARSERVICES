@@ -1,0 +1,784 @@
+/* Panel admin RM ↔ Shopify. JavaScript sin dependencias externas. */
+(() => {
+  'use strict';
+
+  // ───────── Utilidades ─────────
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => (v == null ? '—' : Number(v).toLocaleString('es'));
+  const money = (v) => (v == null ? '—' : '$' + Number(v).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const date = (v) => {
+    if (!v) return '—';
+    const d = new Date(v);
+    return isNaN(d) ? esc(v) : d.toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
+  };
+  const cleanCode = (v) => (v ? String(v).replace(/^'+/, '') : '');
+  const debounce = (fn, ms = 300) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+  const icon = (path) => `<svg viewBox="0 0 24 24">${path}</svg>`;
+  const ICONS = {
+    warn: icon('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>'),
+    ok: icon('<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14l-3-3"/>'),
+    search: icon('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+    refresh: icon('<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>'),
+    arrow: icon('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+    wand: icon('<path d="m15 4 5 5L9 20H4v-5zM13 6l5 5"/>'),
+    lock: icon('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+    unlock: icon('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.9-1"/>'),
+    sun: icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    moon: icon('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+    auto: icon('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/>'),
+  };
+
+  const STATUS = {
+    AUTO: ['Por código', 'badge-ok'],
+    SUGERIDO: ['Sugerido', 'badge-info'],
+    AMBIGUO: ['Ambiguo', 'badge-warn'],
+    SIN_MATCH: ['Sin coincidencia', 'badge-warn'],
+    SOLO_RM: ['Solo en RM', 'badge-accent'],
+    VINCULADO: ['Vinculado', 'badge-ok'],
+    IGNORADO: ['Ignorado', ''],
+    CREAR_EN_RM: ['Alta en RM pendiente', 'badge-info'],
+    ERROR: ['Error', 'badge-danger'],
+  };
+  const TABS = [
+    ['PENDIENTES', 'Por revisar'], ['AUTO', 'Por código'], ['SUGERIDO', 'Sugeridos'], ['AMBIGUO', 'Ambiguos'],
+    ['SIN_MATCH', 'Sin coincidencia'], ['SOLO_RM', 'Solo en RM'], ['ERROR', 'Con error'],
+    ['CREAR_EN_RM', 'Alta en RM pendiente'], ['VINCULADO', 'Vinculados'], ['IGNORADO', 'Ignorados'], ['TODOS', 'Todos'],
+  ];
+  const PENDING_KEYS = ['AUTO', 'SUGERIDO', 'AMBIGUO', 'SIN_MATCH', 'SOLO_RM', 'ERROR'];
+  const MASTER = {
+    RM: { label: 'Retail Manager', short: 'RM' },
+    SHOPIFY: { label: 'Shopify', short: 'Shopify' },
+    NINGUNO: { label: 'Ninguno', short: 'Ninguno' },
+  };
+  const METHOD = { CODIGO_REFERENCIA: 'Referencia', CODIGO_BARCODE: 'Código de barras', NOMBRE: 'Nombre', MANUAL: 'Manual', SYNC: 'Sync', CREADO_EN_RM: 'Creado en RM', CREADO_EN_SHOPIFY: 'Creado en Shopify' };
+  const badge = (status) => { const [l, c] = STATUS[status] || [status, '']; return `<span class="badge ${c}">${esc(l)}</span>`; };
+
+  // ───────── Estado ─────────
+  const state = {
+    user: null,
+    settings: null,
+    recon: { status: 'PENDIENTES', q: '', hideDrafts: false, page: 0, selected: new Set(), rows: [] },
+    links: { q: '', includeDeleted: false, page: 0 },
+    orders: { q: '', page: 0 },
+    audit: { page: 0 },
+    jobTimer: null,
+    lastJobKey: null,
+  };
+
+  // ───────── API ─────────
+  async function api(path, { method = 'GET', body } = {}) {
+    const res = await fetch('/admin/api' + path, {
+      method,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Request': '1' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* sin cuerpo */ }
+    if (res.status === 401 && !path.startsWith('/auth/login')) { showLogin(); throw new Error('Sesión expirada'); }
+    if (res.status === 403 && data && /contraseña/i.test(data.error || '')) { showForcePassword(); throw new Error(data.error); }
+    if (!res.ok) throw new Error((data && data.error) || `Error ${res.status}`);
+    return data;
+  }
+
+  // ───────── Toasts y confirmación ─────────
+  function toast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+    el.textContent = msg;
+    $('#toasts').appendChild(el);
+    setTimeout(() => el.remove(), type === 'error' ? 6000 : 3500);
+  }
+  function confirmDialog(title, text, okLabel = 'Confirmar') {
+    const dlg = $('#confirm-dialog');
+    $('#confirm-title').textContent = title;
+    $('#confirm-text').textContent = text;
+    $('#confirm-ok').textContent = okLabel;
+    return new Promise((resolve) => {
+      dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true });
+      dlg.showModal();
+    });
+  }
+
+  // ───────── Tema ─────────
+  function currentTheme() {
+    const forced = document.documentElement.dataset.theme;
+    if (forced) return forced;
+    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function paintThemeButtons() {
+    const dark = currentTheme() === 'dark';
+    $$('.theme-toggle').forEach((b) => {
+      b.innerHTML = (dark ? ICONS.sun : ICONS.moon) + `<span class="theme-label">${dark ? 'Modo claro' : 'Modo oscuro'}</span>`;
+      b.setAttribute('aria-label', dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    });
+  }
+  function toggleTheme() {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('rm-admin-theme', next); } catch (e) { /* almacenamiento no disponible */ }
+    paintThemeButtons();
+  }
+
+  // ───────── Autenticación ─────────
+  function showLogin() {
+    stopJobPolling();
+    $('#app').hidden = true;
+    $('#force-password-view').hidden = true;
+    $('#login-view').hidden = false;
+    setTimeout(() => $('#login-form [name=username]').focus(), 0);
+  }
+  function showForcePassword() {
+    $('#app').hidden = true;
+    $('#login-view').hidden = true;
+    $('#force-password-view').hidden = false;
+  }
+  function showApp() {
+    $('#login-view').hidden = true;
+    $('#force-password-view').hidden = true;
+    $('#app').hidden = false;
+    $('#user-name').textContent = state.user;
+    $('#user-avatar').textContent = (state.user || '?').slice(0, 2);
+    route();
+    checkJob();
+  }
+
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    $('#login-error').textContent = '';
+    try {
+      const me = await api('/auth/login', { method: 'POST', body: { username: f.username.value.trim(), password: f.password.value } });
+      f.password.value = '';
+      state.user = me.username;
+      me.mustChangePassword ? showForcePassword() : showApp();
+    } catch (err) {
+      $('#login-error').textContent = err.message;
+    }
+  });
+
+  $('#force-password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const errEl = $('.form-error', f);
+    errEl.textContent = '';
+    if (f.next.value !== f.confirm.value) { errEl.textContent = 'Las contraseñas nuevas no coinciden'; return; }
+    try {
+      await api('/auth/change-password', { method: 'POST', body: { current: f.current.value, next: f.next.value } });
+      f.reset();
+      toast('Contraseña actualizada');
+      showApp();
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  });
+
+  $('#logout-btn').addEventListener('click', async () => {
+    try { await api('/auth/logout', { method: 'POST' }); } catch (e) { /* igual se sale */ }
+    state.user = null;
+    showLogin();
+  });
+
+  // ───────── Navegación ─────────
+  const VIEWS = {
+    panel: ['Panel', renderPanel],
+    conciliacion: ['Conciliación', renderRecon],
+    configuracion: ['Configuración', renderSettings],
+    vinculados: ['Productos vinculados', renderLinks],
+    pedidos: ['Pedidos procesados', renderOrders],
+    auditoria: ['Auditoría', renderAudit],
+  };
+  function currentView() {
+    const v = (location.hash || '').replace(/^#\//, '');
+    return VIEWS[v] ? v : 'panel';
+  }
+  function route() {
+    if ($('#app').hidden) return;
+    const view = currentView();
+    $$('dialog[open]').forEach((d) => d.close());
+    $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === view));
+    $('#view-title').textContent = VIEWS[view][0];
+    document.title = VIEWS[view][0] + ' · RM ↔ Shopify';
+    $('#app').classList.remove('menu-open');
+    VIEWS[view][1]().catch((err) => {
+      $('#content').innerHTML = `<div class="card empty"><strong>No se pudo cargar</strong>${esc(err.message)}</div>`;
+    });
+  }
+  window.addEventListener('hashchange', route);
+  $('#menu-btn').addEventListener('click', () => $('#app').classList.add('menu-open'));
+  $('#scrim').addEventListener('click', () => $('#app').classList.remove('menu-open'));
+  $$('.theme-toggle').forEach((b) => b.addEventListener('click', toggleTheme));
+
+  function paintMasterChip(settings, counts) {
+    if (!settings) return;
+    state.settings = settings;
+    const m = MASTER[settings.master] || MASTER.RM;
+    $('#master-chip').innerHTML =
+      `<a class="badge badge-accent" href="#/configuracion" title="Sistema que manda en precio, descripción y altas">` +
+      `<span class="dot"></span><span class="badge-label">Manda:</span> ${esc(m.short)}</a>` +
+      (settings.createEnabled
+        ? `<span class="badge badge-ok" title="El sync puede crear productos">${ICONS.unlock}<span class="badge-label">Altas activas</span></span>`
+        : `<span class="badge badge-warn" title="El sync no crea productos hasta cerrar la conciliación">${ICONS.lock}<span class="badge-label">Altas bloqueadas</span></span>`);
+    if (counts) {
+      const pending = PENDING_KEYS.reduce((s, k) => s + (counts[k] || 0), 0);
+      $('#nav-pending').textContent = pending ? pending.toLocaleString('es') : '';
+    }
+  }
+
+  // ───────── Panel ─────────
+  async function renderPanel() {
+    const c = $('#content');
+    c.innerHTML = '<div class="kpis">' + '<div class="card kpi"><div class="skeleton"></div></div>'.repeat(4) + '</div>';
+    const d = await api('/dashboard');
+    paintMasterChip(d.settings, d.counts);
+    const counts = d.counts || {};
+    const pending = PENDING_KEYS.reduce((s, k) => s + (counts[k] || 0), 0);
+    const m = MASTER[d.settings.master] || MASTER.RM;
+    const neverAnalyzed = !d.lastAnalysis && Object.values(counts).every((v) => !v);
+
+    c.innerHTML = `
+      ${neverAnalyzed ? `
+      <div class="banner banner-warn">${ICONS.warn}
+        <div><strong>Todavía no se han comparado los catálogos.</strong>
+        <p class="muted">Ejecute el análisis para ver qué productos de Shopify ya existen en Retail Manager.</p></div>
+        <div class="actions"><button class="btn btn-primary" data-act="analyze">${ICONS.refresh}Analizar catálogos</button></div>
+      </div>` : ''}
+      ${!d.settings.createEnabled && !neverAnalyzed ? `
+      <div class="banner banner-warn">${ICONS.lock}
+        <div><strong>Las altas automáticas están bloqueadas.</strong>
+        <p class="muted">El sync solo actualiza productos ya vinculados. Revise la conciliación y ciérrela para permitir altas.</p></div>
+        <div class="actions"><a class="btn" href="#/conciliacion">Ir a conciliación</a></div>
+      </div>` : ''}
+      <div class="kpis">
+        <a class="card kpi" href="#/vinculados"><span class="kpi-label">Productos vinculados</span><span class="kpi-value">${num(d.linkedProducts)}</span><span class="kpi-sub">Relacionados en ProductSync</span></a>
+        <a class="card kpi" href="#/conciliacion"><span class="kpi-label">Por revisar</span><span class="kpi-value">${num(pending)}</span><span class="kpi-sub">${num(counts.AUTO)} por código · ${num(counts.SUGERIDO)} sugeridos</span></a>
+        <a class="card kpi" href="#/conciliacion" data-tab="SIN_MATCH"><span class="kpi-label">Solo en Shopify</span><span class="kpi-value">${num(counts.SIN_MATCH)}</span><span class="kpi-sub">${num(counts.AMBIGUO)} ambiguos</span></a>
+        <a class="card kpi" href="#/conciliacion" data-tab="SOLO_RM"><span class="kpi-label">Solo en RM</span><span class="kpi-value">${num(counts.SOLO_RM)}</span><span class="kpi-sub">Con Web=True</span></a>
+        <a class="card kpi" href="#/pedidos"><span class="kpi-label">Pedidos procesados</span><span class="kpi-value">${num(d.processedOrders)}</span><span class="kpi-sub">Último sync: ${date(d.lastOrderSync)}</span></a>
+      </div>
+      <div class="grid-2">
+        <section class="card">
+          <div class="card-head"><h2>Actividad reciente</h2><a href="#/auditoria" class="btn btn-ghost btn-sm">Ver todo</a></div>
+          ${d.recentAudit.length ? `<ul class="activity">${d.recentAudit.map((a) => `
+            <li><time>${date(a.at)}</time><span><strong>${esc(a.action)}</strong> · ${esc(a.username)}</span><span class="detail">${esc(a.detail)}</span></li>`).join('')}</ul>`
+            : '<div class="empty">Sin actividad todavía</div>'}
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>Estado</h2><a href="#/configuracion" class="btn btn-ghost btn-sm">Configurar</a></div>
+          <dl class="kv card-pad">
+            <dt>Manda</dt><dd>${esc(m.label)}</dd>
+            <dt>Stock</dt><dd>Siempre Retail Manager → Shopify</dd>
+            <dt>Altas automáticas</dt><dd>${d.settings.createEnabled ? '<span class="badge badge-ok">Activas</span>' : '<span class="badge badge-warn">Bloqueadas</span>'}</dd>
+            <dt>Borradores</dt><dd>${d.settings.importDrafts ? 'Se importan a RM' : 'No se importan a RM'}</dd>
+            <dt>Último análisis</dt><dd>${date(d.lastAnalysis)}</dd>
+            <dt>Endpoint POS</dt><dd>${d.settings.posCreateProductPath ? `<span class="mono">${esc(d.settings.posCreateProductPath)}</span>` : '<span class="muted">Sin configurar</span>'}</dd>
+          </dl>
+        </section>
+      </div>`;
+    c.querySelector('[data-act=analyze]')?.addEventListener('click', analyze);
+    $$('[data-tab]', c).forEach((a) => a.addEventListener('click', () => { state.recon.status = a.dataset.tab; state.recon.page = 0; }));
+  }
+
+  // ───────── Conciliación ─────────
+  async function renderRecon() {
+    const c = $('#content');
+    const r = state.recon;
+    if (!$('#recon-root', c)) {
+      c.innerHTML = `
+        <div id="recon-root" class="stack">
+          <div class="section-head">
+            <div><p class="muted" id="recon-sub">Relacione cada variante de Shopify con su producto de Retail Manager.</p></div>
+            <div class="actions">
+              <button class="btn" data-act="analyze">${ICONS.refresh}Analizar catálogos</button>
+              <button class="btn" data-act="apply">${ICONS.wand}Aplicar recomendadas</button>
+              <button class="btn btn-primary" data-act="close"></button>
+            </div>
+          </div>
+          <div id="recon-banner"></div>
+          <div class="tabs" role="tablist" id="recon-tabs"></div>
+          <section class="card">
+            <div class="toolbar">
+              <label class="search">${ICONS.search}<input type="search" id="recon-q" placeholder="Buscar por nombre, SKU, código de barras o referencia"></label>
+              <label class="switch"><input type="checkbox" id="recon-drafts"><span>Ocultar borradores</span></label>
+              <span class="spacer"></span>
+              <span class="muted" id="recon-total"></span>
+            </div>
+            <div class="bulkbar" id="recon-bulk" hidden></div>
+            <div class="table-wrap" id="recon-table"></div>
+            <div class="pager" id="recon-pager"></div>
+          </section>
+        </div>`;
+      $('#recon-q').value = r.q;
+      $('#recon-drafts').checked = r.hideDrafts;
+      $('#recon-q').addEventListener('input', debounce((e) => { r.q = e.target.value; r.page = 0; loadRecon(); }));
+      $('#recon-drafts').addEventListener('change', (e) => { r.hideDrafts = e.target.checked; r.page = 0; loadRecon(); });
+      $('[data-act=analyze]', c).addEventListener('click', analyze);
+      $('[data-act=apply]', c).addEventListener('click', applyRecommended);
+      $('[data-act=close]', c).addEventListener('click', toggleClose);
+    }
+    await loadRecon();
+  }
+
+  async function loadRecon() {
+    const r = state.recon;
+    const params = new URLSearchParams({ status: r.status, page: r.page, size: 50, hideDrafts: r.hideDrafts });
+    if (r.q.trim()) params.set('q', r.q.trim());
+    $('#recon-table').innerHTML = '<div class="card-pad stack">' + '<div class="skeleton"></div>'.repeat(6) + '</div>';
+    const [data, settings] = await Promise.all([api('/reconciliation?' + params), api('/settings')]);
+    r.rows = data.rows;
+    r.selected.clear();
+    paintMasterChip(settings, data.counts);
+    paintReconHeader(data, settings);
+    paintTabs(data.counts);
+    paintReconTable();
+    paintBulk();
+    paintPager($('#recon-pager'), data, (p) => { r.page = p; loadRecon(); });
+    $('#recon-total').textContent = `${num(data.total)} filas`;
+  }
+
+  function paintReconHeader(data, settings) {
+    const m = MASTER[settings.master] || MASTER.RM;
+    $('#recon-sub').innerHTML = `Manda <strong>${esc(m.label)}</strong> · Último análisis: ${date(data.lastAnalysis)}`;
+    const btn = $('[data-act=close]');
+    btn.innerHTML = settings.createEnabled ? `${ICONS.lock}Reabrir conciliación` : `${ICONS.unlock}Cerrar conciliación`;
+    btn.className = settings.createEnabled ? 'btn' : 'btn btn-primary';
+    const counts = data.counts || {};
+    const pending = PENDING_KEYS.reduce((s, k) => s + (counts[k] || 0), 0);
+    $('#recon-banner').innerHTML = !data.lastAnalysis && !Object.values(counts).some(Boolean)
+      ? `<div class="banner banner-warn">${ICONS.warn}<div><strong>Sin datos.</strong><p class="muted">Pulse “Analizar catálogos” para descargar Shopify y Retail Manager y compararlos.</p></div></div>`
+      : settings.createEnabled
+        ? `<div class="banner banner-ok">${ICONS.ok}<div><strong>Conciliación cerrada.</strong><p class="muted">El sync ya puede crear productos nuevos según quién manda.</p></div></div>`
+        : pending
+          ? `<div class="banner banner-warn">${ICONS.lock}<div><strong>Altas automáticas bloqueadas mientras concilia.</strong><p class="muted">Quedan ${num(pending)} filas por revisar. El sync solo actualiza productos ya vinculados.</p></div></div>`
+          : '';
+  }
+
+  function paintTabs(counts) {
+    const r = state.recon;
+    const pending = PENDING_KEYS.reduce((s, k) => s + (counts[k] || 0), 0);
+    const total = Object.values(counts).reduce((s, v) => s + v, 0);
+    $('#recon-tabs').innerHTML = TABS.map(([key, label]) => {
+      const n = key === 'PENDIENTES' ? pending : key === 'TODOS' ? total : (counts[key] || 0);
+      return `<button class="tab ${r.status === key ? 'active' : ''}" role="tab" aria-selected="${r.status === key}" data-tab="${key}">${esc(label)}<span class="count">${n.toLocaleString('es')}</span></button>`;
+    }).join('');
+    $$('#recon-tabs .tab').forEach((b) => b.addEventListener('click', () => { r.status = b.dataset.tab; r.page = 0; loadRecon(); }));
+  }
+
+  function shopifyCell(row) {
+    if (!row.shopifyVariantId) return '<span class="prod-none">No existe en Shopify</span>';
+    const draft = row.shopifyStatus === 'DRAFT' ? '<span class="badge">Borrador</span>' : row.shopifyStatus === 'ARCHIVED' ? '<span class="badge">Archivado</span>' : '';
+    return `<div class="prod">
+      <span class="prod-title">${esc(row.shopifyTitle)}</span>
+      ${row.shopifyVariantTitle ? `<span class="prod-meta">Variante: ${esc(row.shopifyVariantTitle)}${row.shopifyVariantCount > 1 ? ` · ${row.shopifyVariantCount} tamaños` : ''}</span>` : ''}
+      <span class="prod-meta">${row.shopifySku ? `<span class="mono">SKU ${esc(cleanCode(row.shopifySku))}</span>` : '<span class="badge badge-warn">Sin SKU</span>'}
+        ${row.shopifyBarcode && cleanCode(row.shopifyBarcode) !== cleanCode(row.shopifySku) ? `<span class="mono">CB ${esc(cleanCode(row.shopifyBarcode))}</span>` : ''}
+        ${draft}</span>
+      <span class="prod-meta"><span class="${row.priceDiff ? 'diff' : ''}">${money(row.shopifyPrice)}</span> · Stock ${num(row.shopifyQty)}</span>
+    </div>`;
+  }
+  function rmCell(row) {
+    if (!row.rmProductCode) {
+      return row.status === 'AMBIGUO' || row.status === 'SIN_MATCH' ? '<span class="prod-none">Sin producto asignado</span>' : '<span class="prod-none">—</span>';
+    }
+    return `<div class="prod">
+      <span class="prod-title">${esc(row.rmName || row.rmProductCode)}</span>
+      <span class="prod-meta"><span class="mono">Ref ${esc(row.rmProductCode)}</span>${row.rmBarcode ? `<span class="mono">CB ${esc(row.rmBarcode)}</span>` : ''}</span>
+      <span class="prod-meta"><span class="${row.priceDiff ? 'diff' : ''}">${money(row.rmPrice)}</span> · Stock ${num(row.rmStock)}</span>
+    </div>`;
+  }
+  function rowActions(row) {
+    const rec = row.recommendation;
+    const b = (act, label, primary) => `<button class="btn btn-sm ${primary ? 'btn-primary' : ''}" data-row-act="${act}" data-id="${row.id}">${label}</button>`;
+    switch (row.status) {
+      case 'AUTO':
+      case 'SUGERIDO':
+        return b('link', 'Vincular', true) + b('assign', 'Cambiar…') + b('ignore', 'Ignorar');
+      case 'AMBIGUO':
+      case 'SIN_MATCH':
+        return b('assign', 'Asignar…', rec !== 'CREATE_RM') + b('create-rm', 'Crear en RM', rec === 'CREATE_RM') + b('ignore', 'Ignorar', rec === 'IGNORE');
+      case 'SOLO_RM':
+        return b('create-shopify', 'Crear en Shopify', rec === 'CREATE_SHOPIFY') + b('ignore', 'Ignorar');
+      case 'IGNORADO':
+      case 'CREAR_EN_RM':
+      case 'ERROR':
+        return b('restore', 'Restaurar');
+      default:
+        return '';
+    }
+  }
+  const REC_TEXT = {
+    LINK: 'Vincular', REVIEW: 'Revisar y vincular', CHOOSE: 'Elegir el producto correcto', ASSIGN: 'Asignar o ignorar',
+    CREATE_RM: 'Crear en RM', CREATE_SHOPIFY: 'Crear en Shopify', IGNORE: 'Ignorar (borrador)', REVIEW_RM: 'Revisar',
+  };
+
+  function paintReconTable() {
+    const r = state.recon;
+    if (!r.rows.length) {
+      $('#recon-table').innerHTML = `<div class="empty"><strong>No hay filas en esta vista</strong>${r.q ? 'Pruebe con otra búsqueda.' : 'Cambie de pestaña o ejecute el análisis.'}</div>`;
+      return;
+    }
+    $('#recon-table').innerHTML = `<table>
+      <thead><tr>
+        <th class="col-check"><input type="checkbox" id="recon-all" aria-label="Seleccionar todas"></th>
+        <th>Estado</th><th>Shopify</th><th aria-hidden="true"></th><th>Retail Manager</th><th>Coincidencia</th><th class="num">Acciones</th>
+      </tr></thead>
+      <tbody>${r.rows.map((row) => `
+        <tr data-id="${row.id}">
+          <td class="col-check"><input type="checkbox" data-check="${row.id}" aria-label="Seleccionar fila"></td>
+          <td>${badge(row.status)}</td>
+          <td>${shopifyCell(row)}</td>
+          <td class="arrow">${ICONS.arrow}</td>
+          <td>${rmCell(row)}${row.note ? `<p class="note">${esc(row.note)}</p>` : ''}</td>
+          <td class="nowrap">
+            ${row.method ? `<div>${esc(METHOD[row.method] || row.method)}</div>` : ''}
+            ${row.score != null && row.method === 'NOMBRE' ? `<div class="muted score">${Math.round(row.score * 100)}% parecido</div>` : ''}
+            ${row.priceDiff ? '<div class="diff">Precio distinto</div>' : ''}
+            ${REC_TEXT[row.recommendation] ? `<div class="muted">Sugerido: ${esc(REC_TEXT[row.recommendation])}</div>` : ''}
+          </td>
+          <td><div class="row-actions">${rowActions(row)}</div></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    $('#recon-all').addEventListener('change', (e) => {
+      $$('[data-check]').forEach((cb) => { cb.checked = e.target.checked; toggleSelect(Number(cb.dataset.check), cb.checked); });
+    });
+    $$('[data-check]').forEach((cb) => cb.addEventListener('change', () => toggleSelect(Number(cb.dataset.check), cb.checked)));
+    $$('[data-row-act]').forEach((btn) => btn.addEventListener('click', () => rowAction(btn.dataset.rowAct, [Number(btn.dataset.id)])));
+  }
+
+  function toggleSelect(id, on) {
+    const r = state.recon;
+    on ? r.selected.add(id) : r.selected.delete(id);
+    $(`tr[data-id="${id}"]`)?.classList.toggle('selected', on);
+    paintBulk();
+  }
+  function paintBulk() {
+    const r = state.recon;
+    const bar = $('#recon-bulk');
+    if (!r.selected.size) { bar.hidden = true; return; }
+    const rows = r.rows.filter((x) => r.selected.has(x.id));
+    const has = (...st) => rows.some((x) => st.includes(x.status));
+    bar.hidden = false;
+    bar.innerHTML = `<strong>${r.selected.size} seleccionadas</strong>
+      ${has('AUTO', 'SUGERIDO') ? '<button class="btn btn-sm btn-primary" data-bulk="link">Vincular</button>' : ''}
+      ${has('SIN_MATCH', 'AMBIGUO') ? '<button class="btn btn-sm" data-bulk="create-rm">Crear en RM</button>' : ''}
+      ${has('SOLO_RM') ? '<button class="btn btn-sm" data-bulk="create-shopify">Crear en Shopify</button>' : ''}
+      ${has('AUTO', 'SUGERIDO', 'AMBIGUO', 'SIN_MATCH', 'SOLO_RM', 'ERROR') ? '<button class="btn btn-sm" data-bulk="ignore">Ignorar</button>' : ''}
+      ${has('IGNORADO', 'CREAR_EN_RM', 'ERROR') ? '<button class="btn btn-sm" data-bulk="restore">Restaurar</button>' : ''}
+      <button class="btn btn-sm btn-ghost" data-bulk="clear">Quitar selección</button>`;
+    $$('[data-bulk]', bar).forEach((b) => b.addEventListener('click', () => {
+      if (b.dataset.bulk === 'clear') { [...r.selected].forEach((id) => { const cb = $(`[data-check="${id}"]`); if (cb) cb.checked = false; toggleSelect(id, false); }); return; }
+      rowAction(b.dataset.bulk, [...r.selected]);
+    }));
+  }
+
+  async function rowAction(act, ids) {
+    try {
+      if (act === 'assign') { openAssign(state.recon.rows.find((x) => x.id === ids[0])); return; }
+      if (act === 'ignore' || act === 'restore') {
+        await api('/reconciliation/' + act, { method: 'POST', body: { ids } });
+        toast(act === 'ignore' ? `${ids.length} fila(s) ignorada(s)` : `${ids.length} fila(s) restaurada(s)`);
+        loadRecon();
+        return;
+      }
+      if (act === 'create-shopify' && ids.length > 1) {
+        const ok = await confirmDialog('Crear en Shopify', `Se crearán ${ids.length} productos nuevos en Shopify y se publicarán en todos los canales.`, 'Crear');
+        if (!ok) return;
+      }
+      if (act === 'create-rm' && ids.length > 1) {
+        const ok = await confirmDialog('Crear en Retail Manager', `Se crearán ${ids.length} productos en Retail Manager. Si el endpoint del POS no está configurado, quedarán en espera.`, 'Crear');
+        if (!ok) return;
+      }
+      const job = await api('/reconciliation/' + act, { method: 'POST', body: { ids } });
+      startJobPolling(job);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  async function analyze() {
+    try { startJobPolling(await api('/reconciliation/analyze', { method: 'POST' })); } catch (err) { toast(err.message, 'error'); }
+  }
+
+  async function applyRecommended() {
+    const s = state.settings || (await api('/settings'));
+    const m = MASTER[s.master] || MASTER.RM;
+    const extra = s.master === 'SHOPIFY' ? ' Las variantes de Shopify sin coincidencia se crearán en RM.'
+      : s.master === 'RM' ? ' Los productos que solo están en RM se crearán en Shopify.'
+      : ' Como no manda ningún sistema, no se creará nada: lo demás queda para revisión manual.';
+    const ok = await confirmDialog('Aplicar acciones recomendadas',
+      `Se vincularán todas las coincidencias por código.${extra} Los sugeridos por nombre y los ambiguos NO se tocan. Manda: ${m.label}.`, 'Aplicar');
+    if (!ok) return;
+    try { startJobPolling(await api('/reconciliation/apply-recommended', { method: 'POST' })); } catch (err) { toast(err.message, 'error'); }
+  }
+
+  async function toggleClose() {
+    const s = await api('/settings');
+    const reopen = s.createEnabled;
+    const ok = await confirmDialog(reopen ? 'Reabrir conciliación' : 'Cerrar conciliación',
+      reopen ? 'El sync dejará de crear productos nuevos hasta que vuelva a cerrar la conciliación.'
+        : 'El sync empezará a crear productos nuevos según quién manda. Hágalo cuando ya no queden productos por relacionar.',
+      reopen ? 'Reabrir' : 'Cerrar conciliación');
+    if (!ok) return;
+    try {
+      await api('/reconciliation/close', { method: 'POST', body: { reopen } });
+      toast(reopen ? 'Conciliación reabierta: altas bloqueadas' : 'Conciliación cerrada: altas activas');
+      loadRecon();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // Diálogo de asignación
+  let assignRow = null;
+  function openAssign(row) {
+    if (!row) return;
+    assignRow = row;
+    $('#assign-subtitle').textContent = `Shopify: ${row.shopifyTitle}${row.shopifyVariantTitle ? ' · ' + row.shopifyVariantTitle : ''}`;
+    const input = $('#assign-search');
+    input.value = row.rmName || (row.shopifyTitle || '').replace(/\s+BY\s+.*$/i, '');
+    $('#assign-dialog').showModal();
+    input.focus();
+    input.select();
+    searchAssign();
+  }
+  const searchAssign = debounce(async () => {
+    const list = $('#assign-results');
+    list.innerHTML = '<li class="empty">Buscando…</li>';
+    try {
+      const results = await api('/rm-products?q=' + encodeURIComponent($('#assign-search').value));
+      list.innerHTML = results.length ? results.map((p) => `
+        <li><button type="button" data-code="${esc(p.productCode)}">
+          <span class="prod"><span class="prod-title">${esc(p.productName)}</span>
+          <span class="prod-meta"><span class="mono">Ref ${esc(p.productCode)}</span>${p.barCode ? `<span class="mono">CB ${esc(p.barCode)}</span>` : ''}</span></span>
+          <span class="prod-meta nowrap">${money(p.price)} · Stock ${num(p.stock)}</span>
+        </button></li>`).join('') : '<li class="empty">Sin resultados</li>';
+      $$('button[data-code]', list).forEach((b) => b.addEventListener('click', () => doAssign(b.dataset.code)));
+    } catch (err) {
+      list.innerHTML = `<li class="empty">${esc(err.message)}</li>`;
+    }
+  }, 250);
+  $('#assign-search').addEventListener('input', searchAssign);
+  async function doAssign(code) {
+    try {
+      await api('/reconciliation/assign', { method: 'POST', body: { id: assignRow.id, rmProductCode: code } });
+      $('#assign-dialog').close();
+      toast(`Vinculado con ${code}`);
+      loadRecon();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // ───────── Configuración ─────────
+  async function renderSettings() {
+    const s = await api('/settings');
+    paintMasterChip(s);
+    const choice = (value, title, items) => `
+      <label class="choice"><input type="radio" name="master" value="${value}" ${s.master === value ? 'checked' : ''}>
+        <span class="choice-title">${esc(title)}</span><ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></label>`;
+    $('#content').innerHTML = `
+      <form id="settings-form" class="card">
+        <div class="card-head"><div><h2>¿Qué sistema manda?</h2><p class="muted">Decide el precio, la descripción y la creación de productos. El stock siempre va de Retail Manager a Shopify.</p></div></div>
+        <div class="card-pad">
+          <div class="choice-grid">
+            ${choice('RM', 'Retail Manager', ['Precio y descripción de RM pasan a Shopify', 'Productos nuevos en RM (Web=True) se crean en Shopify', 'Si se borra en RM, se borra en Shopify'])}
+            ${choice('SHOPIFY', 'Shopify', ['Precio y descripción no se tocan en Shopify', 'Productos solo en Shopify se crean en RM', 'Nunca se borra nada en Shopify'])}
+            ${choice('NINGUNO', 'Ninguno', ['Cada sistema conserva su precio', 'La factura usa el precio de venta de Shopify', 'Los productos nuevos se resuelven en conciliación'])}
+          </div>
+        </div>
+        <div class="settings-row">
+          <div><h3>Importar borradores a RM</h3><p>Los borradores existen en Shopify pero no están a la venta en ningún canal. Si está apagado, se concilian pero no se crean en RM.</p></div>
+          <label class="switch"><input type="checkbox" name="importDrafts" ${s.importDrafts ? 'checked' : ''}><span>${s.importDrafts ? 'Sí' : 'No'}</span></label>
+        </div>
+        <div class="settings-row">
+          <div><h3>Límite de borrado por ciclo</h3><p>Si en un ciclo desaparece de RM más de este porcentaje de productos vinculados, el borrado en Shopify se bloquea y queda en auditoría.</p></div>
+          <label class="field"><input type="number" name="maxDeletePercent" min="0" max="100" value="${esc(s.maxDeletePercent)}"><small>Porcentaje (0–100)</small></label>
+        </div>
+        <div class="settings-row">
+          <div><h3>Endpoint del POS para crear productos</h3><p>Ruta relativa a pos.base-url. Mientras esté vacía, “Crear en RM” deja las filas en espera.</p></div>
+          <label class="field"><input name="posCreateProductPath" placeholder="/cse.api.v1/ImportExternalProduct" value="${esc(s.posCreateProductPath)}"><small>Debe empezar con /</small></label>
+        </div>
+        <div class="settings-row">
+          <div><h3>Altas automáticas</h3><p>Se activan al cerrar la conciliación. Mientras estén bloqueadas, el sync solo actualiza productos ya vinculados.</p></div>
+          <div>${s.createEnabled ? '<span class="badge badge-ok">Activas</span>' : '<span class="badge badge-warn">Bloqueadas</span>'} <a href="#/conciliacion" class="btn btn-ghost btn-sm">Ir a conciliación</a></div>
+        </div>
+        <div class="save-bar"><button type="reset" class="btn">Descartar</button><button type="submit" class="btn btn-primary">Guardar cambios</button></div>
+      </form>
+
+      <form id="password-form" class="card">
+        <div class="card-head"><div><h2>Cuenta</h2><p class="muted">Usuario: ${esc(state.user)}</p></div></div>
+        <div class="settings-row"><div><h3>Contraseña actual</h3></div><input type="password" name="current" autocomplete="current-password" required></div>
+        <div class="settings-row"><div><h3>Nueva contraseña</h3><p>Mínimo 10 caracteres.</p></div><input type="password" name="next" autocomplete="new-password" minlength="10" required></div>
+        <div class="settings-row"><div><h3>Repita la nueva contraseña</h3></div><input type="password" name="confirm" autocomplete="new-password" minlength="10" required></div>
+        <div class="save-bar"><span class="form-error" style="margin-right:auto"></span><button type="submit" class="btn btn-primary">Cambiar contraseña</button></div>
+      </form>`;
+
+    const form = $('#settings-form');
+    const sw = $('[name=importDrafts]', form);
+    sw.addEventListener('change', () => { sw.nextElementSibling.textContent = sw.checked ? 'Sí' : 'No'; });
+    form.addEventListener('reset', () => setTimeout(renderSettings, 0));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const master = $('[name=master]:checked', form).value;
+      if (master !== s.master) {
+        const ok = await confirmDialog('Cambiar quién manda', `Pasará a mandar ${MASTER[master].label}. El próximo ciclo del sync aplicará las nuevas reglas.`, 'Cambiar');
+        if (!ok) return;
+      }
+      try {
+        const saved = await api('/settings', { method: 'PUT', body: {
+          master,
+          importDrafts: sw.checked,
+          maxDeletePercent: Number($('[name=maxDeletePercent]', form).value),
+          posCreateProductPath: $('[name=posCreateProductPath]', form).value.trim(),
+        } });
+        paintMasterChip(saved);
+        toast('Configuración guardada');
+        renderSettings();
+      } catch (err) { toast(err.message, 'error'); }
+    });
+
+    const pf = $('#password-form');
+    pf.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = $('.form-error', pf);
+      errEl.textContent = '';
+      if (pf.next.value !== pf.confirm.value) { errEl.textContent = 'Las contraseñas nuevas no coinciden'; return; }
+      try {
+        await api('/auth/change-password', { method: 'POST', body: { current: pf.current.value, next: pf.next.value } });
+        pf.reset();
+        toast('Contraseña actualizada');
+      } catch (err) { errEl.textContent = err.message; }
+    });
+  }
+
+  // ───────── Tablas simples ─────────
+  function paintPager(el, data, go) {
+    if (!data.pages || data.pages <= 1) { el.innerHTML = data.total ? `<span>${num(data.total)} en total</span>` : ''; return; }
+    el.innerHTML = `<span>Página ${data.page + 1} de ${data.pages} · ${num(data.total)} en total</span>
+      <span class="actions"><button class="btn btn-sm" data-p="${data.page - 1}" ${data.page === 0 ? 'disabled' : ''}>Anterior</button>
+      <button class="btn btn-sm" data-p="${data.page + 1}" ${data.page + 1 >= data.pages ? 'disabled' : ''}>Siguiente</button></span>`;
+    $$('[data-p]', el).forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.p))));
+  }
+
+  async function simpleTable({ key, path, searchPlaceholder, extraToolbar = '', columns, emptyText, bind }) {
+    const st = state[key];
+    const c = $('#content');
+    if (!$(`#${key}-root`, c)) {
+      c.innerHTML = `<section class="card" id="${key}-root">
+        <div class="toolbar">
+          ${searchPlaceholder ? `<label class="search">${ICONS.search}<input type="search" id="${key}-q" placeholder="${esc(searchPlaceholder)}"></label>` : ''}
+          ${extraToolbar}<span class="spacer"></span>
+        </div>
+        <div class="table-wrap" id="${key}-table"></div><div class="pager" id="${key}-pager"></div></section>`;
+      const q = $(`#${key}-q`);
+      if (q) { q.value = st.q || ''; q.addEventListener('input', debounce((e) => { st.q = e.target.value; st.page = 0; simpleTable(arguments[0]); })); }
+      bind?.(c, () => simpleTable(arguments[0]));
+    }
+    const params = new URLSearchParams({ page: st.page });
+    if (st.q && st.q.trim()) params.set('q', st.q.trim());
+    if (st.includeDeleted) params.set('includeDeleted', 'true');
+    const data = await api(path + '?' + params);
+    $(`#${key}-table`).innerHTML = data.rows.length
+      ? `<table><thead><tr>${columns.map((col) => `<th class="${col.cls || ''}">${esc(col.title)}</th>`).join('')}</tr></thead>
+         <tbody>${data.rows.map((row) => `<tr>${columns.map((col) => `<td class="${col.cls || ''}">${col.render(row)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><strong>Sin resultados</strong>${esc(emptyText)}</div>`;
+    paintPager($(`#${key}-pager`), data, (p) => { st.page = p; simpleTable(arguments[0]); });
+  }
+
+  function renderLinks() {
+    return simpleTable({
+      key: 'links', path: '/links', searchPlaceholder: 'Buscar por referencia de RM o ID de Shopify',
+      extraToolbar: '<label class="switch"><input type="checkbox" id="links-deleted"><span>Incluir eliminados</span></label>',
+      emptyText: 'Todavía no hay productos vinculados.',
+      bind: (c, reload) => {
+        const cb = $('#links-deleted', c);
+        cb.checked = state.links.includeDeleted;
+        cb.addEventListener('change', () => { state.links.includeDeleted = cb.checked; state.links.page = 0; reload(); });
+      },
+      columns: [
+        { title: 'Referencia RM', render: (r) => `<span class="mono">${esc(r.productCode)}</span>` },
+        { title: 'Producto Shopify', render: (r) => `<span class="mono">${esc((r.shopifyProductId || '').split('/').pop())}</span>` },
+        { title: 'Variante', render: (r) => `<span class="mono">${esc((r.shopifyVariantId || '').split('/').pop())}</span>` },
+        { title: 'Estado', render: (r) => r.deleted ? '<span class="badge badge-danger">Eliminado</span>' : r.pending ? '<span class="badge badge-info">Pendiente de enviar</span>' : '<span class="badge badge-ok">Sincronizado</span>' },
+        { title: 'Último envío', cls: 'nowrap', render: (r) => date(r.lastSync) },
+        { title: 'Visto en RM', cls: 'nowrap', render: (r) => date(r.lastSeen) },
+      ],
+    });
+  }
+
+  const EVENT = { PAID: ['Pagado', 'badge-ok'], CANCELLED: ['Cancelado', 'badge-danger'], REFUNDED: ['Reembolsado', 'badge-warn'], PARTIALLY_REFUNDED: ['Reembolso parcial', 'badge-warn'], PARTIALLY_PAID: ['Pago parcial', 'badge-warn'], VOIDED: ['Anulado', 'badge-danger'], PENDING: ['Pendiente', 'badge-info'] };
+  function renderOrders() {
+    return simpleTable({
+      key: 'orders', path: '/orders', searchPlaceholder: 'Buscar por ID de pedido o estado',
+      emptyText: 'Todavía no se ha procesado ningún pedido.',
+      columns: [
+        { title: 'Pedido Shopify', render: (r) => `<span class="mono">${esc((r.id || '').split('/').pop())}</span>` },
+        { title: 'Estado', render: (r) => { const [l, c] = EVENT[r.eventType] || [r.eventType || '—', '']; return `<span class="badge ${c}">${esc(l)}</span>`; } },
+        { title: 'Total', cls: 'num', render: (r) => money(r.totalAmount) },
+        { title: 'Procesado', cls: 'nowrap', render: (r) => date(r.processedAt) },
+      ],
+    });
+  }
+
+  function renderAudit() {
+    return simpleTable({
+      key: 'audit', path: '/audit', emptyText: 'Sin actividad registrada.',
+      columns: [
+        { title: 'Fecha', cls: 'nowrap', render: (r) => date(r.at) },
+        { title: 'Usuario', render: (r) => esc(r.username) },
+        { title: 'Acción', render: (r) => `<span class="badge">${esc(r.action)}</span>` },
+        { title: 'Detalle', render: (r) => `<span class="muted">${esc(r.detail)}</span>` },
+      ],
+    });
+  }
+
+  // ───────── Tareas en segundo plano ─────────
+  function startJobPolling(job) {
+    if (job) paintJob(job);
+    stopJobPolling();
+    state.jobTimer = setInterval(checkJob, 1200);
+  }
+  function stopJobPolling() { clearInterval(state.jobTimer); state.jobTimer = null; }
+  async function checkJob() {
+    try {
+      const { job } = await api('/jobs/current');
+      if (!job) { stopJobPolling(); return; }
+      paintJob(job);
+      if (job.running && !state.jobTimer) startJobPolling();
+      if (!job.running) {
+        stopJobPolling();
+        const key = job.name + job.startedAt;
+        if (state.lastJobKey !== key) {
+          state.lastJobKey = key;
+          if (!job.failed) toast(`${job.name}: ${job.message.toLowerCase()}`, job.errors.length ? 'error' : '');
+          route();
+        }
+      }
+    } catch (e) { stopJobPolling(); }
+  }
+  function paintJob(job) {
+    const el = $('#job-toast');
+    const finishedLongAgo = !job.running && job.finishedAt && Date.now() - new Date(job.finishedAt) > 60000;
+    if (finishedLongAgo && !el.dataset.pinned) { el.hidden = true; return; }
+    const pct = job.total ? Math.round((job.done / job.total) * 100) : 0;
+    el.hidden = false;
+    el.innerHTML = `<header><strong>${esc(job.name)}</strong>
+        ${job.running ? `<span class="muted">${job.total ? pct + '%' : ''}</span>` : '<button class="btn btn-ghost btn-sm" data-close>Cerrar</button>'}</header>
+      <div class="muted">${esc(job.message)}${job.total ? ` · ${num(job.done)} de ${num(job.total)}${job.ok !== job.done ? ` (${num(job.done - job.ok)} con error)` : ''}` : ''}</div>
+      ${job.running ? `<div class="progress ${job.total ? '' : 'indeterminate'}"><span style="width:${pct}%"></span></div>` : ''}
+      ${job.errors && job.errors.length ? `<ul class="errors">${job.errors.slice(0, 20).map((e) => `<li>${esc(e)}</li>`).join('')}</ul>` : ''}`;
+    el.dataset.pinned = job.running || (job.errors && job.errors.length) ? '1' : '';
+    $('[data-close]', el)?.addEventListener('click', () => { el.hidden = true; el.dataset.pinned = ''; });
+  }
+
+  // ───────── Inicio ─────────
+  paintThemeButtons();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintThemeButtons);
+  (async () => {
+    try {
+      const me = await api('/auth/me');
+      state.user = me.username;
+      me.mustChangePassword ? showForcePassword() : showApp();
+    } catch (e) {
+      if ($('#app').hidden && $('#force-password-view').hidden) showLogin();
+    }
+  })();
+})();

@@ -2,6 +2,7 @@ package com.retailmanager.rmpayCalendar.services.services.Shopify;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -115,72 +116,61 @@ public ShopifyResponse createProduct(PosProduct product) {
     }
 }
 
+/**
+ * MODIFICADO (aprobado): antes usaba productSet con una sola variante, y productSet reemplaza la
+ * lista completa de variantes (borraba los otros tamaños). Ahora:
+ *  1. Precio y código de barras: productVariantsBulkUpdate solo sobre la variante vinculada.
+ *  2. Título y descripción: productUpdate solo si el producto tiene una única variante, porque en
+ *     productos con varios tamaños el nombre de RM (que incluye el tamaño) no aplica a todo el producto.
+ */
 @Override
 public void updateProduct(PosProduct product, ProductSync sync) {
     try {
 
-        String mutation = """
-        mutation productSet($input: ProductSetInput!, $sync: Boolean!) {
-          productSet(synchronous: $sync, input: $input) {
-            product {
-              id
-              title
-              variants(first: 1) {
-                edges {
-                  node {
-                    id
-                    price
-                    barcode
-                  }
-                }
-              }
-            }
-            userErrors {
-              field
-              message
-            }
+        String variantMutation = """
+        mutation variantsUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price barcode }
+            userErrors { field message }
           }
         }
         """;
 
-        Map<String, Object> variables = Map.of(
-            "sync", true,
-            "input", Map.of(
-                "id", sync.getShopifyProductId(),
-                "title", product.getProductName(),
-                "descriptionHtml", product.getWebDesc(),
+        Map<String, Object> variant = new HashMap<>();
+        variant.put("id", sync.getShopifyVariantId());
+        variant.put("price", product.getPrice());
+        variant.put("barcode", product.getBarCode() == null ? "" : product.getBarCode());
 
-                // 🔥 OBLIGATORIO cuando hay variants
-                "productOptions", List.of(
-                    Map.of(
-                        "name", "Title",
-                        "values", List.of(
-                            Map.of("name", product.getProductName())
-                        )
-                    )
-                ),
+        Map<String, Object> variantVariables = new HashMap<>();
+        variantVariables.put("productId", sync.getShopifyProductId());
+        variantVariables.put("variants", List.of(variant));
 
-                "variants", List.of(
-                    Map.of(
-                        "id", sync.getShopifyVariantId(),
-                        "price", product.getPrice(),
-                        "barcode", product.getBarCode() == null ? "" : product.getBarCode(),
+        System.out.println("📦 Datos enviados a Shopify (variante): " + variantVariables);
+        validateUserErrors(client.execute(variantMutation, variantVariables));
 
-                        "optionValues", List.of(
-                            Map.of(
-                                "optionName", "Title",
-                                "name", product.getProductName()
-                            )
-                        )
-                    )
-                )
-            )
-        );
-        System.out.println("📦 Datos enviados a Shopify: " + variables);
-        System.out.println("📦 Mutation: " + mutation);
-        String response = client.execute(mutation, variables);
+        if (countVariants(sync.getShopifyProductId()) <= 1) {
 
-        validateUserErrors(response);
+            String productMutation = """
+            mutation productUpdate($product: ProductUpdateInput!) {
+              productUpdate(product: $product) {
+                product { id title }
+                userErrors { field message }
+              }
+            }
+            """;
+
+            Map<String, Object> input = new HashMap<>();
+            input.put("id", sync.getShopifyProductId());
+            if (product.getProductName() != null && !product.getProductName().isBlank()) {
+                input.put("title", product.getProductName());
+            }
+            if (product.getWebDesc() != null) {
+                input.put("descriptionHtml", product.getWebDesc());
+            }
+
+            System.out.println("📦 Datos enviados a Shopify (producto): " + input);
+            validateUserErrors(client.execute(productMutation, Map.of("product", input)));
+        }
 
     } catch (Exception e) {
         System.out.println("Error actualizando producto en Shopify: " + e.getMessage());
@@ -225,6 +215,19 @@ public void updateVariant(PosProduct product, ProductSync sync) {
         throw new RuntimeException("Error actualizando variante", e);
     }
 }
+// NUEVO: cantidad de variantes de un producto (usado por updateProduct)
+private int countVariants(String productId) throws Exception {
+    String query = """
+        query variantsCount($id: ID!) {
+          product(id: $id) { variantsCount { count } }
+        }
+        """;
+    JsonNode count = new ObjectMapper()
+        .readTree(client.execute(query, Map.of("id", productId)))
+        .path("data").path("product").path("variantsCount").path("count");
+    return count.isNumber() ? count.asInt() : 1;
+}
+
 private void validateUserErrors(String response) {
     if (response.contains("userErrors") && !response.contains("\"userErrors\":[]")) {
         log.error("Errores en respuesta de Shopify: {}", response);

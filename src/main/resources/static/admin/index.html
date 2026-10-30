@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RM ↔ Shopify · Panel</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f6fed'/%3E%3Cpath d='M9 12h11l-3-3M23 20H12l3 3' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="admin.css">
+  <script>
+    // Aplica el tema antes de pintar para evitar parpadeo
+    try { const t = localStorage.getItem('rm-admin-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <!-- ───────── Login ───────── -->
+  <section id="login-view" class="auth-screen" hidden>
+    <form id="login-form" class="auth-card" autocomplete="on">
+      <div class="brand brand-lg"><span class="brand-mark" aria-hidden="true"></span><span>RM ↔ Shopify</span></div>
+      <h1>Iniciar sesión</h1>
+      <p class="muted">Panel de configuración y conciliación de catálogos.</p>
+      <label class="field"><span>Usuario</span><input name="username" autocomplete="username" required autofocus></label>
+      <label class="field"><span>Contraseña</span><input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="form-error" id="login-error" role="alert"></p>
+      <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+      <button class="btn btn-ghost theme-toggle" type="button" title="Cambiar tema"><span class="theme-label">Tema</span></button>
+    </form>
+  </section>
+
+  <!-- ───────── Cambio de contraseña obligatorio ───────── -->
+  <section id="force-password-view" class="auth-screen" hidden>
+    <form id="force-password-form" class="auth-card">
+      <div class="brand brand-lg"><span class="brand-mark" aria-hidden="true"></span><span>RM ↔ Shopify</span></div>
+      <h1>Cambie su contraseña</h1>
+      <p class="muted">Es su primer ingreso. Elija una contraseña nueva de al menos 10 caracteres.</p>
+      <label class="field"><span>Contraseña actual</span><input name="current" type="password" autocomplete="current-password" required></label>
+      <label class="field"><span>Nueva contraseña</span><input name="next" type="password" autocomplete="new-password" minlength="10" required></label>
+      <label class="field"><span>Repita la nueva contraseña</span><input name="confirm" type="password" autocomplete="new-password" minlength="10" required></label>
+      <p class="form-error" role="alert"></p>
+      <button class="btn btn-primary btn-block" type="submit">Guardar y continuar</button>
+    </form>
+  </section>
+
+  <!-- ───────── Aplicación ───────── -->
+  <div id="app" class="app" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>RM ↔ Shopify</span></div>
+      <nav class="nav" aria-label="Secciones">
+        <a href="#/panel" data-view="panel"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 4v4h6V4z"/></svg>Panel</a>
+        <a href="#/conciliacion" data-view="conciliacion"><svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Conciliación<span class="nav-badge" id="nav-pending"></span></a>
+        <a href="#/configuracion" data-view="configuracion"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configuración</a>
+        <a href="#/vinculados" data-view="vinculados"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Vinculados</a>
+        <a href="#/pedidos" data-view="pedidos"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Pedidos</a>
+        <a href="#/auditoria" data-view="auditoria"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>Auditoría</a>
+      </nav>
+      <div class="sidebar-foot">
+        <button class="btn btn-ghost btn-block theme-toggle" type="button"><span class="theme-label">Tema</span></button>
+        <div class="user-row"><span class="avatar" id="user-avatar"></span><span id="user-name" class="user-name"></span>
+          <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Salir</button></div>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon menu-btn" id="menu-btn" type="button" aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <h1 id="view-title">Panel</h1>
+        <div class="topbar-right" id="master-chip"></div>
+      </header>
+      <div class="content" id="content"></div>
+    </main>
+  </div>
+
+  <!-- Diálogo de asignación manual -->
+  <dialog id="assign-dialog" class="dialog">
+    <form method="dialog" class="dialog-body">
+      <header class="dialog-head">
+        <div><h2>Asignar producto de Retail Manager</h2><p class="muted" id="assign-subtitle"></p></div>
+        <button class="btn btn-ghost btn-icon" value="cancel" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="assign-search" type="search" placeholder="Buscar por nombre, referencia o código de barras" autocomplete="off"></label>
+      <ul class="pick-list" id="assign-results"></ul>
+    </form>
+  </dialog>
+
+  <!-- Diálogo de confirmación -->
+  <dialog id="confirm-dialog" class="dialog dialog-sm">
+    <form method="dialog" class="dialog-body">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text" class="muted"></p>
+      <footer class="dialog-foot">
+        <button class="btn" value="cancel">Cancelar</button>
+        <button class="btn btn-primary" value="ok" id="confirm-ok">Confirmar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="job-toast" id="job-toast" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
