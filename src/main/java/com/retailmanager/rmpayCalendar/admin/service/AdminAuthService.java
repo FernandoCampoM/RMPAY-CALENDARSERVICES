@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Usuario del panel admin. La contraseña se guarda como hash PBKDF2 en Sys_general_config
- * (admin.passwordHash). Si no existe, al arrancar se genera una contraseña inicial aleatoria,
- * se muestra una sola vez en el log y se obliga a cambiarla en el primer ingreso.
+ * (admin.passwordHash). Si no existe, al arrancar se crea admin/admin y se obliga a cambiar
+ * la contraseña en el primer ingreso (el filtro bloquea la API hasta hacerlo).
  * Depende de: SyncSettingsService.get/set.
  */
 @Slf4j
@@ -30,6 +30,8 @@ public class AdminAuthService {
     private static final String USERNAME = "admin.username";
     private static final String PASSWORD_HASH = "admin.passwordHash";
     private static final String MUST_CHANGE = "admin.mustChangePassword";
+    /** Contraseña inicial; el panel obliga a cambiarla en el primer ingreso. */
+    private static final String DEFAULT_PASSWORD = "admin";
     private static final int ITERATIONS = 120_000;
     private static final int MAX_ATTEMPTS = 5;
     private static final long LOCK_SECONDS = 300;
@@ -45,14 +47,10 @@ public class AdminAuthService {
     public void ensureAdminUser() {
         try {
             if (settings.get(PASSWORD_HASH, "").isEmpty()) {
-                String initial = randomPassword();
                 settings.set(USERNAME, "ADMIN USERNAME", "admin");
-                settings.set(PASSWORD_HASH, "ADMIN PASSWORD HASH", hash(initial));
+                settings.set(PASSWORD_HASH, "ADMIN PASSWORD HASH", hash(DEFAULT_PASSWORD));
                 settings.set(MUST_CHANGE, "ADMIN MUST CHANGE PASSWORD", "true");
-                log.warn("==================================================================");
-                log.warn(" PANEL ADMIN | usuario: admin | contraseña inicial: {}", initial);
-                log.warn(" Se pedirá cambiarla en el primer ingreso.");
-                log.warn("==================================================================");
+                log.warn("PANEL ADMIN | usuario inicial: admin / admin | se pedirá cambiar la contraseña en el primer ingreso");
             }
         } catch (Exception e) {
             log.error("ADMIN_USER_INIT_ERROR | error={}", e.getMessage());
@@ -133,14 +131,5 @@ public class AdminAuthService {
         } catch (Exception e) {
             throw new IllegalStateException("No se pudo calcular el hash de la contraseña", e);
         }
-    }
-
-    private String randomPassword() {
-        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 14; i++) {
-            sb.append(alphabet.charAt(random.nextInt(alphabet.length())));
-        }
-        return sb.toString();
     }
 }
