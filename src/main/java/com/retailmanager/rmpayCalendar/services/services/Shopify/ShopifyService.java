@@ -1,6 +1,5 @@
 package com.retailmanager.rmpayCalendar.services.services.Shopify;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,9 +9,11 @@ import java.util.concurrent.Semaphore;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +32,14 @@ public class ShopifyService implements IShopifyService {
     //@Value("${shopify.location-id}")
 private String LOCATION_ID;
     private final Semaphore semaphore = new Semaphore(2);
+    // 5 intentos con espera de 2s, 4s, 8s, 16s (misma configuración que tenía @Retryable)
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(5)
+            .exponentialBackoff(2000, 2, 16000)
+            .retryOn(HttpServerErrorException.class)
+            .retryOn(HttpClientErrorException.TooManyRequests.class)
+            .retryOn(ResourceAccessException.class)
+            .build();
     private List<ShopifyPublication> publications = new ArrayList<>();
     @PostConstruct
     public void init() {
@@ -368,18 +377,20 @@ public String executeControlled(String query) throws InterruptedException {
         semaphore.release();
     }
 }
-@Retryable(
-    retryFor = { RuntimeException.class, IOException.class },
-    maxAttempts = 5,
-    backoff = @Backoff(delay = 2000, multiplier = 2)
-)
+/**
+ * Reintenta con RetryTemplate en lugar de @Retryable: este método se llama desde la misma
+ * clase y esa llamada no pasa por el proxy de Spring, así que la anotación nunca reintentaba.
+ * Solo reintenta errores pasajeros (5xx, 429, timeouts/conexión); un 4xx falla de inmediato.
+ */
 public String executeWithRetry(String query) {
-    try {
-        return executeControlled(query);
-    } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(e);
-    }
+    return retryTemplate.execute(ctx -> {
+        try {
+            return executeControlled(query);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+    });
 }
 private ShopifyResponse parseResponse(String json) {
 
@@ -863,6 +874,106 @@ public String getNewOrders(String lastSyncDate) {
         Map<String, Object> variables = Map.of(
             "query", filter
         );
+
+        return client.execute(query, variables);
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error obteniendo órdenes nuevas", e);
+    }
+}
+
+/**
+ * Igual que getNewOrders(lastSyncDate) pero paginado: devuelve la página que sigue a
+ * afterCursor (null = primera página) e incluye pageInfo.endCursor para pedir la siguiente.
+ */
+@Override
+public String getNewOrders(String lastSyncDate, String afterCursor) {
+
+    try {
+
+        String query = """
+            query getOrders($query: String!, $after: String) {
+              orders(first: 50, after: $after, sortKey: CREATED_AT, reverse: false, query: $query) {
+                edges {
+                  cursor
+                  node {
+
+                    id
+                    name
+                    createdAt
+
+                    displayFinancialStatus
+                    cancelledAt
+
+                    totalPriceSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    subtotalPriceSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    totalDiscountsSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    refunds {
+                      id
+                      createdAt
+                    }
+
+                    customer {
+                      firstName
+                      phone
+                    }
+
+                    billingAddress {
+                      address1
+                    }
+
+                    lineItems(first: 50) {
+                      edges {
+                        node {
+
+                          name
+                          quantity
+
+                          originalUnitPriceSet {
+                            shopMoney {
+                              amount
+                            }
+                          }
+
+                          variant {
+                            sku
+                          }
+
+                        }
+                      }
+                    }
+
+                  }
+                }
+
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+
+              }
+            }
+        """;
+
+        // Map.of no admite null; la primera página va sin cursor
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("query", "created_at:>" + lastSyncDate);
+        variables.put("after", afterCursor);
 
         return client.execute(query, variables);
 

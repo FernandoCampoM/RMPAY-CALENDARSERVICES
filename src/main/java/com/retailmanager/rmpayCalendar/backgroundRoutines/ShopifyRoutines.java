@@ -44,8 +44,19 @@ public class ShopifyRoutines extends Thread {
             public void run() {
                 // Coloca aquí el código que deseas que se ejecute en el evento diario
                 System.out.println("🔥 RUTINA DE SINCORNIZACION DE SHOPIFY EJECUTANDOSE...");
-                productSyncJob.execute();
-                invoiceSyncJob.execute();
+                // Una excepción no capturada cancela el Timer para siempre; cada job se aísla
+                try {
+                    productSyncJob.execute();
+                } catch (Exception e) {
+                    System.out.println("❌ Error en sincronización de productos: " + e.getMessage());
+                    e.printStackTrace();
+                }
+                try {
+                    invoiceSyncJob.execute();
+                } catch (Exception e) {
+                    System.out.println("❌ Error en sincronización de facturas: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         };
 

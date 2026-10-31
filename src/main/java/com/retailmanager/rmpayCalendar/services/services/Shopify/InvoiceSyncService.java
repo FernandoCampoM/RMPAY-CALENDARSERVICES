@@ -24,6 +24,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.hibernate.query.Order;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class InvoiceSyncService {
+    /** Tope de seguridad por ciclo: 100 páginas x 50 = 5000 órdenes. */
+    private static final int MAX_ORDER_PAGES = 100;
     @Autowired
     private ProcessedOrderRepository repository;
     @Autowired
@@ -55,6 +58,8 @@ public class InvoiceSyncService {
     private Sys_general_configRepository configRepository;
     @Autowired
     private PosClientService posClientService;
+    @Value("${shopify.webhook_secret}")
+    private String webhookSecret;
     private Map<String, Object> mapOrderFromQueryToInvoice(JsonNode order) {
 
     Map<String, Object> invoice = new HashMap<>();
@@ -167,29 +172,41 @@ JsonNode gateways = order.path("paymentGatewayNames");
 if (!gateways.isArray() || gateways.size() == 0) {
     paidCash = total;
 } else {
+    // El total se asigna una sola vez (a la primera pasarela reconocida): sin montos
+    // por pasarela, sumarlo por cada una duplicaba el pago en órdenes con pago mixto
+    boolean assigned = false;
     for (JsonNode gatewayNode : gateways) {
 
         String gateway = gatewayNode.asText("").toLowerCase();
+        assigned = true;
 
         if (gateway.contains("visa") || gateway.contains("mastercard") || gateway.contains("credit")) {
-            paidCredit += total;
+            paidCredit = total;
 
         } else if (gateway.contains("debit")) {
-            paidDebit += total;
+            paidDebit = total;
 
         } else if (gateway.contains("cash")) {
-            paidCash += total;
+            paidCash = total;
 
         } else if (gateway.contains("ath")) {
-            paidAth += total;
+            paidAth = total;
 
         } else if (gateway.contains("check")) {
-            paidCheck += total;
+            paidCheck = total;
 
         } else {
-            // 🔥 fallback inteligente
-            paidCash += total;
+            assigned = false;
         }
+
+        if (assigned) {
+            break;
+        }
+    }
+
+    if (!assigned) {
+        // 🔥 fallback inteligente
+        paidCash = total;
     }
 }
 
@@ -320,15 +337,19 @@ invoice.put("Hora", hora);
     return invoice;
 }
     public void syncOrdersToPOS(String lastSyncDate) throws Exception {
-     System.out.println("📦 Sincronizando ordenes...");   
-    String response = shopifyService.getNewOrders(lastSyncDate);
+     System.out.println("📦 Sincronizando ordenes...");
+    // 🔥 PAGINACIÓN: Shopify entrega máximo 50 órdenes por página
+    String cursor = null;
+    int page = 0;
+    do {
+    String response = shopifyService.getNewOrders(lastSyncDate, cursor);
 
-    JsonNode orders = new ObjectMapper()
+    JsonNode ordersNode = new ObjectMapper()
             .readTree(response)
             .path("data")
-            .path("orders")
-            .path("edges");
-        System.out.println("📦 Ordenes recibidas: " + orders.size());
+            .path("orders");
+    JsonNode orders = ordersNode.path("edges");
+        System.out.println("📦 Ordenes recibidas: " + orders.size() + " (página " + (page + 1) + ")");
     for (JsonNode edge : orders) {
 
         JsonNode order = edge.path("node");
@@ -460,6 +481,17 @@ repository.deleteById(orderId);
             }
         }
     }
+
+    JsonNode pageInfo = ordersNode.path("pageInfo");
+    cursor = pageInfo.path("hasNextPage").asBoolean(false)
+            ? pageInfo.path("endCursor").asText(null)
+            : null;
+    page++;
+    } while (cursor != null && page < MAX_ORDER_PAGES);
+
+    if (cursor != null) {
+        System.out.println("⚠️ Se alcanzó el límite de " + MAX_ORDER_PAGES + " páginas de órdenes; quedan órdenes sin leer");
+    }
 }
 private String resolveEventType(JsonNode order) {
 
@@ -501,7 +533,7 @@ private String resolveEventType(JsonNode order) {
 
     private boolean verifyHmac(String data, String hmacHeader) {
         try {
-            String secret = "6517da6a31a9fb849cd904925b6ee47ac53ee90573fde7937d23bf17fdcbe8bf"; // ⚠️ sacar de Shopify
+            String secret = webhookSecret;
 
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
