@@ -62,6 +62,7 @@
     recon: { status: 'PENDIENTES', q: '', hideDrafts: false, page: 0, selected: new Set(), rows: [] },
     links: { q: '', includeDeleted: false, page: 0 },
     orders: { q: '', page: 0 },
+    failed: { q: '', page: 0 },
     audit: { page: 0 },
     jobTimer: null,
     lastJobKey: null,
@@ -188,6 +189,7 @@
     configuracion: ['Configuración', renderSettings],
     vinculados: ['Productos vinculados', renderLinks],
     pedidos: ['Pedidos procesados', renderOrders],
+    'facturas-error': ['Facturas con error', renderFailedOrders],
     auditoria: ['Auditoría', renderAudit],
   };
   function currentView() {
@@ -716,6 +718,70 @@
         { title: 'Procesado', cls: 'nowrap', render: (r) => date(r.processedAt) },
       ],
     });
+  }
+
+  // Facturas que RM rechazó o no recibió (FailedOrder) + vista previa por ID de pedido
+  function renderFailedOrders() {
+    return simpleTable({
+      key: 'failed', path: '/failed-orders', searchPlaceholder: 'Buscar por pedido o error',
+      extraToolbar: `<label class="search"><input type="search" id="preview-id" placeholder="ID de pedido de Shopify"></label>
+        <button class="btn btn-sm" id="preview-btn" type="button">Vista previa</button>`,
+      emptyText: 'Todas las facturas llegaron a RM.',
+      bind: (c, reload) => {
+        const root = $('#failed-root', c);
+        const preview = () => { const id = $('#preview-id', root).value.trim(); if (id) showInvoicePreview(id); };
+        $('#preview-btn', root).addEventListener('click', preview);
+        $('#preview-id', root).addEventListener('keydown', (e) => { if (e.key === 'Enter') preview(); });
+        root.addEventListener('click', async (e) => {
+          const b = e.target.closest('[data-preview]');
+          if (b) { showInvoicePreview(b.dataset.preview); return; }
+          const r = e.target.closest('[data-retry]');
+          if (!r) return;
+          r.disabled = true;
+          try {
+            const res = await api('/failed-orders/retry', { method: 'POST', body: { id: r.dataset.retry } });
+            res.sent ? toast('Factura enviada a RM') : toast('Falló de nuevo: ' + (res.lastError || ''), 'error');
+          } catch (err) { toast(err.message, 'error'); }
+          reload();
+        });
+      },
+      columns: [
+        { title: 'Pedido', render: (r) => `<span class="mono">${esc(r.orderName || (r.id || '').split('/').pop())}</span>` },
+        { title: 'Intentos', cls: 'num', render: (r) => r.attempts >= r.maxAttempts
+          ? `<span class="badge badge-danger">${num(r.attempts)} · revisar</span>` : `<span class="badge badge-warn">${num(r.attempts)} de ${num(r.maxAttempts)}</span>` },
+        { title: 'Último error', render: (r) => `<span class="muted">${esc(r.lastError)}</span>` },
+        { title: 'Último intento', cls: 'nowrap', render: (r) => date(r.lastAttemptAt) },
+        { title: '', cls: 'nowrap', render: (r) => `<button class="btn btn-sm" type="button" data-preview="${esc(r.id)}">Vista previa</button>
+          <button class="btn btn-sm" type="button" data-retry="${esc(r.id)}">Reintentar</button>` },
+      ],
+    });
+  }
+
+  async function showInvoicePreview(id) {
+    const dlg = $('#preview-dialog');
+    $('#preview-subtitle').textContent = id;
+    $('#preview-body').innerHTML = '<p class="muted">Consultando Shopify…</p>';
+    if (!dlg.open) dlg.showModal();
+    try {
+      const p = await api('/orders/preview?' + new URLSearchParams({ id }));
+      const inv = p.invoice;
+      const status = [
+        p.ruleOk ? '<span class="badge badge-ok">Montos OK</span>' : `<span class="badge badge-danger">${esc(p.ruleError)}</span>`,
+        p.wouldSend ? '<span class="badge badge-info">Se enviaría (PAID)</span>' : `<span class="badge badge-warn">No se envía (${esc(p.financialStatus)})</span>`,
+        p.alreadyProcessed ? '<span class="badge badge-ok">Ya procesado</span>' : '',
+        p.failedAttempts ? `<span class="badge badge-warn">${num(p.failedAttempts)} intento(s) fallido(s)</span>` : '',
+      ].join(' ');
+      $('#preview-subtitle').textContent = `Pedido ${p.orderName} · Factura ${inv.Factura}`;
+      $('#preview-body').innerHTML = `<p>${status}</p>
+        <div class="table-wrap"><table><tbody>
+          ${['Subtotal', 'Descuento', 'CityTax', 'StateTax', 'Total', 'PaidCash'].map((k) => `<tr><td>${k}</td><td class="num">${money(inv[k])}</td></tr>`).join('')}
+        </tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Referencia</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead><tbody>
+          ${(inv.Items || []).map((i) => `<tr><td class="mono">${esc(i.Referencia)}</td><td class="num">${num(i.CantidadDespachada)}</td><td class="num">${money(i.Precio)}</td><td class="num">${money(i.TotalF)}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    } catch (err) {
+      $('#preview-body').innerHTML = `<p class="form-error">${esc(err.message)}</p>`;
+    }
   }
 
   function renderAudit() {

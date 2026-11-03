@@ -822,6 +822,12 @@ public String getNewOrders(String lastSyncDate) {
                       }
                     }
 
+                    totalTipReceivedSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
                     taxesIncluded
 
                     totalTaxSet {
@@ -941,6 +947,12 @@ public String getNewOrders(String lastSyncDate, String afterCursor) {
                       }
                     }
 
+                    totalTipReceivedSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
                     taxesIncluded
 
                     totalTaxSet {
@@ -1015,6 +1027,109 @@ public String getNewOrders(String lastSyncDate, String afterCursor) {
 
     } catch (Exception e) {
         throw new RuntimeException("Error obteniendo órdenes nuevas", e);
+    }
+}
+
+/**
+ * Un pedido por su ID (gid://shopify/Order/...), con los mismos campos que getNewOrders,
+ * para armar la vista previa de la factura sin enviarla. Respuesta: data.order.
+ */
+@Override
+public String getOrderById(String orderId) {
+
+    try {
+
+        String query = """
+            query getOrder($id: ID!) {
+              order(id: $id) {
+
+                id
+                name
+                createdAt
+
+                displayFinancialStatus
+                cancelledAt
+
+                totalPriceSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+
+                subtotalPriceSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+
+                totalDiscountsSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+
+                totalTipReceivedSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+
+                taxesIncluded
+
+                totalTaxSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+
+                taxLines {
+                  title
+                  rate
+                  priceSet {
+                    shopMoney {
+                      amount
+                    }
+                  }
+                }
+
+                customer {
+                  firstName
+                  phone
+                }
+
+                billingAddress {
+                  address1
+                }
+
+                lineItems(first: 50) {
+                  edges {
+                    node {
+
+                      name
+                      quantity
+
+                      originalUnitPriceSet {
+                        shopMoney {
+                          amount
+                        }
+                      }
+
+                      variant {
+                        sku
+                      }
+
+                    }
+                  }
+                }
+
+              }
+            }
+        """;
+
+        return client.execute(query, Map.of("id", orderId));
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error obteniendo la orden " + orderId, e);
     }
 }
 

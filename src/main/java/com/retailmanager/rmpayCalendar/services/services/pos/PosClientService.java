@@ -94,4 +94,22 @@ public class PosClientService {
         throw new RuntimeException("Error enviando al POS"+ e.getMessage(), e);
     }
 }
+
+    /**
+     * Indica si el producto existe en RM (ProductInfo por ItemCode).
+     * RM responde {"success":false,"message":"NoMatch","status":404} con HTTP 200 cuando no existe.
+     * Si RM no responde, la excepción sube al llamador.
+     */
+    public boolean productExists(String itemCode) throws Exception {
+        String url = baseUrl + "/cse.api.v1/ProductInfo?ItemCode=" + URLEncoder.encode(itemCode, StandardCharsets.UTF_8);
+        String body = restTemplate.getForObject(url, String.class);
+        JsonNode node = new ObjectMapper().readTree(body == null ? "" : body);
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return false;
+        }
+        if (node.isArray()) {
+            return node.size() > 0;
+        }
+        return !node.has("success") || node.path("success").asBoolean(false);
+    }
 }

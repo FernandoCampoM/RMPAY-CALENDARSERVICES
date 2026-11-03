@@ -36,7 +36,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.retailmanager.rmpayCalendar.db2.entity.FailedOrder;
 import com.retailmanager.rmpayCalendar.db2.entity.ProcessedOrder;
+import com.retailmanager.rmpayCalendar.db2.repository.FailedOrderRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.ProcessedOrderRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.ProductSyncRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
@@ -64,11 +66,31 @@ public class InvoiceSyncService {
     /** Producto de RM con el que se factura el envío (debe existir en Inventario). */
     @Value("${shopify.shipping_item_code}")
     private String shippingItemCode;
+    /** Producto de RM con el que se factura la propina (debe existir en Inventario). */
+    @Value("${shopify.tip_item_code}")
+    private String tipItemCode;
+    /** Simulación: arma las facturas y las escribe en el log, pero no las envía a RM. */
+    @Value("${shopify.invoice_dry_run}")
+    private boolean invoiceDryRun;
+    @Autowired
+    private FailedOrderRepository failedOrderRepository;
+
+    /** Intentos de envío a RM antes de dejar la factura para revisión manual en el panel. */
+    public static final int MAX_FAILED_ATTEMPTS = 10;
+
+    public boolean isDryRun() {
+        return invoiceDryRun;
+    }
 
     /** Monto de un campo MoneyBag de Shopify ({shopMoney{amount}}), a 2 decimales. */
     private BigDecimal money(JsonNode moneyBag) {
-        return new BigDecimal(moneyBag.path("shopMoney").path("amount").asText("0"))
-                .setScale(2, RoundingMode.HALF_UP);
+        return decimal(moneyBag.path("shopMoney").path("amount"));
+    }
+
+    /** Monto en texto ("12.50") de la API REST/webhook de Shopify, a 2 decimales; vacío o null = 0. */
+    private BigDecimal decimal(JsonNode amount) {
+        String text = amount.asText("0").trim();
+        return new BigDecimal(text.isEmpty() ? "0" : text).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -78,15 +100,129 @@ public class InvoiceSyncService {
     private BigDecimal cityTaxOf(JsonNode taxLines) {
         BigDecimal city = BigDecimal.ZERO;
         for (JsonNode line : taxLines) {
-            String title = line.path("title").asText("").toLowerCase();
-            double rate = line.path("rate").asDouble(0);
-            boolean byTitle = title.contains("munic") || title.contains("city");
-            boolean byRate = Math.abs(rate - 0.01) < 0.0001;
-            if (byTitle || (byRate && !title.contains("state") && !title.contains("estatal"))) {
+            if (isCityTaxLine(line)) {
                 city = city.add(money(line.path("priceSet")));
             }
         }
         return city;
+    }
+
+    /** Igual que cityTaxOf, para tax_lines del webhook (el monto viene en "price"). */
+    private BigDecimal cityTaxOfWebhook(JsonNode taxLines) {
+        BigDecimal city = BigDecimal.ZERO;
+        for (JsonNode line : taxLines) {
+            if (isCityTaxLine(line)) {
+                city = city.add(decimal(line.path("price")));
+            }
+        }
+        return city;
+    }
+
+    private boolean isCityTaxLine(JsonNode line) {
+        String title = line.path("title").asText("").toLowerCase();
+        double rate = line.path("rate").asDouble(0);
+        boolean byTitle = title.contains("munic") || title.contains("city");
+        boolean byRate = Math.abs(rate - 0.01) < 0.0001;
+        return byTitle || (byRate && !title.contains("state") && !title.contains("estatal"));
+    }
+
+    /**
+     * 💰 MONTOS: RM API (1.11.0+) rechaza la factura si
+     * Total != Subtotal - Descuento + CityTax + StateTax.
+     * En Shopify el subtotal ya trae los descuentos restados y el total incluye impuestos,
+     * envío y propina, así que el Subtotal se arma con las líneas a precio original (grossLines)
+     * más una línea de envío (shippingItemCode) y otra de propina (tipItemCode) si los hay.
+     * El envío es lo que queda del total; si hubiera aranceles, también quedan ahí.
+     */
+    private void applyAmounts(Map<String, Object> invoice, List<Map<String, Object>> items, String orderName,
+            BigDecimal grossLines, BigDecimal shopifySubtotal, BigDecimal shopifyTotal, BigDecimal tax,
+            boolean taxesIncluded, BigDecimal cityTax, BigDecimal tip) {
+
+        BigDecimal stateTax = tax.subtract(cityTax);
+        BigDecimal gross = grossLines.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal descuento = gross.subtract(shopifySubtotal);
+
+        BigDecimal shipping = shopifyTotal.subtract(shopifySubtotal)
+                .subtract(taxesIncluded ? BigDecimal.ZERO : tax)
+                .subtract(tip);
+        BigDecimal invoiceSubtotal = gross;
+
+        if (shipping.compareTo(BigDecimal.ZERO) > 0) {
+            items.add(extraLine(orderName, shippingItemCode, shipping));
+            invoiceSubtotal = invoiceSubtotal.add(shipping);
+        }
+        if (tip.compareTo(BigDecimal.ZERO) > 0) {
+            items.add(extraLine(orderName, tipItemCode, tip));
+            invoiceSubtotal = invoiceSubtotal.add(tip);
+        }
+
+        // Con precios que incluyen impuesto, el impuesto ya está dentro de las líneas
+        if (taxesIncluded) {
+            invoiceSubtotal = invoiceSubtotal.subtract(tax);
+        }
+
+        invoice.put("Subtotal", invoiceSubtotal.doubleValue());
+        invoice.put("Descuento", descuento.doubleValue());
+        invoice.put("CityTax", cityTax.doubleValue());
+        invoice.put("StateTax", stateTax.doubleValue());
+
+        String error = amountsRuleError(invoice);
+        if (error != null) {
+            System.out.println("⚠️ Montos no cuadran para la regla del POS | Orden: " + orderName + " | " + error);
+        }
+    }
+
+    /** Línea de factura sin impuesto ni descuento para un cargo que no es producto (envío, propina). */
+    private Map<String, Object> extraLine(String orderName, String itemCode, BigDecimal amount) {
+        Map<String, Object> line = new HashMap<>();
+        line.put("FacturaNumero", "K" + orderName);
+        line.put("Referencia", itemCode);
+        line.put("CantidadOrdenada", 1);
+        line.put("CantidadDespachada", 1);
+        line.put("Precio", amount.doubleValue());
+        line.put("Costo", 0.0);
+        line.put("TotalF", amount.doubleValue());
+        line.put("UnidadID", 1);
+        line.put("Descuento", 0.0);
+        line.put("CityTx", 0.0);
+        line.put("StateTx", 0.0);
+        return line;
+    }
+
+    /** @return null si la factura cumple Total == Subtotal - Descuento + CityTax + StateTax; si no, el detalle. */
+    private String amountsRuleError(Map<String, Object> invoice) {
+        BigDecimal total = BigDecimal.valueOf(((Number) invoice.get("Total")).doubleValue()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal expected = BigDecimal.valueOf(((Number) invoice.get("Subtotal")).doubleValue())
+                .subtract(BigDecimal.valueOf(((Number) invoice.get("Descuento")).doubleValue()))
+                .add(BigDecimal.valueOf(((Number) invoice.get("CityTax")).doubleValue()))
+                .add(BigDecimal.valueOf(((Number) invoice.get("StateTax")).doubleValue()))
+                .setScale(2, RoundingMode.HALF_UP);
+        if (expected.compareTo(total) == 0) {
+            return null;
+        }
+        return "Montos no cuadran: Total=" + total + " | Subtotal-Descuento+Impuestos=" + expected;
+    }
+
+    /** Guarda (o actualiza) un pedido cuya factura no llegó a RM, para reintentarlo después. */
+    private void recordFailedOrder(String orderId, JsonNode order, String error) {
+        try {
+            FailedOrder failed = failedOrderRepository.findById(orderId).orElseGet(() -> {
+                FailedOrder f = new FailedOrder();
+                f.setId(orderId);
+                f.setFirstFailedAt(LocalDateTime.now());
+                return f;
+            });
+            failed.setOrderName(order.path("name").asText(""));
+            failed.setOrderJson(order.toString());
+            failed.setAttempts(failed.getAttempts() + 1);
+            failed.setLastError(error);
+            failed.setLastAttemptAt(LocalDateTime.now());
+            failedOrderRepository.save(failed);
+            System.out.println("📝 Factura pendiente de reintento: " + orderId
+                    + " (intento " + failed.getAttempts() + " de " + MAX_FAILED_ATTEMPTS + ")");
+        } catch (Exception e) {
+            System.out.println("❌ No se pudo guardar la factura fallida " + orderId + ": " + e.getMessage());
+        }
     }
 
     private Map<String, Object> mapOrderFromQueryToInvoice(JsonNode order) {
@@ -168,56 +304,15 @@ if (sku == null || sku.isEmpty()) {
         items.add(detail);
     }
 
-    // 💰 MONTOS: RM API (1.11.0+) rechaza la factura si
-    // Total != Subtotal - Descuento + CityTax + StateTax.
-    // En Shopify subtotalPriceSet ya trae los descuentos restados y totalPriceSet incluye
-    // impuestos y envío, así que el Subtotal se arma con las líneas a precio original.
-    BigDecimal shopifySubtotal = money(order.path("subtotalPriceSet"));
-    BigDecimal shopifyTotal = money(order.path("totalPriceSet"));
+    // 💰 MONTOS: ver applyAmounts
     BigDecimal tax = money(order.path("totalTaxSet"));
-    boolean taxesIncluded = order.path("taxesIncluded").asBoolean(false);
-
-    BigDecimal cityTax = cityTaxOf(order.path("taxLines")).min(tax);
-    BigDecimal stateTax = tax.subtract(cityTax);
-    BigDecimal descuento = grossLines.setScale(2, RoundingMode.HALF_UP).subtract(shopifySubtotal);
-
-    // Envío: lo que queda del total después de productos e impuestos
-    BigDecimal shipping = shopifyTotal.subtract(shopifySubtotal)
-            .subtract(taxesIncluded ? BigDecimal.ZERO : tax);
-    BigDecimal invoiceSubtotal = grossLines.setScale(2, RoundingMode.HALF_UP);
-
-    if (shipping.compareTo(BigDecimal.ZERO) > 0) {
-        Map<String, Object> shippingLine = new HashMap<>();
-        shippingLine.put("FacturaNumero", "K" + orderName);
-        shippingLine.put("Referencia", shippingItemCode);
-        shippingLine.put("CantidadOrdenada", 1);
-        shippingLine.put("CantidadDespachada", 1);
-        shippingLine.put("Precio", shipping.doubleValue());
-        shippingLine.put("Costo", 0.0);
-        shippingLine.put("TotalF", shipping.doubleValue());
-        shippingLine.put("UnidadID", 1);
-        shippingLine.put("Descuento", 0.0);
-        shippingLine.put("CityTx", 0.0);
-        shippingLine.put("StateTx", 0.0);
-        items.add(shippingLine);
-        invoiceSubtotal = invoiceSubtotal.add(shipping);
-    }
-
-    // Con precios que incluyen impuesto, el impuesto ya está dentro de las líneas
-    if (taxesIncluded) {
-        invoiceSubtotal = invoiceSubtotal.subtract(tax);
-    }
-
-    invoice.put("Subtotal", invoiceSubtotal.doubleValue());
-    invoice.put("Descuento", descuento.doubleValue());
-    invoice.put("CityTax", cityTax.doubleValue());
-    invoice.put("StateTax", stateTax.doubleValue());
-
-    BigDecimal expectedTotal = invoiceSubtotal.subtract(descuento).add(cityTax).add(stateTax);
-    if (expectedTotal.compareTo(shopifyTotal) != 0) {
-        System.out.println("⚠️ Montos no cuadran para la regla del POS | Orden: " + orderName
-                + " | Total=" + shopifyTotal + " | Subtotal-Descuento+Impuestos=" + expectedTotal);
-    }
+    applyAmounts(invoice, items, orderName, grossLines,
+            money(order.path("subtotalPriceSet")),
+            money(order.path("totalPriceSet")),
+            tax,
+            order.path("taxesIncluded").asBoolean(false),
+            cityTaxOf(order.path("taxLines")).min(tax),
+            money(order.path("totalTipReceivedSet")));
 
     invoice.put("NumeroPiezas", totalPiezas);
 
@@ -303,10 +398,7 @@ invoice.put("PaidAthMovil", paidAth);
     // 🔹 Limpieza del número de orden (#9999 → 9999)
     String orderName = order.path("name").asText("").replace("#", "");
 
-    double subtotal = order.path("subtotal_price").asDouble(0);
-    double discount = order.path("total_discounts").asDouble(0);
     double total = order.path("total_price").asDouble(0);
-    double tax = order.path("total_tax").asDouble(0);
 
     // 🧾 HEADER
     invoice.put("Factura", "K" + orderName);
@@ -337,13 +429,8 @@ invoice.put("Hora", hora);
 
     invoice.put("ClienteOrdenNum", orderName);
 
-    invoice.put("Subtotal", subtotal);
-    invoice.put("Descuento", discount);
+    // Subtotal, Descuento e impuestos se calculan después de recorrer los ítems
     invoice.put("Total", total);
-
-    // 🔥 Impuestos
-    invoice.put("CityTax", 0.0);
-    invoice.put("StateTax", tax);
 
     // 🔢 Número de piezas
     invoice.put("NumeroPiezas", order.path("line_items").size());
@@ -369,11 +456,13 @@ invoice.put("Hora", hora);
 
     // 🧾 ITEMS
     List<Map<String, Object>> items = new ArrayList<>();
+    BigDecimal grossLines = BigDecimal.ZERO;
 
     for (JsonNode item : order.path("line_items")) {
 
         double price = item.path("price").asDouble(0);
         int qty = item.path("quantity").asInt(0);
+        grossLines = grossLines.add(BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(qty)));
 
         Map<String, Object> detail = new HashMap<>();
 
@@ -402,10 +491,131 @@ invoice.put("Hora", hora);
         items.add(detail);
     }
 
+    // 💰 MONTOS: misma regla que mapOrderFromQueryToInvoice, con los campos del webhook (REST)
+    BigDecimal tax = decimal(order.path("total_tax"));
+    applyAmounts(invoice, items, orderName, grossLines,
+            decimal(order.path("subtotal_price")),
+            decimal(order.path("total_price")),
+            tax,
+            order.path("taxes_included").asBoolean(false),
+            cityTaxOfWebhook(order.path("tax_lines")).min(tax),
+            decimal(order.path("total_tip_received")));
+
     invoice.put("Items", items);
 
     return invoice;
 }
+    /**
+     * Vista previa: arma la factura de un pedido de Shopify igual que syncOrdersToPOS,
+     * pero no la envía a RM ni escribe en ProcessedOrder.
+     * Incluye si cumple la regla de montos de RM API y si el pedido ya fue procesado.
+     */
+    public Map<String, Object> previewInvoice(String orderId) throws Exception {
+        JsonNode order = new ObjectMapper()
+                .readTree(shopifyService.getOrderById(orderId))
+                .path("data")
+                .path("order");
+
+        if (order.isMissingNode() || order.isNull()) {
+            throw new IllegalArgumentException("No se encontró la orden en Shopify: " + orderId);
+        }
+
+        Map<String, Object> invoice = mapOrderFromQueryToInvoice(order);
+        String amountsError = amountsRuleError(invoice);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderId", order.path("id").asText());
+        result.put("orderName", order.path("name").asText());
+        result.put("financialStatus", order.path("displayFinancialStatus").asText());
+        // Solo los pedidos PAID se envían a RM en la sincronización
+        result.put("wouldSend", "PAID".equals(order.path("displayFinancialStatus").asText()));
+        result.put("alreadyProcessed", repository.existsById(order.path("id").asText()));
+        result.put("failedAttempts", failedOrderRepository.findById(order.path("id").asText())
+                .map(FailedOrder::getAttempts).orElse(0));
+        result.put("ruleOk", amountsError == null);
+        result.put("ruleError", amountsError);
+        result.put("invoice", invoice);
+        return result;
+    }
+
+    /**
+     * Reintenta las facturas guardadas en FailedOrder que no llegan al máximo de intentos.
+     * Se vuelven a mapear desde el pedido guardado, así que toman las correcciones del código
+     * y los productos creados en RM después del fallo. En simulación no hace nada.
+     */
+    public void retryFailedOrders() {
+        if (invoiceDryRun) {
+            System.out.println("🧪 SIMULACIÓN activa: no se reintentan facturas fallidas");
+            return;
+        }
+        List<FailedOrder> pending = failedOrderRepository.findByAttemptsLessThanOrderByFirstFailedAtAsc(MAX_FAILED_ATTEMPTS);
+        if (pending.isEmpty()) {
+            return;
+        }
+        System.out.println("🔁 Reintentando facturas fallidas: " + pending.size());
+        for (FailedOrder failed : pending) {
+            retryFailedOrder(failed);
+        }
+    }
+
+    /** Reintenta una sola factura fallida. @return true si quedó enviada (o ya existía en RM). */
+    public boolean retryFailedOrder(FailedOrder failed) {
+        String orderId = failed.getId();
+
+        // Ya procesada por otro camino (webhook o un ciclo anterior)
+        if (repository.existsById(orderId)) {
+            failedOrderRepository.delete(failed);
+            return true;
+        }
+
+        JsonNode order;
+        try {
+            order = new ObjectMapper().readTree(failed.getOrderJson());
+        } catch (Exception e) {
+            recordFailedOrder(orderId, new ObjectMapper().createObjectNode().put("name", failed.getOrderName()),
+                    "Pedido guardado ilegible: " + e.getMessage());
+            return false;
+        }
+
+        try {
+            Map<String, Object> invoice = mapOrderFromQueryToInvoice(order);
+            String amountsError = amountsRuleError(invoice);
+            if (amountsError != null) {
+                throw new IllegalStateException(amountsError);
+            }
+            posClientService.sendInvoiceToPOS(invoice);
+            markProcessed(orderId, order);
+            failedOrderRepository.delete(failed);
+            System.out.println("✅ Factura reintentada y enviada: " + orderId);
+            return true;
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            if (message != null && message.contains("Invoice already exists")) {
+                markProcessed(orderId, order);
+                failedOrderRepository.delete(failed);
+                System.out.println("✅ Factura ya existía en RM: " + orderId);
+                return true;
+            }
+            System.out.println("❌ Reintento fallido: " + orderId + " | " + message);
+            recordFailedOrder(orderId, order, message);
+            if (failed.getAttempts() + 1 >= MAX_FAILED_ATTEMPTS) {
+                System.out.println("⛔ Factura " + orderId + " llegó a " + MAX_FAILED_ATTEMPTS
+                        + " intentos: queda para revisión en el panel");
+            }
+            return false;
+        }
+    }
+
+    private void markProcessed(String orderId, JsonNode order) {
+        repository.save(new ProcessedOrder(
+                orderId,
+                LocalDateTime.now(),
+                order.toString(),
+                resolveEventType(order),
+                money(order.path("totalPriceSet"))));
+    }
+
     public void syncOrdersToPOS(String lastSyncDate) throws Exception {
      System.out.println("📦 Sincronizando ordenes...");
     // 🔥 PAGINACIÓN: Shopify entrega máximo 50 órdenes por página
@@ -476,6 +686,24 @@ invoice.put("Hora", hora);
                     // 🧾 MAPEAR
                     Map<String, Object> invoice =
                             mapOrderFromQueryToInvoice(order);
+                    String amountsError = amountsRuleError(invoice);
+
+                    // 🧪 SIMULACIÓN: solo log, sin enviar ni marcar como procesada
+                    if (invoiceDryRun) {
+                        System.out.println("🧪 SIMULACIÓN | Orden " + orderId
+                                + (amountsError == null ? " | montos OK" : " | " + amountsError)
+                                + " | Factura: " + new ObjectMapper().writeValueAsString(invoice));
+                        repository.deleteById(orderId);
+                        break;
+                    }
+
+                    // 🚫 Montos que RM rechazaría: no se envía, queda para reintento
+                    if (amountsError != null) {
+                        System.out.println("❌ Factura no enviada: " + orderId + " | " + amountsError);
+                        repository.deleteById(orderId);
+                        recordFailedOrder(orderId, order, amountsError);
+                        break;
+                    }
 
                     // 🚀 ENVIAR
                     posClientService.sendInvoiceToPOS(invoice);
@@ -548,6 +776,11 @@ repository.deleteById(orderId);
                 !message.contains("Invoice already exists")) {
 
                 repository.deleteById(orderId);
+
+                // 📝 Shopify se consulta por fecha de creación: sin esto el pedido no se vuelve a leer
+                if ("PAID".equals(financialStatus)) {
+                    recordFailedOrder(orderId, order, message);
+                }
             }
         }
     }

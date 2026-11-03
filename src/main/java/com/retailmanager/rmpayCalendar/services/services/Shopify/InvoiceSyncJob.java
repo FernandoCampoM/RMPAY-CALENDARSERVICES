@@ -24,9 +24,21 @@ public class InvoiceSyncJob {
             lastSyncDate = configRepository.getLastSyncDate();
         }
 
+        // 🔁 Primero las facturas que fallaron en ciclos anteriores; un error aquí no frena el ciclo
+        try {
+            invoiceSyncService.retryFailedOrders();
+        } catch (Exception e) {
+            System.out.println("Error al reintentar facturas fallidas: " + e.getMessage());
+        }
+
         try {
             invoiceSyncService.syncOrdersToPOS(lastSyncDate);
-            configRepository.updateLastSyncDate(now);
+            // En simulación no se avanza la fecha, para que esos pedidos se lean de nuevo al apagarla
+            if (invoiceSyncService.isDryRun()) {
+                System.out.println("🧪 SIMULACIÓN activa (shopify.invoice_dry_run): no se envían facturas ni se avanza la fecha de sincronización");
+            } else {
+                configRepository.updateLastSyncDate(now);
+            }
         } catch (Exception e) {
             System.out.println("Error al sincronizar facturas: " + e.getMessage());
         }
