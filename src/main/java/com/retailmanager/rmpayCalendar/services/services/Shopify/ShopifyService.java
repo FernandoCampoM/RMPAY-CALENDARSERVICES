@@ -822,6 +822,24 @@ public String getNewOrders(String lastSyncDate) {
                       }
                     }
 
+                    taxesIncluded
+
+                    totalTaxSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    taxLines {
+                      title
+                      rate
+                      priceSet {
+                        shopMoney {
+                          amount
+                        }
+                      }
+                    }
+
                     refunds {
                       id
                       createdAt
@@ -920,6 +938,24 @@ public String getNewOrders(String lastSyncDate, String afterCursor) {
                     totalDiscountsSet {
                       shopMoney {
                         amount
+                      }
+                    }
+
+                    taxesIncluded
+
+                    totalTaxSet {
+                      shopMoney {
+                        amount
+                      }
+                    }
+
+                    taxLines {
+                      title
+                      rate
+                      priceSet {
+                        shopMoney {
+                          amount
+                        }
                       }
                     }
 

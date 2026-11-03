@@ -2,6 +2,7 @@ package com.retailmanager.rmpayCalendar.services.services.Shopify;
 
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -60,21 +61,41 @@ public class InvoiceSyncService {
     private PosClientService posClientService;
     @Value("${shopify.webhook_secret}")
     private String webhookSecret;
+    /** Producto de RM con el que se factura el envío (debe existir en Inventario). */
+    @Value("${shopify.shipping_item_code}")
+    private String shippingItemCode;
+
+    /** Monto de un campo MoneyBag de Shopify ({shopMoney{amount}}), a 2 decimales. */
+    private BigDecimal money(JsonNode moneyBag) {
+        return new BigDecimal(moneyBag.path("shopMoney").path("amount").asText("0"))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Parte municipal del IVU. Se reconoce por el nombre del impuesto (municipal/city);
+     * si el nombre no lo dice, por la tasa del 1% que usa Puerto Rico.
+     */
+    private BigDecimal cityTaxOf(JsonNode taxLines) {
+        BigDecimal city = BigDecimal.ZERO;
+        for (JsonNode line : taxLines) {
+            String title = line.path("title").asText("").toLowerCase();
+            double rate = line.path("rate").asDouble(0);
+            boolean byTitle = title.contains("munic") || title.contains("city");
+            boolean byRate = Math.abs(rate - 0.01) < 0.0001;
+            if (byTitle || (byRate && !title.contains("state") && !title.contains("estatal"))) {
+                city = city.add(money(line.path("priceSet")));
+            }
+        }
+        return city;
+    }
+
     private Map<String, Object> mapOrderFromQueryToInvoice(JsonNode order) {
 
     Map<String, Object> invoice = new HashMap<>();
 
     String orderName = order.path("name").asText("").replace("#", "");
 
-    double subtotal = order.path("subtotalPriceSet")
-            .path("shopMoney")
-            .path("amount").asDouble(0);
-
     double total = order.path("totalPriceSet")
-            .path("shopMoney")
-            .path("amount").asDouble(0);
-
-    double discount = order.path("totalDiscountsSet")
             .path("shopMoney")
             .path("amount").asDouble(0);
 
@@ -103,17 +124,14 @@ public class InvoiceSyncService {
 
     invoice.put("ClienteOrdenNum", orderName);
 
-    invoice.put("Subtotal", subtotal);
-    invoice.put("Descuento", discount);
+    // Subtotal, Descuento e impuestos se calculan después de recorrer los ítems
     invoice.put("Total", total);
-
-    invoice.put("CityTax", 0.0);
-    invoice.put("StateTax", 0.0);
 
     // 🧾 ITEMS (GraphQL cambia estructura)
     List<Map<String, Object>> items = new ArrayList<>();
 
     int totalPiezas = 0;
+    BigDecimal grossLines = BigDecimal.ZERO;
 
     for (JsonNode edge : order.path("lineItems").path("edges")) {
 
@@ -126,6 +144,7 @@ public class InvoiceSyncService {
         int qty = item.path("quantity").asInt(0);
 
         totalPiezas += qty;
+        grossLines = grossLines.add(BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(qty)));
 
         Map<String, Object> detail = new HashMap<>();
         String sku = item.path("variant").path("sku").asText();
@@ -147,6 +166,57 @@ if (sku == null || sku.isEmpty()) {
         detail.put("StateTx", 0.0);
 
         items.add(detail);
+    }
+
+    // 💰 MONTOS: RM API (1.11.0+) rechaza la factura si
+    // Total != Subtotal - Descuento + CityTax + StateTax.
+    // En Shopify subtotalPriceSet ya trae los descuentos restados y totalPriceSet incluye
+    // impuestos y envío, así que el Subtotal se arma con las líneas a precio original.
+    BigDecimal shopifySubtotal = money(order.path("subtotalPriceSet"));
+    BigDecimal shopifyTotal = money(order.path("totalPriceSet"));
+    BigDecimal tax = money(order.path("totalTaxSet"));
+    boolean taxesIncluded = order.path("taxesIncluded").asBoolean(false);
+
+    BigDecimal cityTax = cityTaxOf(order.path("taxLines")).min(tax);
+    BigDecimal stateTax = tax.subtract(cityTax);
+    BigDecimal descuento = grossLines.setScale(2, RoundingMode.HALF_UP).subtract(shopifySubtotal);
+
+    // Envío: lo que queda del total después de productos e impuestos
+    BigDecimal shipping = shopifyTotal.subtract(shopifySubtotal)
+            .subtract(taxesIncluded ? BigDecimal.ZERO : tax);
+    BigDecimal invoiceSubtotal = grossLines.setScale(2, RoundingMode.HALF_UP);
+
+    if (shipping.compareTo(BigDecimal.ZERO) > 0) {
+        Map<String, Object> shippingLine = new HashMap<>();
+        shippingLine.put("FacturaNumero", "K" + orderName);
+        shippingLine.put("Referencia", shippingItemCode);
+        shippingLine.put("CantidadOrdenada", 1);
+        shippingLine.put("CantidadDespachada", 1);
+        shippingLine.put("Precio", shipping.doubleValue());
+        shippingLine.put("Costo", 0.0);
+        shippingLine.put("TotalF", shipping.doubleValue());
+        shippingLine.put("UnidadID", 1);
+        shippingLine.put("Descuento", 0.0);
+        shippingLine.put("CityTx", 0.0);
+        shippingLine.put("StateTx", 0.0);
+        items.add(shippingLine);
+        invoiceSubtotal = invoiceSubtotal.add(shipping);
+    }
+
+    // Con precios que incluyen impuesto, el impuesto ya está dentro de las líneas
+    if (taxesIncluded) {
+        invoiceSubtotal = invoiceSubtotal.subtract(tax);
+    }
+
+    invoice.put("Subtotal", invoiceSubtotal.doubleValue());
+    invoice.put("Descuento", descuento.doubleValue());
+    invoice.put("CityTax", cityTax.doubleValue());
+    invoice.put("StateTax", stateTax.doubleValue());
+
+    BigDecimal expectedTotal = invoiceSubtotal.subtract(descuento).add(cityTax).add(stateTax);
+    if (expectedTotal.compareTo(shopifyTotal) != 0) {
+        System.out.println("⚠️ Montos no cuadran para la regla del POS | Orden: " + orderName
+                + " | Total=" + shopifyTotal + " | Subtotal-Descuento+Impuestos=" + expectedTotal);
     }
 
     invoice.put("NumeroPiezas", totalPiezas);
