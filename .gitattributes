@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Los hooks de git los ejecuta sh: deben conservar finales de línea LF
+.githooks/* text eol=lf

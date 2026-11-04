@@ -1,0 +1,64 @@
+# Verifica y recompila el instalador de RMPAY Service en cada push y pull request.
+# Corre los tests (installer/build.ps1 los ejecuta con Maven), genera
+# RMPAYService-Setup-<versión>.<n.º de ejecución>.exe y lo deja como artefacto
+# descargable en la pestaña Actions durante 30 días.
+name: Instalador
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instalador-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  instalador:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '20'
+          cache: maven
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Descargar WinSW
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force installer\tools | Out-Null
+          Invoke-WebRequest https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe -OutFile installer\tools\WinSW-x64.exe
+          $hash = (Get-FileHash installer\tools\WinSW-x64.exe -Algorithm SHA256).Hash
+          if ($hash -ne '05B82D46AD331CC16BDC00DE5C6332C1EF818DF8CEEFCD49C726553209B3A0DA') {
+            throw "WinSW descargado no coincide con el esperado (SHA256 $hash)"
+          }
+
+      - name: Tests y compilación del instalador
+        shell: pwsh
+        run: ./installer/build.ps1 -BuildNumber ${{ github.run_number }}
+
+      - name: Publicar el instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: RMPAYService-Setup
+          path: installer/Output/*.exe
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publicar reportes de tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-tests
+          path: target/surefire-reports/
+          if-no-files-found: ignore

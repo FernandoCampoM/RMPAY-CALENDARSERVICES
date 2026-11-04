@@ -35,3 +35,11 @@ target/RMPAYservice.jar.original
 target/surefire-reports/com.retailmanager.rmpaydashboard.RmpaydashboardApplicationTests.txt
 target/surefire-reports/TEST-com.retailmanager.rmpaydashboard.RmpaydashboardApplicationTests.xml
 target/classes/localhost.p12
+
+# Configuración local de desarrollo (contraseñas y secretos)
+/config/
+
+# Instalador: herramientas descargadas y archivos generados
+/installer/tools/
+/installer/build/
+/installer/Output/

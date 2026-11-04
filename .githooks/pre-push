@@ -1,0 +1,13 @@
+#!/bin/sh
+# Antes de cada push: corre los tests y recompila el instalador (installer/build.ps1).
+# Si algo falla, el push se cancela. Para saltarlo en un caso puntual: git push --no-verify
+# Se activa una vez por copia del repositorio con: git config core.hooksPath .githooks
+
+root="$(git rev-parse --show-toplevel)"
+
+echo "pre-push: corriendo tests y recompilando el instalador..."
+if ! powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$root/installer/build.ps1"; then
+    echo "pre-push: falló la verificación o la compilación del instalador; el push se canceló."
+    echo "pre-push: revise el error de arriba (reportes de tests en target/surefire-reports)."
+    exit 1
+fi
