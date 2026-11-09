@@ -51,11 +51,15 @@ class WebhookLogFilterTest {
     private InvoiceSyncService invoiceSyncService;
     private PosClientService pos;
 
+    private WebhookSettingsService webhookSettings;
+
     @BeforeEach
     void setUp() {
+        webhookSettings = WebhookSettingsServiceTest.settings(SECRET);
         logService = mock(WebhookLogService.class);
         WebhookLogFilter config = new WebhookLogFilter();
         ReflectionTestUtils.setField(config, "webhookLogService", logService);
+        ReflectionTestUtils.setField(config, "webhookSettingsService", webhookSettings);
         filter = config.webhookTraceFilter().getFilter();
 
         invoiceSyncService = new InvoiceSyncService();
@@ -63,6 +67,7 @@ class WebhookLogFilterTest {
         ReflectionTestUtils.setField(invoiceSyncService, "posClientService", pos);
         ReflectionTestUtils.setField(invoiceSyncService, "repository", mock(ProcessedOrderRepository.class));
         ReflectionTestUtils.setField(invoiceSyncService, "webhookSecret", SECRET);
+        ReflectionTestUtils.setField(invoiceSyncService, "webhookSettingsService", webhookSettings);
         ReflectionTestUtils.setField(invoiceSyncService, "shippingItemCode", "FLETE");
         ReflectionTestUtils.setField(invoiceSyncService, "tipItemCode", "PROPINA");
     }
@@ -156,6 +161,43 @@ class WebhookLogFilterTest {
         assertEquals(400, log.getHttpStatus());
         assertFalse(log.getHmacPresent());
         assertEquals(ORDER, log.getPayload());
+    }
+
+    @Test
+    void soloRegistrarCompruebaLaFirmaYNoProcesa() throws Exception {
+        webhookSettings.setMode(webhookSettings.findByKey("orders"), WebhookSettingsService.MODE_LOG_ONLY);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        WebhookLog log = run(sign(ORDER), controller(), response);
+
+        assertEquals("SOLO_REGISTRO", log.getResult());
+        assertEquals(200, log.getHttpStatus());
+        assertTrue(log.getHmacValid());
+        assertEquals(ORDER, log.getPayload());
+        assertNull(log.getInvoiceJson());
+        verify(pos, org.mockito.Mockito.never()).sendInvoiceToPOS(any());
+        assertTrue(response.getContentAsString().contains("\"processed\":false"));
+    }
+
+    @Test
+    void soloRegistrarDetectaFirmaInvalida() throws Exception {
+        webhookSettings.setMode(webhookSettings.findByKey("orders"), WebhookSettingsService.MODE_LOG_ONLY);
+
+        WebhookLog log = run("firmaFalsa==", controller(), new MockHttpServletResponse());
+
+        assertEquals("SOLO_REGISTRO", log.getResult());
+        assertFalse(log.getHmacValid());
+    }
+
+    @Test
+    void laLlaveDelPanelReemplazaLaDelInstalador() throws Exception {
+        webhookSettings.setSecret("llave-del-panel");
+
+        // firmado con la llave vieja (instalador): ahora es inválido
+        WebhookLog log = run(sign(ORDER), controller(), new MockHttpServletResponse());
+
+        assertEquals("FIRMA_INVALIDA", log.getResult());
+        assertEquals(401, log.getHttpStatus());
     }
 
     @Test

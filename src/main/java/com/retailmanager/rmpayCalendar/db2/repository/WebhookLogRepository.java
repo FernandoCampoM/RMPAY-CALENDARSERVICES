@@ -23,6 +23,9 @@ public interface WebhookLogRepository extends JpaRepository<WebhookLog, Long> {
             + " OR LOWER(w.topic) LIKE :q OR LOWER(w.result) LIKE :q OR LOWER(w.error) LIKE :q)")
     Page<WebhookLog> search(@Param("q") String q, Pageable pageable);
 
+    /** Último registro recibido en una ruta (para mostrar si el webhook ya está llegando). */
+    WebhookLog findFirstByEndpointOrderByReceivedAtDesc(String endpoint);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM WebhookLog w WHERE w.receivedAt < :before")

@@ -789,8 +789,8 @@
   };
   const webhookBadge = (r) => { const [l, c] = WEBHOOK_RESULT[r] || [r || '—', '']; return `<span class="badge ${c}">${esc(l)}</span>`; };
 
-  function renderWebhooks() {
-    return simpleTable({
+  async function renderWebhooks() {
+    await simpleTable({
       key: 'webhooks', path: '/webhooks', searchPlaceholder: 'Buscar por pedido, tema, resultado o error',
       emptyText: 'Todavía no ha llegado ningún webhook.',
       bind: (c) => {
@@ -808,6 +808,89 @@
         { title: 'ms', cls: 'num', render: (r) => num(r.durationMs) },
         { title: '', cls: 'nowrap', render: (r) => `<button class="btn btn-sm" type="button" data-webhook="${esc(r.id)}">Ver</button>` },
       ],
+    });
+    const root = $('#webhooks-root');
+    if (root && !$('#webhook-config')) {
+      root.insertAdjacentHTML('beforebegin', '<section class="card" id="webhook-config"><div class="card-pad muted">Cargando configuración…</div></section>');
+      try { paintWebhookConfig(await api('/webhooks/config')); } catch (err) { toast(err.message, 'error'); }
+    }
+  }
+
+  // Configuración de los webhooks en Shopify: URL pública, llave de firma, modo de cada uno e instrucciones
+  const WEBHOOK_MODES = { ACTIVO: 'Activo', SOLO_REGISTRO: 'Solo registrar' };
+  const SECRET_SOURCE = {
+    PANEL: ['Configurada en el panel', 'badge-ok'],
+    INSTALADOR: ['Usando la del instalador', 'badge-info'],
+    NINGUNA: ['Sin llave: la firma de todos los webhooks fallará', 'badge-danger'],
+  };
+
+  function paintWebhookConfig(cfg) {
+    const card = $('#webhook-config');
+    if (!card) return;
+    const [srcLabel, srcCls] = SECRET_SOURCE[cfg.secretSource] || [cfg.secretSource, ''];
+    card.innerHTML = `
+      <div class="card-head"><div><h2>Configuración en Shopify</h2>
+        <p class="muted">Direcciones para dar de alta cada webhook en Shopify, llave con que se comprueba su firma y modo de cada uno.</p></div></div>
+      <form id="webhook-config-form">
+        <div class="settings-row">
+          <div><h3>URL pública del servicio</h3><p>Dirección HTTPS con la que Shopify llega a este servicio desde internet. Con ella se arman las URL de la tabla.</p></div>
+          <label class="field"><input name="publicUrl" placeholder="https://rmpay.mitienda.com" value="${esc(cfg.publicUrl)}"><small>Debe empezar con https://</small></label>
+        </div>
+        <div class="settings-row">
+          <div><h3>Llave de firma</h3><p>La que muestra Shopify debajo de la lista de webhooks: “Tus webhooks se firmarán con …”. Se aplica al instante, sin reiniciar.</p></div>
+          <div class="field">
+            <span><span class="badge ${srcCls}">${esc(srcLabel)}</span> <span class="mono">${esc(cfg.secretHint)}</span></span>
+            <input type="password" name="secret" autocomplete="new-password" placeholder="Pegue aquí la llave nueva">
+            ${cfg.secretSource === 'PANEL' ? '<label class="switch"><input type="checkbox" name="clearSecret"><span>Volver a la llave del instalador</span></label>' : ''}
+          </div>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Evento en Shopify</th><th>URL para Shopify</th><th>Modo</th><th>Último recibido</th></tr></thead>
+          <tbody>${cfg.webhooks.map((w) => `<tr>
+            <td><strong>${esc(w.label)}</strong><div class="muted mono">${esc(w.topic)}</div></td>
+            <td>${w.url
+              ? `<span class="mono">${esc(w.url)}</span> <button class="btn btn-sm" type="button" data-copy="${esc(w.url)}">Copiar</button>`
+              : `<span class="muted">Configure la URL pública (ruta <span class="mono">${esc(w.path)}</span>)</span>`}</td>
+            <td><select name="mode-${esc(w.key)}">${Object.entries(WEBHOOK_MODES).map(([v, l]) => `<option value="${v}" ${w.mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+            <td class="nowrap">${w.lastReceivedAt
+              ? `${date(w.lastReceivedAt)}<div>${webhookBadge(w.lastResult)}${w.lastHmacValid === false ? ' <span class="badge badge-danger">Firma inválida</span>' : ''}</div>`
+              : '<span class="muted">Nunca</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+        <details class="card-pad steps">
+          <summary><strong>Cómo configurarlos en Shopify</strong></summary>
+          <ol>
+            <li><strong>Requisito:</strong> Shopify solo envía webhooks a una dirección <strong>HTTPS pública con certificado válido</strong>. El certificado local del servicio no sirve: publique el puerto de la API del servicio (9192 por defecto) con un dominio y un proxy (IIS, nginx) o con un túnel (por ejemplo Cloudflare Tunnel).</li>
+            <li>Escriba esa dirección en <em>URL pública del servicio</em> y guarde. La tabla mostrará las URL completas.</li>
+            <li>En Shopify entre a <em>Configuración → Notificaciones → Webhooks</em> (al final de la página) y use <em>Crear webhook</em>.</li>
+            <li>Cree uno por cada fila de la tabla: <em>Evento</em> = el de la columna “Evento en Shopify”, <em>Formato</em> = JSON, <em>URL</em> = la de la tabla (botón Copiar), <em>Versión de la API</em> = ${esc(cfg.apiVersion || 'la más reciente')}.</li>
+            <li>Copie la llave que Shopify muestra debajo de la lista (“Tus webhooks se firmarán con …”), péguela en <em>Llave de firma</em> y guarde.</li>
+            <li>Para probar sin crear facturas: ponga el webhook en <strong>Solo registrar</strong>, use <em>Enviar notificación de prueba</em> en Shopify y compruebe en la lista de abajo que llegó con la firma válida. Después vuelva a <strong>Activo</strong>. Ojo: con <em>Pago de pedido</em> en “Activo”, la notificación de prueba crea una factura de prueba en RM.</li>
+            <li>Si cambia la llave o la dirección en Shopify, actualícelas aquí. “Solo registrar” no detiene los envíos de Shopify: para dejar de recibir un webhook, bórrelo en Shopify.</li>
+          </ol>
+        </details>
+        <div class="save-bar"><button type="submit" class="btn btn-primary">Guardar configuración</button></div>
+      </form>`;
+
+    const form = $('#webhook-config-form', card);
+    $$('[data-copy]', form).forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); toast('URL copiada'); } catch (e) { toast('No se pudo copiar: selecciónela y cópiela a mano', 'error'); }
+    }));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const modes = {};
+      cfg.webhooks.forEach((w) => { modes[w.key] = $(`[name="mode-${w.key}"]`, form).value; });
+      const clear = $('[name=clearSecret]', form);
+      try {
+        const saved = await api('/webhooks/config', { method: 'PUT', body: {
+          publicUrl: $('[name=publicUrl]', form).value.trim(),
+          secret: $('[name=secret]', form).value,
+          clearSecret: !!(clear && clear.checked),
+          modes,
+        } });
+        paintWebhookConfig(saved);
+        toast('Configuración de webhooks guardada');
+      } catch (err) { toast(err.message, 'error'); }
     });
   }
 

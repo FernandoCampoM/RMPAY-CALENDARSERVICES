@@ -318,6 +318,10 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* Detalle de webhooks: diálogo ancho y bloques de texto (JSON, trazas) con scroll propio */
 .dialog-lg { width: min(960px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
 .dialog-lg .dialog-body { max-height: calc(100vh - 48px); overflow: auto; }
+/* Instrucciones de configuración de webhooks en Shopify */
+#webhook-config { margin-bottom: 16px; }
+.steps summary { cursor: pointer; }
+.steps ol { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; color: var(--text-2); line-height: 1.5; }
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-top: 4px; }
 .code-block { margin: 0; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
   font-family: var(--mono); font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; }

@@ -55,7 +55,7 @@ public class WebhookLog {
     @Column(length = 50)
     private String orderName;
 
-    /** PROCESADA, DUPLICADA, IGNORADA, RECIBIDA, FIRMA_INVALIDA, SIN_FIRMA, PETICION_INVALIDA, ERROR, OK */
+    /** PROCESADA, DUPLICADA, IGNORADA, RECIBIDA, SOLO_REGISTRO, FIRMA_INVALIDA, SIN_FIRMA, PETICION_INVALIDA, ERROR, OK */
     @Column(length = 40)
     private String result;
 

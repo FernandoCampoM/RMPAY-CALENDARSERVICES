@@ -43,6 +43,7 @@ import com.retailmanager.rmpayCalendar.db2.repository.ProcessedOrderRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.ProductSyncRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
 import com.retailmanager.rmpayCalendar.services.services.pos.PosClientService;
+import com.retailmanager.rmpayCalendar.services.services.webhook.WebhookSettingsService;
 import com.retailmanager.rmpayCalendar.services.services.webhook.WebhookTrace;
 
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,9 @@ public class InvoiceSyncService {
     private PosClientService posClientService;
     @Value("${shopify.webhook_secret}")
     private String webhookSecret;
+    /** Llave de firma configurada en el panel (si no hay, se usa webhookSecret). */
+    @Autowired
+    private WebhookSettingsService webhookSettingsService;
     /** Producto de RM con el que se factura el envío (debe existir en Inventario). */
     @Value("${shopify.shipping_item_code}")
     private String shippingItemCode;
@@ -844,7 +848,7 @@ private String resolveEventType(JsonNode order) {
 
     private boolean verifyHmac(String data, String hmacHeader) {
         try {
-            String secret = webhookSecret;
+            String secret = webhookSettingsService.getSecret(webhookSecret);
 
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes(), "HmacSHA256");

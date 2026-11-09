@@ -23,13 +23,18 @@ import jakarta.servlet.http.HttpServletResponse;
  * Registra en WebhookLog cada petición a /webhook/* (Shopify): headers, body, respuesta,
  * duración y lo que anote el código con WebhookTrace. Va como filtro para registrar también
  * las peticiones que Spring rechaza antes de llegar al controlador (por ejemplo sin firma).
- * No cambia la petición ni la respuesta. Depende de WebhookLogService.
+ * No cambia la petición ni la respuesta, salvo en los webhooks en modo "Solo registrar"
+ * (WebhookSettingsService): ahí comprueba la firma, responde 200 y no los pasa al controlador.
+ * Depende de WebhookLogService y WebhookSettingsService.
  */
 @Configuration
 public class WebhookLogFilter {
 
     @Autowired
     private WebhookLogService webhookLogService;
+
+    @Autowired
+    private WebhookSettingsService webhookSettingsService;
 
     @Bean
     public FilterRegistrationBean<OncePerRequestFilter> webhookTraceFilter() {
@@ -52,7 +57,18 @@ public class WebhookLogFilter {
                 long start = System.currentTimeMillis();
                 WebhookTrace.begin(log);
                 try {
-                    chain.doFilter(req, res);
+                    if (webhookSettingsService.isProcessing(request.getRequestURI())) {
+                        chain.doFilter(req, res);
+                    } else {
+                        // Modo "solo registrar": se comprueba la firma y se responde 200 sin procesar
+                        byte[] body = req.getInputStream().readAllBytes();
+                        log.setHmacValid(webhookSettingsService.isValidSignature(body, hmac));
+                        log.setResult("SOLO_REGISTRO");
+                        log.setDetail("Webhook en modo 'Solo registrar': se recibió y se comprobó la firma, pero no se procesó");
+                        res.setStatus(HttpServletResponse.SC_OK);
+                        res.setContentType("application/json");
+                        res.getOutputStream().write("{\"success\":true,\"processed\":false}".getBytes(StandardCharsets.UTF_8));
+                    }
                 } catch (IOException | ServletException | RuntimeException e) {
                     WebhookTrace.error(e);
                     throw e;
