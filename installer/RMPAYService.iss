@@ -360,7 +360,7 @@ begin
 
   RmPage := CreateInputQueryPage(DbPage.ID,
     'Retail Manager', 'RM API y productos para facturar',
-    'Dirección de RM API y códigos de los productos de Retail Manager con los que se facturan el envío y la propina de los pedidos de Shopify. Esos productos deben existir en Retail Manager.');
+    'Dirección de RM API y códigos de los productos de Retail Manager con los que se facturan el envío y la propina de los pedidos de Shopify. Si no existen en Retail Manager, el servicio los crea solo.');
   RmPage.Add('Dirección de RM API:', False);
   RmPage.Add('Código del producto de envío:', False);
   RmPage.Add('Código del producto de propina:', False);

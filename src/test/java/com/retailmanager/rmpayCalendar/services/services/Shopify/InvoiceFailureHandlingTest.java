@@ -28,6 +28,7 @@ import com.retailmanager.rmpayCalendar.db2.entity.ProcessedOrder;
 import com.retailmanager.rmpayCalendar.db2.repository.FailedOrderRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.ProcessedOrderRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
+import com.retailmanager.rmpayCalendar.services.services.pos.ChargeItemsService;
 import com.retailmanager.rmpayCalendar.services.services.pos.PosClientService;
 
 /**
@@ -219,6 +220,7 @@ class InvoiceFailureHandlingTest {
         InvoiceSyncJob job = new InvoiceSyncJob();
         ReflectionTestUtils.setField(job, "invoiceSyncService", service);
         ReflectionTestUtils.setField(job, "configRepository", config);
+        ReflectionTestUtils.setField(job, "chargeItemsService", mock(ChargeItemsService.class));
         job.execute();
 
         verify(config, never()).updateLastSyncDate(any());
@@ -234,6 +236,7 @@ class InvoiceFailureHandlingTest {
         InvoiceSyncJob job = new InvoiceSyncJob();
         ReflectionTestUtils.setField(job, "invoiceSyncService", service);
         ReflectionTestUtils.setField(job, "configRepository", config);
+        ReflectionTestUtils.setField(job, "chargeItemsService", mock(ChargeItemsService.class));
         job.execute();
 
         verify(config).updateLastSyncDate(any());

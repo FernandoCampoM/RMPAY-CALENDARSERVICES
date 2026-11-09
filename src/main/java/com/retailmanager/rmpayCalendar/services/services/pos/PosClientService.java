@@ -112,4 +112,23 @@ public class PosClientService {
         }
         return !node.has("success") || node.path("success").asBoolean(false);
     }
+
+    /**
+     * Crea un producto en RM (ProdCreateNewItem). Los parámetros van en la query string aunque sea POST.
+     * RM responde {"success":true,"message":"Created","status":201} con HTTP 200; si no, se lanza excepción.
+     */
+    public void createProduct(String itemCode, String description, double price, double tax1, double tax2) throws Exception {
+        String url = baseUrl + "/cse.api.v1/ProdCreateNewItem"
+                + "?ItemCode=" + URLEncoder.encode(itemCode, StandardCharsets.UTF_8)
+                + "&Description=" + URLEncoder.encode(description, StandardCharsets.UTF_8)
+                + "&Price=" + price
+                + "&Cost=0"
+                + "&Tax1=" + tax1
+                + "&Tax2=" + tax2;
+        String body = restTemplate.postForObject(URI.create(url), null, String.class);
+        JsonNode node = new ObjectMapper().readTree(body == null ? "" : body);
+        if (node == null || !node.path("success").asBoolean(false)) {
+            throw new RuntimeException("RM no creó el producto " + itemCode + ": " + body);
+        }
+    }
 }

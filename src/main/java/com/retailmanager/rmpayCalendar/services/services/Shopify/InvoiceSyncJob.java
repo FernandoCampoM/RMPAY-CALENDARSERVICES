@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.retailmanager.rmpayCalendar.db2.entity.PosProduct;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
+import com.retailmanager.rmpayCalendar.services.services.pos.ChargeItemsService;
 import com.retailmanager.rmpayCalendar.services.services.pos.PosClientService;
 
 @Component
@@ -15,8 +16,14 @@ public class InvoiceSyncJob {
     private  PosClientService posClientService;
     @Autowired
     private Sys_general_configRepository configRepository;
+    @Autowired
+    private ChargeItemsService chargeItemsService;
 
     public void execute() {
+        // 🧾 Productos de envío y propina en RM (solo consulta mientras no estén confirmados)
+        chargeItemsService.ensureChargeItems();
+
+
         String lastSyncDate = configRepository.getLastSyncDate();
         String now = nowUTC();
         if(lastSyncDate == null) {
