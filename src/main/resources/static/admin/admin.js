@@ -63,6 +63,7 @@
     links: { q: '', includeDeleted: false, page: 0 },
     orders: { q: '', page: 0 },
     failed: { q: '', page: 0 },
+    webhooks: { q: '', page: 0 },
     audit: { page: 0 },
     jobTimer: null,
     lastJobKey: null,
@@ -190,6 +191,7 @@
     vinculados: ['Productos vinculados', renderLinks],
     pedidos: ['Pedidos procesados', renderOrders],
     'facturas-error': ['Facturas con error', renderFailedOrders],
+    webhooks: ['Webhooks recibidos', renderWebhooks],
     auditoria: ['Auditoría', renderAudit],
   };
   function currentView() {
@@ -781,6 +783,68 @@
         </tbody></table></div>`;
     } catch (err) {
       $('#preview-body').innerHTML = `<p class="form-error">${esc(err.message)}</p>`;
+    }
+  }
+
+  // Traza de los webhooks de Shopify (WebhookLog): qué llegó, qué se hizo y el error si lo hubo
+  const WEBHOOK_RESULT = {
+    PROCESADA: ['Procesada', 'badge-ok'], RECIBIDA: ['Recibida', 'badge-info'], OK: ['OK', 'badge-ok'],
+    DUPLICADA: ['Duplicada', ''], IGNORADA: ['Ignorada', ''],
+    FIRMA_INVALIDA: ['Firma inválida', 'badge-danger'], SIN_FIRMA: ['Sin firma', 'badge-danger'],
+    PETICION_INVALIDA: ['Petición inválida', 'badge-warn'], ERROR: ['Error', 'badge-danger'],
+  };
+  const webhookBadge = (r) => { const [l, c] = WEBHOOK_RESULT[r] || [r || '—', '']; return `<span class="badge ${c}">${esc(l)}</span>`; };
+
+  function renderWebhooks() {
+    return simpleTable({
+      key: 'webhooks', path: '/webhooks', searchPlaceholder: 'Buscar por pedido, tema, resultado o error',
+      emptyText: 'Todavía no ha llegado ningún webhook.',
+      bind: (c) => {
+        $('#webhooks-root', c).addEventListener('click', (e) => {
+          const b = e.target.closest('[data-webhook]');
+          if (b) showWebhookDetail(b.dataset.webhook);
+        });
+      },
+      columns: [
+        { title: 'Recibido', cls: 'nowrap', render: (r) => date(r.receivedAt) },
+        { title: 'Endpoint', render: (r) => `<span class="mono">${esc((r.endpoint || '').replace('/webhook', ''))}</span>${r.topic ? `<div class="muted">${esc(r.topic)}</div>` : ''}` },
+        { title: 'Pedido', render: (r) => `<span class="mono">${esc(r.orderName || (r.shopifyOrderId || '').split('/').pop() || '—')}</span>` },
+        { title: 'Resultado', render: (r) => webhookBadge(r.result) + (r.error ? `<div class="muted">${esc(r.error.slice(0, 120))}</div>` : '') },
+        { title: 'HTTP', cls: 'num', render: (r) => esc(r.httpStatus) },
+        { title: 'ms', cls: 'num', render: (r) => num(r.durationMs) },
+        { title: '', cls: 'nowrap', render: (r) => `<button class="btn btn-sm" type="button" data-webhook="${esc(r.id)}">Ver</button>` },
+      ],
+    });
+  }
+
+  const prettyJson = (text) => { try { return JSON.stringify(JSON.parse(text), null, 2); } catch (e) { return text || ''; } };
+  const codeSection = (title, text) => text ? `<h3 class="section-title">${esc(title)}</h3><pre class="code-block">${esc(text)}</pre>` : '';
+
+  async function showWebhookDetail(id) {
+    const dlg = $('#webhook-dialog');
+    $('#webhook-subtitle').textContent = '';
+    $('#webhook-body').innerHTML = '<p class="muted">Cargando…</p>';
+    if (!dlg.open) dlg.showModal();
+    try {
+      const w = await api('/webhooks/' + encodeURIComponent(id));
+      const yesNo = (v) => (v == null ? '—' : v ? 'Sí' : 'No');
+      $('#webhook-subtitle').textContent = `${w.endpoint} · ${date(w.receivedAt)}`;
+      $('#webhook-body').innerHTML = `<p>${webhookBadge(w.result)} <span class="muted">HTTP ${esc(w.httpStatus)} · ${num(w.durationMs)} ms</span></p>
+        ${w.detail ? `<p>${esc(w.detail)}</p>` : ''}
+        <div class="table-wrap"><table><tbody>
+          <tr><td>Pedido</td><td class="mono">${esc(w.orderName || '—')} ${esc(w.shopifyOrderId || '')}</td></tr>
+          <tr><td>Tema (X-Shopify-Topic)</td><td class="mono">${esc(w.topic || '—')}</td></tr>
+          <tr><td>ID del webhook</td><td class="mono">${esc(w.webhookId || '—')}</td></tr>
+          <tr><td>Tienda</td><td class="mono">${esc(w.shopDomain || '—')}</td></tr>
+          <tr><td>Firma recibida / válida</td><td>${yesNo(w.hmacPresent)} / ${yesNo(w.hmacValid)}</td></tr>
+        </tbody></table></div>
+        ${codeSection('Error', w.error)}
+        ${codeSection('Traza del error', w.stackTrace)}
+        ${codeSection('Factura enviada a RM', w.invoiceJson)}
+        ${codeSection('Respuesta enviada a Shopify', w.responseBody)}
+        ${codeSection('Body recibido', prettyJson(w.payload))}`;
+    } catch (err) {
+      $('#webhook-body').innerHTML = `<p class="form-error">${esc(err.message)}</p>`;
     }
   }
 

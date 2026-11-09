@@ -51,6 +51,7 @@
         <a href="#/vinculados" data-view="vinculados"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Vinculados</a>
         <a href="#/pedidos" data-view="pedidos"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Pedidos</a>
         <a href="#/facturas-error" data-view="facturas-error"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Facturas con error</a>
+        <a href="#/webhooks" data-view="webhooks"><svg viewBox="0 0 24 24"><path d="M4 12h4l3-8 4 16 3-8h2"/></svg>Webhooks</a>
         <a href="#/auditoria" data-view="auditoria"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>Auditoría</a>
       </nav>
       <div class="sidebar-foot">
@@ -105,6 +106,17 @@
         <button class="btn btn-ghost btn-icon" value="cancel" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </header>
       <div id="preview-body"></div>
+    </form>
+  </dialog>
+
+  <!-- Detalle de un webhook recibido de Shopify -->
+  <dialog id="webhook-dialog" class="dialog dialog-lg">
+    <form method="dialog" class="dialog-body">
+      <header class="dialog-head">
+        <div><h2>Webhook recibido</h2><p class="muted" id="webhook-subtitle"></p></div>
+        <button class="btn btn-ghost btn-icon" value="cancel" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <div id="webhook-body"></div>
     </form>
   </dialog>
 

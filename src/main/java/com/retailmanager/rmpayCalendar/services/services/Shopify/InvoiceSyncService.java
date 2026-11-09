@@ -43,6 +43,7 @@ import com.retailmanager.rmpayCalendar.db2.repository.ProcessedOrderRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.ProductSyncRepository;
 import com.retailmanager.rmpayCalendar.db2.repository.Sys_general_configRepository;
 import com.retailmanager.rmpayCalendar.services.services.pos.PosClientService;
+import com.retailmanager.rmpayCalendar.services.services.webhook.WebhookTrace;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -801,9 +802,16 @@ private String resolveEventType(JsonNode order) {
     String financialStatus =
         order.path("displayFinancialStatus").asText("");
 
+    // El webhook (API REST) usa financial_status y cancelled_at en lugar de los campos de GraphQL
+    if (financialStatus.isEmpty()) {
+        financialStatus = order.path("financial_status").asText("");
+    }
+
     boolean cancelled =
-        !order.path("cancelledAt").isNull()
-        && !order.path("cancelledAt").asText().isEmpty();
+        (!order.path("cancelledAt").isNull()
+        && !order.path("cancelledAt").asText().isEmpty())
+        || (!order.path("cancelled_at").isNull()
+        && !order.path("cancelled_at").asText().isEmpty());
 
     if (cancelled) {
         return "CANCELLED";
@@ -864,9 +872,10 @@ private String resolveEventType(JsonNode order) {
         // 🔐 Validar Shopify
         
         if (!verifyHmac(payload, hmac)) {
+            WebhookTrace.hmacValid(false);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
+        WebhookTrace.hmacValid(true);
 
         System.out.println("✅ Webhook recibido");
 
@@ -881,6 +890,8 @@ private String resolveEventType(JsonNode order) {
             throw new RuntimeException("Order ID inválido");
         }
 
+        WebhookTrace.order(orderId, order.path("name").asText(""));
+
         // 🔥 ESTADO FINANCIERO
         String financialStatus = order.path("financial_status").asText();
 
@@ -891,6 +902,7 @@ private String resolveEventType(JsonNode order) {
                 "⚠️ Orden ignorada por estado financiero: "
                 + financialStatus
             );
+            WebhookTrace.result("IGNORADA", "Solo se facturan pedidos pagados; estado financiero: " + financialStatus);
 
             return ResponseEntity.ok().build();
         }
@@ -899,6 +911,7 @@ private String resolveEventType(JsonNode order) {
         if (repository.existsById(orderId)) {
 
             System.out.println("⚠️ Orden duplicada: " + orderId);
+            WebhookTrace.result("DUPLICADA", "El pedido ya estaba procesado; no se envió otra factura a RM");
 
             return ResponseEntity.ok().build();
         }
@@ -906,6 +919,7 @@ private String resolveEventType(JsonNode order) {
         // 🧾 MAPEAR
         Map<String, Object> invoice = mapOrderToInvoice(order);
         String eventType = resolveEventType(order);
+        WebhookTrace.invoice(invoice);
         // 🚀 ENVIAR POS
         posClientService.sendInvoiceToPOS(invoice);
          BigDecimal total = new BigDecimal(
@@ -923,6 +937,8 @@ private String resolveEventType(JsonNode order) {
         );
 
         System.out.println("✅ Orden procesada correctamente: " + orderId);
+        WebhookTrace.result("PROCESADA", "Factura " + invoice.get("Factura") + " enviada a RM; pedido guardado en ProcessedOrder como "
+                + eventType + " por " + total);
 
         HashMap<String, Object> response = new HashMap<>();
         response.put("orderId", orderId);
@@ -933,6 +949,8 @@ private String resolveEventType(JsonNode order) {
     } catch (Exception e) {
 
         e.printStackTrace();
+        WebhookTrace.error(e);
+        WebhookTrace.result("ERROR", e.getMessage());
 
         HashMap<String, Object> response = new HashMap<>();
         response.put("success", false);
@@ -951,8 +969,10 @@ public ResponseEntity<?> receiveCancelledOrder(
 
         // 🔐 VALIDAR SHOPIFY
         if (!verifyHmac(payload, hmac)) {
+            WebhookTrace.hmacValid(false);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        WebhookTrace.hmacValid(true);
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode order = mapper.readTree(payload);
@@ -963,6 +983,8 @@ public ResponseEntity<?> receiveCancelledOrder(
             throw new RuntimeException("Order ID inválido");
         }
 
+        WebhookTrace.order(orderId, order.path("name").asText(""));
+
         // 🔥 VALIDAR SI EXISTE EN POS
         boolean exists = repository.existsById(orderId);
 
@@ -972,6 +994,7 @@ public ResponseEntity<?> receiveCancelledOrder(
                 "⚠️ Orden cancelada ignorada porque no existe en POS: "
                 + orderId
             );
+            WebhookTrace.result("IGNORADA", "Cancelación de un pedido que no se había enviado a RM");
 
             return ResponseEntity.ok().build();
         }
@@ -983,6 +1006,7 @@ public ResponseEntity<?> receiveCancelledOrder(
         // 🔥 RESTAURAR INVENTARIO SI APLICA
 
         System.out.println("✅ Orden cancelada procesada: " + orderId);
+        WebhookTrace.result("RECIBIDA", "Cancelación registrada. Pendiente: anular la factura en RM y restaurar inventario (aún no implementado)");
 
         HashMap<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -993,6 +1017,8 @@ public ResponseEntity<?> receiveCancelledOrder(
     } catch (Exception e) {
 
         e.printStackTrace();
+        WebhookTrace.error(e);
+        WebhookTrace.result("ERROR", e.getMessage());
 
         HashMap<String, Object> response = new HashMap<>();
         response.put("success", false);
@@ -1011,8 +1037,10 @@ public ResponseEntity<?> receiveRefund(
 
         // 🔐 VALIDAR SHOPIFY
         if (!verifyHmac(payload, hmac)) {
+            WebhookTrace.hmacValid(false);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        WebhookTrace.hmacValid(true);
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode refund = mapper.readTree(payload);
@@ -1027,6 +1055,8 @@ public ResponseEntity<?> receiveRefund(
         String shopifyOrderId =
                 "gid://shopify/Order/" + orderId;
 
+        WebhookTrace.order(shopifyOrderId, null);
+
         // 🔥 VALIDAR EXISTE EN POS
         Optional<ProcessedOrder> processedOrderOpt =
                 repository.findById(shopifyOrderId);
@@ -1037,6 +1067,7 @@ public ResponseEntity<?> receiveRefund(
                 "⚠️ Refund ignorado porque orden no existe en POS: "
                 + orderId
             );
+            WebhookTrace.result("IGNORADA", "Reembolso de un pedido que no se había enviado a RM");
 
             return ResponseEntity.ok().build();
         }
@@ -1097,6 +1128,9 @@ public ResponseEntity<?> receiveRefund(
             );
         }
 
+        WebhookTrace.result("RECIBIDA", (fullRefund ? "Reembolso total" : "Reembolso parcial") + " de " + refundTotal
+                + " sobre un total de " + originalTotal + ". Pendiente: procesarlo en RM (aún no implementado)");
+
         HashMap<String, Object> response =
                 new HashMap<>();
 
@@ -1113,6 +1147,8 @@ public ResponseEntity<?> receiveRefund(
     } catch (Exception e) {
 
         e.printStackTrace();
+        WebhookTrace.error(e);
+        WebhookTrace.result("ERROR", e.getMessage());
 
         HashMap<String, Object> response =
                 new HashMap<>();
