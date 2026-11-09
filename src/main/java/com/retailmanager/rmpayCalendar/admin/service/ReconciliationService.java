@@ -314,7 +314,7 @@ public class ReconciliationService {
         audit.log(username, "RESTAURAR", rows.size() + " filas");
     }
 
-    /** Crea en RM variantes de Shopify sin contraparte (requiere endpoint del POS). */
+    /** Crea en RM variantes de Shopify sin contraparte (ver PosProductWriter). */
     public void createInRm(Collection<Long> ids, String username, AdminJobRunner.Job job) {
         List<CatalogMatch> rows = matchRepository.findAllById(ids);
         job.total = rows.size();

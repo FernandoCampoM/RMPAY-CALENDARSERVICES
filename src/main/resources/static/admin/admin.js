@@ -277,7 +277,6 @@
             <dt>Altas automáticas</dt><dd>${d.settings.createEnabled ? '<span class="badge badge-ok">Activas</span>' : '<span class="badge badge-warn">Bloqueadas</span>'}</dd>
             <dt>Borradores</dt><dd>${d.settings.importDrafts ? 'Se importan a RM' : 'No se importan a RM'}</dd>
             <dt>Último análisis</dt><dd>${date(d.lastAnalysis)}</dd>
-            <dt>Endpoint POS</dt><dd>${d.settings.posCreateProductPath ? `<span class="mono">${esc(d.settings.posCreateProductPath)}</span>` : '<span class="muted">Sin configurar</span>'}</dd>
           </dl>
         </section>
       </div>`;
@@ -491,7 +490,7 @@
         if (!ok) return;
       }
       if (act === 'create-rm' && ids.length > 1) {
-        const ok = await confirmDialog('Crear en Retail Manager', `Se crearán ${ids.length} productos en Retail Manager. Si el endpoint del POS no está configurado, quedarán en espera.`, 'Crear');
+        const ok = await confirmDialog('Crear en Retail Manager', `Se crearán ${ids.length} productos en Retail Manager con el precio de Shopify y se marcarán como productos web.`, 'Crear');
         if (!ok) return;
       }
       const job = await api('/reconciliation/' + act, { method: 'POST', body: { ids } });
@@ -597,10 +596,6 @@
           <label class="field"><input type="number" name="maxDeletePercent" min="0" max="100" value="${esc(s.maxDeletePercent)}"><small>Porcentaje (0–100)</small></label>
         </div>
         <div class="settings-row">
-          <div><h3>Endpoint del POS para crear productos</h3><p>Ruta relativa a pos.base-url. Mientras esté vacía, “Crear en RM” deja las filas en espera.</p></div>
-          <label class="field"><input name="posCreateProductPath" placeholder="/cse.api.v1/ImportExternalProduct" value="${esc(s.posCreateProductPath)}"><small>Debe empezar con /</small></label>
-        </div>
-        <div class="settings-row">
           <div><h3>Altas automáticas</h3><p>Se activan al cerrar la conciliación. Mientras estén bloqueadas, el sync solo actualiza productos ya vinculados.</p></div>
           <div>${s.createEnabled ? '<span class="badge badge-ok">Activas</span>' : '<span class="badge badge-warn">Bloqueadas</span>'} <a href="#/conciliacion" class="btn btn-ghost btn-sm">Ir a conciliación</a></div>
         </div>
@@ -631,7 +626,6 @@
           master,
           importDrafts: sw.checked,
           maxDeletePercent: Number($('[name=maxDeletePercent]', form).value),
-          posCreateProductPath: $('[name=posCreateProductPath]', form).value.trim(),
         } });
         paintMasterChip(saved);
         toast('Configuración guardada');

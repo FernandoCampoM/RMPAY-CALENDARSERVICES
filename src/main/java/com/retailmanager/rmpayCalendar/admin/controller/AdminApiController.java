@@ -115,13 +115,6 @@ public class AdminApiController {
             }
             settings.set(SyncSettingsService.MAX_DELETE_PERCENT, "SYNC MAX DELETE PERCENT", String.valueOf(pct));
         }
-        if (body.containsKey("posCreateProductPath")) {
-            String path = String.valueOf(body.get("posCreateProductPath")).trim();
-            if (!path.isEmpty() && !path.startsWith("/")) {
-                throw new IllegalArgumentException("La ruta del POS debe empezar con /");
-            }
-            settings.set(SyncSettingsService.POS_CREATE_PRODUCT_PATH, "POS CREATE PRODUCT PATH", path);
-        }
         if (body.containsKey("createEnabled")) {
             settings.set(SyncSettingsService.CREATE_ENABLED, "SYNC CREATE ENABLED", String.valueOf(Boolean.TRUE.equals(body.get("createEnabled"))));
         }

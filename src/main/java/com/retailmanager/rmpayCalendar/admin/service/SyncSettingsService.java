@@ -22,7 +22,6 @@ public class SyncSettingsService {
     public static final String CREATE_ENABLED = "sync.createEnabled";
     public static final String IMPORT_DRAFTS = "sync.importDrafts";
     public static final String MAX_DELETE_PERCENT = "sync.maxDeletePercent";
-    public static final String POS_CREATE_PRODUCT_PATH = "pos.createProductPath";
 
     @Autowired
     private AdminConfigRepository repository;
@@ -52,17 +51,12 @@ public class SyncSettingsService {
         }
     }
 
-    public String getPosCreateProductPath() {
-        return get(POS_CREATE_PRODUCT_PATH, "");
-    }
-
     public Map<String, Object> asMap() {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("master", getMaster().name());
         map.put("createEnabled", isCreateEnabled());
         map.put("importDrafts", isImportDrafts());
         map.put("maxDeletePercent", getMaxDeletePercent());
-        map.put("posCreateProductPath", getPosCreateProductPath());
         return map;
     }
 

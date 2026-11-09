@@ -1,5 +1,6 @@
 package com.retailmanager.rmpayCalendar.services.services.pos;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -129,6 +130,24 @@ public class PosClientService {
         JsonNode node = new ObjectMapper().readTree(body == null ? "" : body);
         if (node == null || !node.path("success").asBoolean(false)) {
             throw new RuntimeException("RM no creó el producto " + itemCode + ": " + body);
+        }
+    }
+
+    /**
+     * Crea un producto de venta en RM (ProdCreateNewItem) con los impuestos por defecto de RM.
+     * El código de barras es opcional. Lanza excepción si RM no lo crea.
+     */
+    public void createItem(String itemCode, String description, BigDecimal price, String barcode) throws Exception {
+        String url = baseUrl + "/cse.api.v1/ProdCreateNewItem"
+                + "?ItemCode=" + URLEncoder.encode(itemCode, StandardCharsets.UTF_8)
+                + "&Description=" + URLEncoder.encode(description, StandardCharsets.UTF_8)
+                + "&Price=" + (price == null ? "0" : price.toPlainString())
+                + "&Cost=0"
+                + (barcode == null || barcode.isBlank() ? "" : "&Barcode=" + URLEncoder.encode(barcode, StandardCharsets.UTF_8));
+        String body = restTemplate.postForObject(URI.create(url), null, String.class);
+        JsonNode node = new ObjectMapper().readTree(body == null ? "" : body);
+        if (node == null || !node.path("success").asBoolean(false)) {
+            throw new RuntimeException("RM no creó el producto " + itemCode + ": " + node.path("message").asText(body));
         }
     }
 }
