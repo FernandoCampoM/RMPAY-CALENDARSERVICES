@@ -79,40 +79,48 @@ public ShopifyResponse createProduct(PosProduct product) {
         }
         """;
 
-        Map<String, Object> variables = Map.of(
-            "sync", true,
-            "input", Map.of(
-                "title", product.getProductName(),
-                "descriptionHtml", product.getWebDesc(),
-                "productType", product.getCategory(),
-                "vendor", "Mi Empresa",
-                "tags", List.of(product.getDepartment()),
-                "productOptions", List.of(
-                    Map.of(
-                        "name", "Title",
-                        "values", List.of(
-                            Map.of("name", product.getProductName())
-                        )
-                    )
-                ),
-                "variants", List.of(
-                    Map.of(
-                        "price", product.getPrice(),
-                        "barcode", product.getBarCode() == null ? "" : product.getBarCode(),
-                        "inventoryItem", Map.of(
-                            "sku", product.getProductCode(),
-                            "tracked", true
-                        ),
-                        "optionValues", List.of(
-                            Map.of(
-                                "optionName", "Title",
-                                "name", product.getProductName()
-                            )
-                        )
-                    )
+        // HashMap y no Map.of: RM manda campos vacíos (casi ningún producto trae WebDesc) y Map.of
+        // no acepta null. Los campos opcionales vacíos simplemente no se envían.
+        String title = product.getProductName() == null || product.getProductName().isBlank()
+                ? product.getProductCode() : product.getProductName();
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("title", title);
+        if (product.getWebDesc() != null && !product.getWebDesc().isBlank()) {
+            input.put("descriptionHtml", product.getWebDesc());
+        }
+        if (product.getCategory() != null && !product.getCategory().isBlank()) {
+            input.put("productType", product.getCategory());
+        }
+        // Marca: el departamento de RM (antes era fija "Mi Empresa")
+        if (product.getDepartment() != null && !product.getDepartment().isBlank()) {
+            input.put("vendor", product.getDepartment());
+            input.put("tags", List.of(product.getDepartment()));
+        }
+        input.put("productOptions", List.of(
+                Map.of(
+                    "name", "Title",
+                    "values", List.of(Map.of("name", title))
                 )
-            )
-        );
+        ));
+        Map<String, Object> variant = new HashMap<>();
+        variant.put("price", product.getPrice());
+        variant.put("barcode", product.getBarCode() == null ? "" : product.getBarCode());
+        variant.put("inventoryItem", Map.of(
+                "sku", product.getProductCode(),
+                "tracked", true
+        ));
+        variant.put("optionValues", List.of(
+                Map.of(
+                    "optionName", "Title",
+                    "name", title
+                )
+        ));
+        input.put("variants", List.of(variant));
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("sync", true);
+        variables.put("input", input);
         // 🔥 AQUÍ USAS EL NUEVO MÉTODO
         String response = client.execute(mutation, variables);
 

@@ -1,6 +1,8 @@
 package com.retailmanager.rmpayCalendar.services.services.Shopify;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -52,9 +54,13 @@ public class ProductSyncJob {
             return;
         }
 
-        List<String> productCodes = products.stream().map(PosProduct::getProductCode).toList();
+        // Comparación en memoria: un NOT IN con todos los códigos de RM supera el límite de
+        // 2100 parámetros de SQL Server cuando el catálogo es grande
+        Set<String> productCodes = products.stream().map(PosProduct::getProductCode).collect(Collectors.toSet());
 
-        List<ProductSync> deletedProducts = productSyncRepository.findAllByProductCodeNotInAndDeletedFalse(productCodes);
+        List<ProductSync> deletedProducts = productSyncRepository.findAllByDeletedFalse().stream()
+                .filter(sync -> !productCodes.contains(sync.getProductCode()))
+                .collect(Collectors.toList());
 
         long linked = productSyncAdminRepository.countByDeletedFalse();
         int maxPercent = syncSettings.getMaxDeletePercent();

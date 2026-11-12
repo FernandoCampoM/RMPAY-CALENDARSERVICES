@@ -16,5 +16,8 @@ public interface ProductSyncRepository extends CrudRepository<ProductSync, Long>
      * @return
      */
      List<ProductSync> findAllByProductCodeNotInAndDeletedFalse(List<String> codes);
-    
+
+    /** Vinculados sin borrar (ProductSyncJob compara en memoria: SQL Server admite hasta 2100 parámetros). */
+    List<ProductSync> findAllByDeletedFalse();
+
 }
