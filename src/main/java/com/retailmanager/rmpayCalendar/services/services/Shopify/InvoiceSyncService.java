@@ -621,6 +621,22 @@ invoice.put("Hora", hora);
                 money(order.path("totalPriceSet"))));
     }
 
+    /**
+     * Si Shopify respondió la consulta de pedidos con "errors" (permiso denegado, límite de
+     * consultas...), lanza excepción: así InvoiceSyncJob no avanza lastSyncDate y esos pedidos se
+     * vuelven a pedir en el próximo ciclo. Sin esto el error se leía como "0 pedidos".
+     */
+    static void failIfShopifyErrors(JsonNode root) {
+        JsonNode errors = root.path("errors");
+        if (errors.isMissingNode() || errors.isNull() || (errors.isContainerNode() && errors.isEmpty())) {
+            return;
+        }
+        String message = errors.isArray() && errors.get(0).hasNonNull("message")
+                ? errors.get(0).path("message").asText()
+                : errors.toString();
+        throw new IllegalStateException("Shopify rechazó la consulta de pedidos: " + message);
+    }
+
     public void syncOrdersToPOS(String lastSyncDate) throws Exception {
      System.out.println("📦 Sincronizando ordenes...");
     // 🔥 PAGINACIÓN: Shopify entrega máximo 50 órdenes por página
@@ -629,8 +645,9 @@ invoice.put("Hora", hora);
     do {
     String response = shopifyService.getNewOrders(lastSyncDate, cursor);
 
-    JsonNode ordersNode = new ObjectMapper()
-            .readTree(response)
+    JsonNode root = new ObjectMapper().readTree(response);
+    failIfShopifyErrors(root);
+    JsonNode ordersNode = root
             .path("data")
             .path("orders");
     JsonNode orders = ordersNode.path("edges");

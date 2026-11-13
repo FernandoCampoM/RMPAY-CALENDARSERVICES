@@ -788,6 +788,16 @@ public List<ShopifyPublication> getAvailablePublications(){
 
     return publications;
 }
+
+    /**
+     * Filtro de búsqueda de pedidos creados después de lastSyncDate. La fecha va entre comillas:
+     * sin ellas Shopify corta el texto en los ":" de la hora, solo usa el día ("Invalid search
+     * field") y, con la hora en UTC después de las 19:00 de Puerto Rico, pide pedidos del día siguiente.
+     */
+    static String ordersCreatedAfterFilter(String lastSyncDate) {
+        String date = lastSyncDate == null ? "" : lastSyncDate.trim().replace("'", "").replace("\"", "");
+        return "created_at:>'" + date + "'";
+    }
         /**
          * Obtiene una lista de las 10 últimas órdenes
          * @return Una cadena JSON con la lista de órdenes
@@ -901,7 +911,7 @@ public String getNewOrders(String lastSyncDate) {
         """;
 
         // 🔥 FILTRO DINÁMICO
-        String filter = "created_at:>" + lastSyncDate;
+        String filter = ordersCreatedAfterFilter(lastSyncDate);
 
         Map<String, Object> variables = Map.of(
             "query", filter
@@ -1028,7 +1038,7 @@ public String getNewOrders(String lastSyncDate, String afterCursor) {
 
         // Map.of no admite null; la primera página va sin cursor
         Map<String, Object> variables = new HashMap<>();
-        variables.put("query", "created_at:>" + lastSyncDate);
+        variables.put("query", ordersCreatedAfterFilter(lastSyncDate));
         variables.put("after", afterCursor);
 
         return client.execute(query, variables);
