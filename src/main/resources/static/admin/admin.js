@@ -931,6 +931,46 @@
     }
   }
 
+  // ───────── Conciliación automática (Configuración) ─────────
+  // Tarjeta agregada a la vista Configuración sin tocar renderSettings: cada vez que aparece el
+  // formulario de ajustes (#settings-form), se inserta debajo. API: AdminAutoReconciliationController.
+  async function paintAutoReconciliation() {
+    const form = $('#settings-form');
+    if (!form || $('#auto-recon')) return;
+    form.insertAdjacentHTML('afterend', '<form id="auto-recon" class="card"><div class="card-pad muted">Cargando conciliación automática…</div></form>');
+    let a;
+    try { a = await api('/reconciliation/auto'); } catch (err) { $('#auto-recon').innerHTML = `<div class="card-pad form-error">${esc(err.message)}</div>`; return; }
+    const card = $('#auto-recon');
+    if (!card) return;
+    card.innerHTML = `
+      <div class="card-head"><div><h2>Conciliación automática</h2>
+        <p class="muted">Cada cierto tiempo analiza los catálogos y aplica las acciones recomendadas (vincular por código y crear en RM o en Shopify según quién manda), igual que los botones de Conciliación. Los sugeridos y ambiguos siguen esperando revisión.</p></div></div>
+      <div class="settings-row">
+        <div><h3>Cada cuántos minutos</h3><p>0 la apaga. Cuenta desde el último análisis, automático o manual.</p></div>
+        <label class="field"><input type="number" name="minutes" min="0" max="1440" value="${esc(a.minutes)}"><small>${a.enabled ? 'Activa' : 'Apagada'}</small></label>
+      </div>
+      <div class="settings-row">
+        <div><h3>Estado</h3></div>
+        <div class="muted">
+          <div>Próximo ciclo: ${a.nextRun ? `${date(a.nextRun)} (en ${num(a.minutesToNext)} min)` : '—'}</div>
+          <div>Último ciclo automático: ${a.lastRun ? date(a.lastRun) : 'todavía no corre desde que arrancó el servicio'}</div>
+          ${a.lastResult ? `<div>Resultado: <span class="mono">${esc(a.lastResult)}</span></div>` : ''}
+        </div>
+      </div>
+      <div class="save-bar"><button type="submit" class="btn btn-primary">Guardar</button></div>`;
+    card.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('/reconciliation/auto', { method: 'PUT', body: { minutes: Number($('[name=minutes]', card).value) } });
+        toast('Conciliación automática guardada');
+        card.remove();
+        paintAutoReconciliation();
+      } catch (err) { toast(err.message, 'error'); }
+    });
+  }
+  new MutationObserver(() => { if ($('#settings-form') && !$('#auto-recon')) paintAutoReconciliation(); })
+    .observe($('#content'), { childList: true });
+
   // ───────── Túnel de Cloudflare ─────────
   // Instala el túnel con el token de Cloudflare (AdminTunnelController / TunnelService). La guía
   // completa está en guias/tunel.md: si cambia algo de esta pantalla, actualícela.

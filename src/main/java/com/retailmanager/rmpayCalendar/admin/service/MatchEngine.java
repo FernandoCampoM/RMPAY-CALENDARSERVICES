@@ -38,6 +38,23 @@ public final class MatchEngine {
         return v.toUpperCase(Locale.ROOT);
     }
 
+    /**
+     * Código para guardar en RM al crear un producto desde Shopify: el SKU o código de barras tal
+     * cual, solo sin espacios ni apóstrofes iniciales. A diferencia de normalizeCode (que es para
+     * comparar) conserva los ceros a la izquierda y las mayúsculas/minúsculas, porque la factura
+     * de un pedido manda a RM el SKU exacto de Shopify.
+     */
+    public static String rmCode(String value) {
+        if (value == null) {
+            return "";
+        }
+        String v = value.trim();
+        while (v.startsWith("'")) {
+            v = v.substring(1).trim();
+        }
+        return v.replace(" ", "");
+    }
+
     public static Set<String> tokens(String text) {
         Set<String> result = new HashSet<>();
         if (text == null) {

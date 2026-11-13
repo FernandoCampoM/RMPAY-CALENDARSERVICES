@@ -247,9 +247,22 @@ public class ReconciliationService {
 
     // ───────────────────────── ACCIONES ─────────────────────────
 
+    /** Filas por consulta en findRows: SQL Server admite hasta 2100 parámetros por consulta. */
+    static final int ROWS_PER_QUERY = 1000;
+
+    /** Carga filas por ID en lotes (un findAllById con miles de IDs supera el límite de SQL Server). */
+    List<CatalogMatch> findRows(Collection<Long> ids) {
+        List<Long> all = new ArrayList<>(ids);
+        List<CatalogMatch> rows = new ArrayList<>(all.size());
+        for (int from = 0; from < all.size(); from += ROWS_PER_QUERY) {
+            rows.addAll(matchRepository.findAllById(all.subList(from, Math.min(from + ROWS_PER_QUERY, all.size()))));
+        }
+        return rows;
+    }
+
     /** Vincula filas que ya tienen producto de RM asignado (AUTO, SUGERIDO, o asignadas a mano). */
     public void link(Collection<Long> ids, String username, AdminJobRunner.Job job) {
-        List<CatalogMatch> rows = matchRepository.findAllById(ids);
+        List<CatalogMatch> rows = findRows(ids);
         job.total = rows.size();
         for (CatalogMatch row : rows) {
             try {
@@ -283,7 +296,7 @@ public class ReconciliationService {
     }
 
     public void ignore(Collection<Long> ids, String username) {
-        List<CatalogMatch> rows = matchRepository.findAllById(ids);
+        List<CatalogMatch> rows = findRows(ids);
         for (CatalogMatch row : rows) {
             if (row.getStatus() == MatchStatus.VINCULADO) {
                 continue;
@@ -297,7 +310,7 @@ public class ReconciliationService {
 
     /** Devuelve filas ignoradas o en espera a su estado calculado. */
     public void restore(Collection<Long> ids, String username) {
-        List<CatalogMatch> rows = matchRepository.findAllById(ids);
+        List<CatalogMatch> rows = findRows(ids);
         for (CatalogMatch row : rows) {
             if (!KEEP_DECISION.contains(row.getStatus()) && row.getStatus() != MatchStatus.ERROR) {
                 continue;
@@ -316,7 +329,7 @@ public class ReconciliationService {
 
     /** Crea en RM variantes de Shopify sin contraparte (ver PosProductWriter). */
     public void createInRm(Collection<Long> ids, String username, AdminJobRunner.Job job) {
-        List<CatalogMatch> rows = matchRepository.findAllById(ids);
+        List<CatalogMatch> rows = findRows(ids);
         job.total = rows.size();
         boolean configured = posProductWriter.isConfigured();
         for (CatalogMatch row : rows) {
@@ -324,7 +337,7 @@ public class ReconciliationService {
                 if (row.getShopifyVariantId() == null || row.getStatus() == MatchStatus.VINCULADO) {
                     throw new IllegalStateException("No es una variante de Shopify pendiente");
                 }
-                String code = MatchEngine.normalizeCode(row.getShopifySku() != null ? row.getShopifySku() : row.getShopifyBarcode());
+                String code = MatchEngine.rmCode(row.getShopifySku() != null ? row.getShopifySku() : row.getShopifyBarcode());
                 if (code.isEmpty()) {
                     throw new IllegalStateException("No tiene SKU ni código de barras; asígnele uno en Shopify");
                 }
@@ -354,7 +367,7 @@ public class ReconciliationService {
 
     /** Crea en Shopify productos que solo existen en RM, usando el mismo flujo del sync. */
     public void createInShopify(Collection<Long> ids, String username, AdminJobRunner.Job job) {
-        List<CatalogMatch> rows = matchRepository.findAllById(ids);
+        List<CatalogMatch> rows = findRows(ids);
         job.total = rows.size();
         for (CatalogMatch row : rows) {
             try {

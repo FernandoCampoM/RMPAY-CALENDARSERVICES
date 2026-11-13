@@ -45,7 +45,7 @@ public class PosProductWriter {
         if (description.length() > MAX_DESCRIPTION) {
             description = description.substring(0, MAX_DESCRIPTION);
         }
-        String barcode = row.getShopifyBarcode() == null ? "" : MatchEngine.normalizeCode(row.getShopifyBarcode());
+        String barcode = row.getShopifyBarcode() == null ? "" : MatchEngine.rmCode(row.getShopifyBarcode());
         if (barcode.length() > MAX_BARCODE) {
             barcode = "";
         }

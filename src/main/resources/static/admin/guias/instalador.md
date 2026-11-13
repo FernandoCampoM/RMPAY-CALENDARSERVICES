@@ -62,7 +62,9 @@ valores actuales: sirve para cambiar una credencial sin perder el resto.
 
 ## Después de instalar
 
-1. Revise el panel → *Panel* y *Configuración*.
+1. Revise el panel → *Panel* y *Configuración*. En *Configuración → Conciliación automática* se
+   elige cada cuántos minutos se analizan los catálogos y se aplican las acciones recomendadas
+   (15 por defecto; 0 la apaga).
 2. Para recibir pedidos por webhooks: [instale el túnel](tunel.md) y configure el panel →
    *Webhooks*.
 
