@@ -15,7 +15,7 @@ conseguir credenciales o permisos se agrega ahí y se corrigen los pasos de arri
 | Tienda | Instalador, página *Shopify* | `mitienda.myshopify.com` |
 | Client ID | Instalador, página *Shopify* | `84a80e…` (32 caracteres) |
 | Client secret | Instalador, página *Shopify* | `shpss_…` |
-| Versión de la API | Instalador, página *Shopify* | `2026-04` |
+| Versión de la API | Instalador, página *Shopify* | `2026-10` (la misma que la app) |
 | Llave de firma de webhooks | Panel → *Webhooks* → *Llave de firma* (o el instalador) | la que muestra Shopify |
 
 El servicio pide su propio token a Shopify con el Client ID y el Client secret
@@ -46,7 +46,7 @@ opción antigua *Configuración → Apps → Desarrollar apps* ya no permite cre
 En la app: *Versiones → Crear versión → Acceso → Alcances* (scopes). Escriba exactamente:
 
 ```
-write_products,write_inventory,read_locations,write_publications,read_orders
+read_customers,write_inventory,read_locations,read_orders,write_products,write_publications,customer_read_orders
 ```
 
 | Alcance | Para qué lo usa el servicio |
@@ -56,6 +56,11 @@ write_products,write_inventory,read_locations,write_publications,read_orders
 | `read_locations` | Saber en qué ubicación se cargan las existencias |
 | `write_publications` | Publicar los productos en los canales de venta |
 | `read_orders` | Leer los pedidos para facturarlos en RM |
+| `read_customers` | Leer el cliente del pedido (nombre y teléfono que van en la factura) |
+| `customer_read_orders` | Alcance de la *Customer Account API* (cuentas de clientes). El servicio no lo usa; está en la app configurada y no estorba |
+
+En la misma versión, *Versión de la API de webhooks*: **2026-10**. En el instalador, campo
+*Versión de la API de Shopify*, use la misma versión.
 
 Después: **Publicar** (*Release*) la versión e **instalar o actualizar** la app en la tienda
 (en la app: *Inicio → Instalar app*, elegir la tienda). Si la app ya estaba instalada, Shopify
@@ -129,4 +134,6 @@ Cada entrada dice qué aprendimos y si está comprobado en una tienda real.
 | 2026-11-12 | La app con Client ID `84a80e…` responde `API Access has been disabled` en `retailmanager.myshopify.com`: esa app no es la que está activa en la tienda. | Comprobado |
 | 2026-11 | Los webhooks creados en el admin de la tienda no dependen de la aprobación de la app. | Por confirmar en `retailmanager` |
 | 2026-11-12 | **Engañoso:** si la búsqueda no encuentra ningún pedido, Shopify responde `"orders": []` sin error aunque la app no tenga aprobados los datos protegidos. El `not approved to access the Order object` solo aparece cuando hay pedidos que devolver. Que la consulta "funcione" no prueba el permiso: probar con un rango de fechas que tenga pedidos. En `retailmanager` el permiso **sigue sin aprobar** (22:29 y 22:48, con la fecha movida al 12-nov). Desde esta fecha, si Shopify niega la consulta el registro muestra `Error al sincronizar facturas: Shopify rechazó la consulta de pedidos: …` y el servicio **no avanza** `lastSyncDate`: al aprobarse el permiso, los pedidos pendientes se leen solos. | Comprobado |
+| 2026-11-12 | A las 23:15, con `lastSyncDate` en el inicio del 12-nov, Shopify devolvió 5 pedidos de `retailmanager`: la app **ya puede leer pedidos** con datos protegidos. Entre las 22:48 (denegado) y las 23:15 se reinstaló el servicio; falta confirmar si el permiso cambió en Shopify en ese lapso. | Comprobado (causa por confirmar) |
 | 2026-11-12 | Si la consulta de pedidos responde bien pero trae 0 pedidos, revisar en la respuesta de Shopify el bloque `search → warnings`: con `created_at:>2026-11-13T03:06:18Z` sin comillas Shopify avisa `Invalid search field` y solo usa la fecha. Es un error del filtro del servicio, no de permisos. Corregido: el servicio ahora envía la fecha entre comillas (`created_at:>'…'`). Para recuperar pedidos que quedaron atrás se puede mover `config.lastSyncDate` (tabla `Sys_general_config`) hacia atrás: los pedidos ya facturados no se repiten. | Comprobado |
+| 2026-11-12 | Configuración que funciona en `retailmanager` (productos y pedidos): versión de la API **2026-10** y alcances `read_customers,write_inventory,read_locations,read_orders,write_products,write_publications,customer_read_orders`. Frente a la lista anterior se agregaron `read_customers` (cliente del pedido) y `customer_read_orders` (Customer Account API, no lo usa el servicio). El valor por defecto del instalador sigue siendo 2026-04: escribir 2026-10 al instalar. | Comprobado con estos alcances; la versión que usa el servicio instalado está por confirmar |

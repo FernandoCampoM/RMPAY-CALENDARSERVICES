@@ -14,6 +14,6 @@ import com.retailmanager.rmpayCalendar.db2.entity.ProcessedOrder;
  */
 public interface ProcessedOrderAdminRepository extends JpaRepository<ProcessedOrder, String> {
 
-    @Query("SELECT o FROM ProcessedOrder o WHERE (:q IS NULL OR LOWER(o.id) LIKE :q OR LOWER(o.eventType) LIKE :q)")
+    @Query("SELECT o FROM ProcessedOrder o WHERE (:q IS NULL OR LOWER(o.id) LIKE :q OR LOWER(o.eventType) LIKE :q OR LOWER(o.rmInvoice) LIKE :q)")
     Page<ProcessedOrder> search(@Param("q") String q, Pageable pageable);
 }

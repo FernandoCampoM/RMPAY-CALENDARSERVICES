@@ -13,6 +13,9 @@ configuración, instala RMPAY Service como **servicio de Windows** y crea en el 
 - Permisos de administrador para instalar.
 - SQL Server con la base de datos de Retail Manager (por ejemplo `localhost\CSE`, base `POSDPS`).
 - RM API funcionando (por ejemplo `http://localhost:8180`).
+- En la base de Retail Manager, `Compania.IDCompania` debe ser un número de **1 a 999**. Si no,
+  RM rechaza todas las facturas con `Station code not configured (Compania.IDCompania must be a
+  single numeric value 1-999)` y quedan en el panel → *Facturas con error*.
 
 ## Dónde conseguir el instalador
 

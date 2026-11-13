@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.retailmanager.rmpayCalendar.admin.service.AdminJobRunner;
 import com.retailmanager.rmpayCalendar.admin.service.AuditService;
 import com.retailmanager.rmpayCalendar.admin.service.ReconciliationService;
@@ -265,6 +266,8 @@ public class AdminApiController {
             m.put("processedAt", o.getProcessedAt() == null ? null : o.getProcessedAt().toString());
             m.put("eventType", o.getEventType());
             m.put("totalAmount", o.getTotalAmount());
+            m.put("orderName", orderName(o.getJSONRecibed()));
+            m.put("rmInvoice", o.getRmInvoice());
             return m;
         }).collect(Collectors.toList()));
     }
@@ -276,6 +279,21 @@ public class AdminApiController {
     }
 
     // ───────────── Mapeos ─────────────
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    /** Número del pedido en Shopify (#1006) desde el JSON guardado; sirve igual para el ciclo y el webhook. */
+    static String orderName(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            String name = JSON.readTree(json).path("name").asText("");
+            return name.isEmpty() ? null : name;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     private Map<String, Object> matchToMap(CatalogMatch m) {
         Map<String, Object> map = new LinkedHashMap<>();

@@ -27,4 +27,15 @@ public class ProcessedOrder {
     private String eventType;
     @Column(precision = 19, scale = 2)
     private BigDecimal totalAmount;
+
+    /**
+     * NUEVO: número de la factura en RM (K… si la envió el ciclo, KW… si la envió el webhook).
+     * Vacío mientras no se envía o si el pedido no se facturó. Lo muestra el panel en Pedidos.
+     */
+    private String rmInvoice;
+
+    /** Constructor de siempre (sin factura de RM): lo usan el ciclo, los reintentos y el webhook. */
+    public ProcessedOrder(String id, LocalDateTime processedAt, String JSONRecibed, String eventType, BigDecimal totalAmount) {
+        this(id, processedAt, JSONRecibed, eventType, totalAmount, null);
+    }
 }

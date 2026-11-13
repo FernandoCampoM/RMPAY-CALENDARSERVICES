@@ -120,7 +120,7 @@ class WebhookLogFilterTest {
         assertTrue(log.getHmacValid());
         assertEquals(ORDER, log.getPayload());
         assertTrue(log.getInvoiceJson().contains("FLETE"), "la factura enviada queda en la traza");
-        assertTrue(log.getDetail().contains("K1077"));
+        assertTrue(log.getDetail().contains("KW1077"), "las facturas del webhook llevan el prefijo KW");
         assertNull(log.getError());
         assertNotNull(log.getDurationMs());
         // la respuesta llega igual a Shopify

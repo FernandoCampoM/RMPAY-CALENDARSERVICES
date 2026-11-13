@@ -65,7 +65,8 @@ que una pregunta de más.
 
 # Guías del proyecto (mantenerlas al día)
 Las guías están en `src/main/resources/static/admin/guias/` (se ven en el panel, vista Guías,
-y `docs/README.md` las enlaza):
+`docs/README.md` las enlaza y `docs/pdf/` tiene su versión en PDF, que regenera el hook
+`.githooks/pre-commit`; no edites los PDF a mano):
 - `credenciales-shopify.md`: dónde se consiguen las credenciales y permisos de Shopify.
 - `tunel.md`: túnel de Cloudflare instalado desde el panel.
 - `instalador.md`: instalador del servicio.

@@ -707,10 +707,14 @@
   const EVENT = { PAID: ['Pagado', 'badge-ok'], CANCELLED: ['Cancelado', 'badge-danger'], REFUNDED: ['Reembolsado', 'badge-warn'], PARTIALLY_REFUNDED: ['Reembolso parcial', 'badge-warn'], PARTIALLY_PAID: ['Pago parcial', 'badge-warn'], VOIDED: ['Anulado', 'badge-danger'], PENDING: ['Pendiente', 'badge-info'] };
   function renderOrders() {
     return simpleTable({
-      key: 'orders', path: '/orders', searchPlaceholder: 'Buscar por ID de pedido o estado',
+      key: 'orders', path: '/orders', searchPlaceholder: 'Buscar por ID de pedido, factura de RM o estado',
       emptyText: 'Todavía no se ha procesado ningún pedido.',
       columns: [
-        { title: 'Pedido Shopify', render: (r) => `<span class="mono">${esc((r.id || '').split('/').pop())}</span>` },
+        { title: 'Pedido Shopify', render: (r) => `<strong>${esc(r.orderName || '—')}</strong><div class="muted mono">${esc((r.id || '').split('/').pop())}</div>` },
+        // K… = lo envió el ciclo de sincronización; KW… = lo envió el webhook de pago
+        { title: 'Factura en RM', render: (r) => r.rmInvoice
+          ? `<span class="mono">${esc(r.rmInvoice)}</span><div class="muted">${String(r.rmInvoice).startsWith('KW') ? 'Webhook' : 'Ciclo'}</div>`
+          : '<span class="muted">—</span>' },
         { title: 'Estado', render: (r) => { const [l, c] = EVENT[r.eventType] || [r.eventType || '—', '']; return `<span class="badge ${c}">${esc(l)}</span>`; } },
         { title: 'Total', cls: 'num', render: (r) => money(r.totalAmount) },
         { title: 'Procesado', cls: 'nowrap', render: (r) => date(r.processedAt) },

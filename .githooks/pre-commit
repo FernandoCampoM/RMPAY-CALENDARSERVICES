@@ -1,0 +1,16 @@
+#!/bin/sh
+# Si el commit cambia alguna guía (src/main/resources/static/admin/guias/*.md), regenera los PDF de
+# docs/pdf con docs/build-pdfs.ps1 y los agrega al mismo commit, para que nunca queden desactualizados.
+# Se activa con: git config core.hooksPath .githooks (el mismo paso que el pre-push).
+
+root="$(git rev-parse --show-toplevel)"
+
+if git diff --cached --name-only | grep -q '^src/main/resources/static/admin/guias/.*\.md$'; then
+    echo "pre-commit: cambiaron las guías; regenerando docs/pdf..."
+    if ! powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$root/docs/build-pdfs.ps1"; then
+        echo "pre-commit: no se pudieron generar los PDF de las guías; el commit se canceló."
+        echo "pre-commit: revise el error de arriba o use git commit --no-verify en un caso puntual."
+        exit 1
+    fi
+    git add "$root/docs/pdf"
+fi

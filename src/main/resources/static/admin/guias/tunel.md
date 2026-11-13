@@ -78,7 +78,12 @@ Para cambiar de túnel o de token, pegue el nuevo y pulse **Reinstalar con este 
    el servicio con un error de método (por ejemplo *405*), **no** una página de error de
    Cloudflare. Shopify usa POST, por eso el navegador no recibe un pedido.
 2. En Shopify use *Enviar notificación de prueba* con el webhook en *Solo registrar* y compruebe
-   que aparece en el panel → *Webhooks* con la firma válida.
+   que aparece en el panel → *Webhooks* con la firma válida. La notificación de prueba siempre es
+   el pedido #9999 anulado (`voided`): el servicio la registra como *Ignorada* y no factura.
+3. Haga un pedido real pagado con un producto de RM. En RM la factura sale como **KW** + número
+   del pedido (por ejemplo `KW1007`) si llegó por el webhook, o **K** + número (`K1007`) si la
+   leyó antes el ciclo de 5 minutos. Un mismo pedido nunca se factura por los dos caminos: el
+   segundo queda como *Duplicada*.
 
 ## Problemas frecuentes
 

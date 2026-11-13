@@ -26,6 +26,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.hibernate.query.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -82,6 +83,28 @@ public class InvoiceSyncService {
 
     /** Intentos de envío a RM antes de dejar la factura para revisión manual en el panel. */
     public static final int MAX_FAILED_ATTEMPTS = 10;
+
+    /**
+     * Prefijo del número de factura en RM según por dónde llegó el pedido: K para el ciclo de
+     * sincronización (y sus reintentos), KW para el webhook de pago. Número = prefijo + pedido
+     * sin "#" (K1006 / KW1006); Facturas.Factura en RM admite 12 caracteres.
+     */
+    public static final String INVOICE_PREFIX_SYNC = "K";
+    public static final String INVOICE_PREFIX_WEBHOOK = "KW";
+
+    /** Número de factura del ciclo para un pedido (K + nombre sin "#"), como en mapOrderFromQueryToInvoice. */
+    static String syncInvoiceNumber(JsonNode order) {
+        return INVOICE_PREFIX_SYNC + order.path("name").asText("").replace("#", "");
+    }
+
+    /** Guarda en ProcessedOrder el número de factura de RM; si falla solo se registra (la factura ya está en RM). */
+    private void recordRmInvoice(String orderId, String invoiceNumber) {
+        try {
+            repository.setRmInvoice(orderId, invoiceNumber);
+        } catch (Exception e) {
+            System.out.println("⚠️ No se pudo guardar el número de factura " + invoiceNumber + " de " + orderId + ": " + e.getMessage());
+        }
+    }
 
     public boolean isDryRun() {
         return invoiceDryRun;
@@ -406,7 +429,7 @@ invoice.put("PaidAthMovil", paidAth);
     double total = order.path("total_price").asDouble(0);
 
     // 🧾 HEADER
-    invoice.put("Factura", "K" + orderName);
+    invoice.put("Factura", INVOICE_PREFIX_WEBHOOK + orderName);
     invoice.put("OrdenNumero", orderName);
     invoice.put("Cliente", "0000");
 
@@ -471,7 +494,7 @@ invoice.put("Hora", hora);
 
         Map<String, Object> detail = new HashMap<>();
 
-        detail.put("FacturaNumero", "K" + orderName);
+        detail.put("FacturaNumero", INVOICE_PREFIX_WEBHOOK + orderName);
 
         // 🔥 Usa SKU si existe
         String sku = item.path("sku").asText();
@@ -505,6 +528,8 @@ invoice.put("Hora", hora);
             order.path("taxes_included").asBoolean(false),
             cityTaxOfWebhook(order.path("tax_lines")).min(tax),
             decimal(order.path("total_tip_received")));
+    // Las líneas de envío y propina (extraLine) salen con el prefijo del ciclo: alinearlas al del webhook
+    items.forEach(line -> line.put("FacturaNumero", invoice.get("Factura")));
 
     invoice.put("Items", items);
 
@@ -590,6 +615,7 @@ invoice.put("Hora", hora);
             }
             posClientService.sendInvoiceToPOS(invoice);
             markProcessed(orderId, order);
+            recordRmInvoice(orderId, (String) invoice.get("Factura"));
             failedOrderRepository.delete(failed);
             System.out.println("✅ Factura reintentada y enviada: " + orderId);
             return true;
@@ -598,6 +624,7 @@ invoice.put("Hora", hora);
             String message = e.getMessage();
             if (message != null && message.contains("Invoice already exists")) {
                 markProcessed(orderId, order);
+                recordRmInvoice(orderId, syncInvoiceNumber(order));
                 failedOrderRepository.delete(failed);
                 System.out.println("✅ Factura ya existía en RM: " + orderId);
                 return true;
@@ -682,15 +709,9 @@ invoice.put("Hora", hora);
             .path("amount")
             .asText("0")
     );
-            // 🔥 PROTECCIÓN DUPLICADOS
-            repository.save(
-                new ProcessedOrder(
-                    orderId,
-                    LocalDateTime.now(),
-                    order.toString(),
-                    eventType, total
-                )
-            );
+            // 🔥 PROTECCIÓN DUPLICADOS: INSERT por ID de pedido de Shopify (no save, que sobrescribe);
+            // si el webhook ya lo reservó, falla y el pedido se salta aunque las facturas usen otro prefijo
+            repository.reserve(orderId, LocalDateTime.now(), order.toString(), eventType, total);
 
         } catch (Exception e) {
 
@@ -729,6 +750,7 @@ invoice.put("Hora", hora);
 
                     // 🚀 ENVIAR
                     posClientService.sendInvoiceToPOS(invoice);
+                    recordRmInvoice(orderId, (String) invoice.get("Factura"));
 
                     System.out.println("✅ Orden PAID procesada: " + orderId);
 
@@ -792,6 +814,11 @@ repository.deleteById(orderId);
 
             System.out.println("❌ Error enviando orden: " + orderId);
             System.out.println("❌ Error: " + e.getMessage());
+
+            // La factura ya estaba en RM: queda procesada con su número
+            if (message != null && message.contains("Invoice already exists")) {
+                recordRmInvoice(orderId, syncInvoiceNumber(order));
+            }
 
             // 🔥 ROLLBACK MANUAL
             if (message == null ||
@@ -941,21 +968,26 @@ private String resolveEventType(JsonNode order) {
         Map<String, Object> invoice = mapOrderToInvoice(order);
         String eventType = resolveEventType(order);
         WebhookTrace.invoice(invoice);
-        // 🚀 ENVIAR POS
-        posClientService.sendInvoiceToPOS(invoice);
          BigDecimal total = new BigDecimal(
             order.path("total_price").asText("0")
         );
-        // 💾 GUARDAR PROCESADA
-        repository.save(
-            new ProcessedOrder(
-                orderId,
-                LocalDateTime.now(),
-                payload,
-                eventType, 
-                total
-            )
-        );
+        // 🔒 RESERVAR ANTES DE ENVIAR: el ciclo factura con otro prefijo (K), así que RM ya no
+        // rechazaría el duplicado. Si el pedido entró por otro camino, el INSERT falla.
+        try {
+            repository.reserve(orderId, LocalDateTime.now(), payload, eventType, total);
+        } catch (DataIntegrityViolationException e) {
+            System.out.println("⚠️ Orden duplicada: " + orderId);
+            WebhookTrace.result("DUPLICADA", "El pedido ya estaba procesado; no se envió otra factura a RM");
+            return ResponseEntity.ok().build();
+        }
+        // 🚀 ENVIAR POS (si falla se libera la reserva y Shopify reintenta el webhook)
+        try {
+            posClientService.sendInvoiceToPOS(invoice);
+        } catch (Exception e) {
+            repository.deleteById(orderId);
+            throw e;
+        }
+        recordRmInvoice(orderId, (String) invoice.get("Factura"));
 
         System.out.println("✅ Orden procesada correctamente: " + orderId);
         WebhookTrace.result("PROCESADA", "Factura " + invoice.get("Factura") + " enviada a RM; pedido guardado en ProcessedOrder como "
