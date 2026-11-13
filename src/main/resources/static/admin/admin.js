@@ -192,6 +192,8 @@
     pedidos: ['Pedidos procesados', renderOrders],
     'facturas-error': ['Facturas con error', renderFailedOrders],
     webhooks: ['Webhooks recibidos', renderWebhooks],
+    tunel: ['Túnel de Cloudflare', renderTunnel],
+    guias: ['Guías', renderGuides],
     auditoria: ['Auditoría', renderAudit],
   };
   function currentView() {
@@ -923,6 +925,193 @@
     } catch (err) {
       $('#webhook-body').innerHTML = `<p class="form-error">${esc(err.message)}</p>`;
     }
+  }
+
+  // ───────── Túnel de Cloudflare ─────────
+  // Instala el túnel con el token de Cloudflare (AdminTunnelController / TunnelService). La guía
+  // completa está en guias/tunel.md: si cambia algo de esta pantalla, actualícela.
+  const TUNNEL_STATE = {
+    RUNNING: ['Funcionando', 'badge-ok'],
+    START_PENDING: ['Iniciando', 'badge-info'],
+    STOPPED: ['Detenido', 'badge-danger'],
+    STOP_PENDING: ['Deteniéndose', 'badge-warn'],
+    NO_INSTALADO: ['No instalado', ''],
+    DESCONOCIDO: ['Desconocido', 'badge-warn'],
+  };
+
+  async function renderTunnel() {
+    const c = $('#content');
+    c.innerHTML = '<section class="card"><div class="card-pad muted">Cargando estado del túnel…</div></section>';
+    paintTunnel(await api('/tunnel'));
+  }
+
+  function paintTunnel(t) {
+    const [stateLabel, stateCls] = TUNNEL_STATE[t.state] || [t.state, ''];
+    $('#content').innerHTML = `
+      <section class="card" id="tunnel-card">
+        <div class="card-head"><div><h2>Túnel de Cloudflare</h2>
+          <p class="muted">Publica en internet, con HTTPS válido, solo los webhooks de este servicio para que Shopify pueda enviarlos. El panel de administración no queda expuesto.</p></div></div>
+        <div class="settings-row">
+          <div><h3>Estado</h3><p>Servicio de Windows <span class="mono">${esc(t.serviceId)}</span> con cloudflared ${esc(t.cloudflaredVersion)}.</p></div>
+          <div class="field">
+            <span><span class="badge ${stateCls}">${esc(stateLabel)}</span></span>
+            ${t.tunnelId ? `<small>Túnel: <span class="mono">${esc(t.tunnelId)}</span></small>` : ''}
+          </div>
+        </div>
+        ${t.available ? '' : `<div class="card-pad"><span class="badge badge-warn">No disponible</span> <span class="muted">${esc(t.unavailableReason)}</span></div>`}
+        <form id="tunnel-form">
+          <div class="settings-row">
+            <div><h3>Token del túnel</h3><p>En Cloudflare: <em>Zero Trust → Networks → Tunnels</em>, abra el túnel y copie el comando de instalación de Windows. Puede pegar el comando entero o solo el token (empieza por <span class="mono">eyJ</span>).</p></div>
+            <label class="field"><textarea name="token" rows="3" autocomplete="off" spellcheck="false" placeholder="eyJhIjoi…" ${t.available ? '' : 'disabled'}></textarea>
+              <small>El token se guarda en la carpeta config (solo administradores). No se muestra ni se registra.</small></label>
+          </div>
+          <details class="card-pad steps" open>
+            <summary><strong>Qué configurar en Cloudflare (Public Hostname)</strong></summary>
+            <ol>
+              <li><em>Subdomain</em> y <em>Domain</em>: la dirección pública, por ejemplo <span class="mono">shopify.midominio.com</span>.</li>
+              <li><em>Path</em>: <span class="mono">^/webhook</span> (solo los webhooks; nada más del servicio queda publicado).</li>
+              <li><em>Service</em>: tipo <strong>HTTPS</strong>, URL <span class="mono">localhost:${esc(t.apiPort)}</span> <button class="btn btn-sm" type="button" data-copy="localhost:${esc(t.apiPort)}">Copiar</button></li>
+              <li><em>Additional application settings → TLS</em>: active <strong>No TLS Verify</strong> (el certificado local del servicio no es público).</li>
+              <li>Después escriba <span class="mono">https://shopify.midominio.com</span> en <a href="#/webhooks">Webhooks → URL pública del servicio</a>.</li>
+            </ol>
+            <p class="muted">Paso a paso completo y solución de problemas:<a href="#/guias" data-guide="tunel">guía del túnel</a>.</p>
+          </details>
+          <div class="save-bar">
+            ${t.installed ? '<button type="button" class="btn btn-danger" id="tunnel-uninstall">Desinstalar túnel</button>' : ''}
+            <button type="submit" class="btn btn-primary" ${t.available ? '' : 'disabled'}>${t.installed ? 'Reinstalar con este token' : 'Instalar túnel'}</button>
+          </div>
+        </form>
+      </section>`;
+
+    const form = $('#tunnel-form');
+    $$('[data-copy]', form).forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); toast('Copiado'); } catch (e) { toast('No se pudo copiar: selecciónelo y cópielo a mano', 'error'); }
+    }));
+    bindGuideLinks(form);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = $('[name=token]', form).value.trim();
+      if (!token) { toast('Pegue el token del túnel', 'error'); return; }
+      const ok = await confirmDialog('Instalar el túnel',
+        'Se descargará cloudflared ' + t.cloudflaredVersion + ' de GitHub (unos 55 MB), se verificará su huella y se instalará el servicio de Windows ' + t.serviceId + '.' +
+        (t.installed ? ' El túnel actual se reemplaza.' : ''), 'Instalar');
+      if (!ok) return;
+      try { startJobPolling(await api('/tunnel/install', { method: 'POST', body: { token } })); $('[name=token]', form).value = ''; } catch (err) { toast(err.message, 'error'); }
+    });
+    const un = $('#tunnel-uninstall');
+    if (un) un.addEventListener('click', async () => {
+      if (!(await confirmDialog('Desinstalar el túnel', 'Se detiene y se borra el servicio ' + t.serviceId + ' y el token guardado. Shopify dejará de llegar a los webhooks.', 'Desinstalar'))) return;
+      try { paintTunnel(await api('/tunnel/uninstall', { method: 'POST' })); toast('Túnel desinstalado'); } catch (err) { toast(err.message, 'error'); }
+    });
+  }
+
+  // ───────── Guías ─────────
+  // Archivos Markdown en /admin/guias/ (src/main/resources/static/admin/guias). Son la única copia:
+  // docs/README.md del repositorio enlaza a ellos.
+  const GUIDES = [
+    { key: 'credenciales-shopify', title: 'Credenciales y permisos de Shopify' },
+    { key: 'tunel', title: 'Túnel de Cloudflare' },
+    { key: 'instalador', title: 'Instalador del servicio' },
+  ];
+
+  async function renderGuides() {
+    const key = GUIDES.some((g) => g.key === state.guide) ? state.guide : GUIDES[0].key;
+    const c = $('#content');
+    c.innerHTML = `
+      <div class="tabs guide-tabs">${GUIDES.map((g) => `<button type="button" class="tab ${g.key === key ? 'active' : ''}" data-guide="${g.key}">${esc(g.title)}</button>`).join('')}</div>
+      <article class="card card-pad guide" id="guide-body"><p class="muted">Cargando…</p></article>`;
+    bindGuideLinks(c);
+    const res = await fetch('guias/' + key + '.md', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('No se encontró la guía ' + key);
+    const body = $('#guide-body');
+    body.innerHTML = markdown(await res.text());
+    bindGuideLinks(body);
+  }
+
+  /** Enlaces con data-guide abren esa guía en la vista Guías. */
+  function bindGuideLinks(root) {
+    $$('[data-guide]', root).forEach((a) => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      state.guide = a.dataset.guide;
+      if (location.hash === '#/guias') route(); else location.hash = '#/guias';
+      window.scrollTo(0, 0);
+    }));
+  }
+
+  // Markdown básico para las guías: títulos, párrafos, listas (un nivel de anidación), tablas,
+  // citas, bloques de código, `código`, **negrita**, *cursiva* y enlaces. Todo el texto se escapa.
+  function mdInline(text) {
+    const codes = [];
+    let s = esc(text).replace(/`([^`]+)`/g, (_, code) => { codes.push(code); return `\u0000${codes.length - 1}\u0000`; });
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*\w])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+        const guide = url.match(/^([\w-]+)\.md(#.*)?$/);
+        if (guide) return `<a href="#/guias" data-guide="${guide[1]}">${label}</a>`;
+        if (/^#\//.test(url)) return `<a href="${url}">${label}</a>`;
+        if (/^https:\/\//.test(url)) return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+        return label;
+      });
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+  }
+
+  function markdown(src) {
+    const lines = src.replace(/\r/g, '').split('\n');
+    const out = [];
+    const listRe = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
+    const isBlockStart = (l) => /^(#{1,4}\s|```|>|\|)/.test(l) || listRe.test(l);
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim()) { i++; continue; }
+      if (line.startsWith('```')) {
+        const code = [];
+        for (i++; i < lines.length && !lines[i].startsWith('```'); i++) code.push(lines[i]);
+        i++;
+        out.push(`<pre class="code-block">${esc(code.join('\n'))}</pre>`);
+        continue;
+      }
+      const h = line.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { const n = Math.min(h[1].length + 1, 5); out.push(`<h${n}>${mdInline(h[2])}</h${n}>`); i++; continue; }
+      if (line.startsWith('|') && /^\|?\s*:?-{3,}/.test(lines[i + 1] || '')) {
+        const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((x) => mdInline(x.trim()));
+        const head = cells(line);
+        const rows = [];
+        for (i += 2; i < lines.length && lines[i].trim().startsWith('|'); i++) rows.push(cells(lines[i]));
+        out.push(`<div class="table-wrap"><table><thead><tr>${head.map((x) => `<th>${x}</th>`).join('')}</tr></thead>` +
+          `<tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+        continue;
+      }
+      if (line.startsWith('>')) {
+        const quote = [];
+        for (; i < lines.length && lines[i].startsWith('>'); i++) quote.push(lines[i].replace(/^>\s?/, ''));
+        out.push(`<blockquote>${markdown(quote.join('\n'))}</blockquote>`);
+        continue;
+      }
+      if (listRe.test(line)) {
+        const ordered = /^\s*\d+\./.test(line);
+        const items = [];
+        for (; i < lines.length; i++) {
+          const l = lines[i];
+          const m = l.match(listRe);
+          if (m && !m[1]) { items.push({ text: m[3], sub: [] }); continue; }
+          if (m && m[1] && items.length) { items[items.length - 1].sub.push({ ordered: /\d/.test(m[2]), text: m[3] }); continue; }
+          if (l.trim() && /^\s+/.test(l) && items.length) { items[items.length - 1].text += ' ' + l.trim(); continue; }
+          if (!l.trim() && listRe.test(lines[i + 1] || '') && !/^\s/.test(lines[i + 1])) continue;
+          break;
+        }
+        const tag = ordered ? 'ol' : 'ul';
+        out.push(`<${tag}>${items.map((it) => {
+          const subTag = it.sub.length && it.sub[0].ordered ? 'ol' : 'ul';
+          return `<li>${mdInline(it.text)}${it.sub.length ? `<${subTag}>${it.sub.map((s) => `<li>${mdInline(s.text)}</li>`).join('')}</${subTag}>` : ''}</li>`;
+        }).join('')}</${tag}>`);
+        continue;
+      }
+      const para = [line.trim()];
+      for (i++; i < lines.length && lines[i].trim() && !isBlockStart(lines[i]); i++) para.push(lines[i].trim());
+      out.push(`<p>${mdInline(para.join(' '))}</p>`);
+    }
+    return out.join('\n');
   }
 
   function renderAudit() {

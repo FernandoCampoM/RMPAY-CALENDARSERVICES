@@ -357,3 +357,17 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .arrow { display: none; }
   .topbar-right .badge-label { display: none; }
 }
+/* Túnel de Cloudflare y guías (vistas Túnel y Guías) */
+#tunnel-card textarea { width: 100%; font-family: var(--mono); font-size: 12px; resize: vertical; }
+.guide-tabs { margin-bottom: 16px; }
+.guide { line-height: 1.6; color: var(--text-2); max-width: 920px; }
+.guide h2 { font-size: 22px; color: var(--text); margin: 0 0 12px; }
+.guide h3 { font-size: 17px; color: var(--text); margin: 28px 0 8px; padding-top: 16px; border-top: 1px solid var(--border); }
+.guide h4, .guide h5 { font-size: 15px; color: var(--text); margin: 18px 0 6px; }
+.guide p, .guide ul, .guide ol, .guide .table-wrap, .guide pre { margin: 0 0 12px; }
+.guide ul, .guide ol { padding-left: 22px; display: grid; gap: 4px; }
+.guide li > ul, .guide li > ol { margin: 4px 0 0; }
+.guide code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); }
+.guide blockquote { margin: 0 0 12px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.guide blockquote p:last-child { margin: 0; }
+.guide a { color: var(--accent); }

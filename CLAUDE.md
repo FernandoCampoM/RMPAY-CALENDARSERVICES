@@ -62,3 +62,19 @@ la tarea con el cambio más pequeño y limpio posible.
 # Regla general
 Si tienes dudas, pregunta en vez de asumir. Un cambio que no hace falta es peor
 que una pregunta de más.
+
+# Guías del proyecto (mantenerlas al día)
+Las guías están en `src/main/resources/static/admin/guias/` (se ven en el panel, vista Guías,
+y `docs/README.md` las enlaza):
+- `credenciales-shopify.md`: dónde se consiguen las credenciales y permisos de Shopify.
+- `tunel.md`: túnel de Cloudflare instalado desde el panel.
+- `instalador.md`: instalador del servicio.
+
+Reglas:
+- Todo cambio que afecte a la instalación (`installer/`), al túnel (`TunnelService`, vista Túnel)
+  o a la conexión con Shopify (credenciales, alcances, permisos, webhooks, versión de la API)
+  actualiza la guía correspondiente **en el mismo commit**. Inclúyelo en el plan de la Fase 2.
+- Cuando el usuario pregunte o descubramos algo nuevo sobre cómo conseguir credenciales o
+  permisos de Shopify (un paso, un menú que cambió, un error y su causa), corrige los pasos de
+  `credenciales-shopify.md` y agrega una fila a su *Historial de hallazgos* con la fecha y si está
+  comprobado.

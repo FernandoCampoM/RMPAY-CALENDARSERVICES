@@ -38,3 +38,8 @@ powershell -ExecutionPolicy Bypass -File installer\build.ps1 [-Version 1.0.0]
 
 Las contraseñas y secretos no están en el jar. En desarrollo van en `config/application.properties`
 en la raíz del proyecto (fuera de git); en los clientes ese archivo lo escribe el instalador.
+
+## Guías para quien instala
+
+Paso a paso del asistente, credenciales de Shopify y túnel de Cloudflare: ver
+[docs/README.md](../docs/README.md). Las mismas guías están en el panel, vista **Guías**.
