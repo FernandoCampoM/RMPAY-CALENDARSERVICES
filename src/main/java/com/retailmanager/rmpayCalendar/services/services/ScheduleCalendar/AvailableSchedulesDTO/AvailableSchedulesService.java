@@ -1,7 +1,6 @@
 package com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar.AvailableSchedulesDTO;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -13,9 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.retailmanager.rmpayCalendar.db1.entity.AvailableSchedules;
+import com.retailmanager.rmpayCalendar.db1.repository.AvailableSchedulesRepository;
 import com.retailmanager.rmpayCalendar.exceptionControllers.exceptions.EntidadNoExisteException;
-import com.retailmanager.rmpayCalendar.models.AvailableSchedules;
-import com.retailmanager.rmpayCalendar.repositories.AvailableSchedulesRepository;
 import com.retailmanager.rmpayCalendar.services.DTO.AvailableSchedulesDTO;
 @Service
 public class AvailableSchedulesService implements IAvailableSchedulesService {

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.retailmanager.rmpayCalendar.services.DTO.AvailableSchedulesDTO;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,9 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.retailmanager.rmpayCalendar.db1.entity.ScheduleCalendar;
+import com.retailmanager.rmpayCalendar.db1.repository.ScheduleCalendarRepository;
 import com.retailmanager.rmpayCalendar.exceptionControllers.exceptions.EntidadNoExisteException;
-import com.retailmanager.rmpayCalendar.models.ScheduleCalendar;
-import com.retailmanager.rmpayCalendar.repositories.ScheduleCalendarRepository;
 import com.retailmanager.rmpayCalendar.services.DTO.ScheduleCalendarDTO;
 
 @Service

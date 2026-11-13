@@ -1,0 +1,29 @@
+<!--
+  Servicio de Windows de RMPAY (WinSW 2.12). El instalador copia WinSW-x64.exe como
+  RMPAYService.exe junto a este archivo; %BASE% es la carpeta de instalación.
+  La configuración de la aplicación está en %BASE%\config\application.properties.
+-->
+<service>
+  <id>RMPAYService</id>
+  <name>RMPAY Service</name>
+  <description>Servicio RMPAY: sincronización Shopify - Retail Manager y panel de administración local.</description>
+
+  <executable>%BASE%\runtime\bin\java.exe</executable>
+  <arguments>-Xms256m -Xmx1024m -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -jar "%BASE%\app\RMPAYservice.jar"</arguments>
+  <workingdirectory>%BASE%</workingdirectory>
+
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>30 sec</stoptimeout>
+
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+  <resetfailure>1 hour</resetfailure>
+
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>10</keepFiles>
+  </log>
+</service>

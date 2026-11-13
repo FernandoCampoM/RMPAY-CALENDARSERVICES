@@ -1,4 +1,4 @@
-package com.retailmanager.rmpayCalendar.models;
+package com.retailmanager.rmpayCalendar.db1.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

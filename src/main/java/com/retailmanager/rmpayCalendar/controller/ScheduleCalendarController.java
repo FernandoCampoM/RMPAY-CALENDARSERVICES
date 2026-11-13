@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.retailmanager.rmpayCalendar.models.ScheduleCalendar;
+import com.retailmanager.rmpayCalendar.db1.entity.ScheduleCalendar;
 import com.retailmanager.rmpayCalendar.services.DTO.ScheduleCalendarDTO;
 import com.retailmanager.rmpayCalendar.services.services.ScheduleCalendar.IScheduleCalendarService;
 

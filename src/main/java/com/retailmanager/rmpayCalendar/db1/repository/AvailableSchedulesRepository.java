@@ -1,10 +1,10 @@
-package com.retailmanager.rmpayCalendar.repositories;
+package com.retailmanager.rmpayCalendar.db1.repository;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.retailmanager.rmpayCalendar.models.AvailableSchedules;
+import com.retailmanager.rmpayCalendar.db1.entity.AvailableSchedules;
 
 import jakarta.transaction.Transactional;
 
