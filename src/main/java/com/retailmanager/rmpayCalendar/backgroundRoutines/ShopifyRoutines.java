@@ -38,19 +38,26 @@ public class ShopifyRoutines extends Thread {
         // Calcula la diferencia en milisegundos entre la próxima ejecución y la hora actual
         long initialDelay = nextExecutionTime.getTimeInMillis() - now.getTimeInMillis();
 
-        // Crea un objeto TimerTask para ejecutar tu evento
-        TimerTask task = new TimerTask() {
+        // Productos y pedidos corren en temporizadores (hilos) separados: una carga grande de
+        // productos (miles de altas en Shopify) no retrasa la facturación de los pedidos.
+        // Cada Timer nunca se solapa consigo mismo; una excepción no capturada cancelaría su
+        // Timer para siempre, por eso cada tarea atrapa sus errores.
+        TimerTask productTask = new TimerTask() {
             @Override
             public void run() {
-                // Coloca aquí el código que deseas que se ejecute en el evento diario
-                System.out.println("🔥 RUTINA DE SINCORNIZACION DE SHOPIFY EJECUTANDOSE...");
-                // Una excepción no capturada cancela el Timer para siempre; cada job se aísla
+                System.out.println("🔥 RUTINA DE SINCRONIZACION DE PRODUCTOS EJECUTANDOSE...");
                 try {
                     productSyncJob.execute();
                 } catch (Exception e) {
                     System.out.println("❌ Error en sincronización de productos: " + e.getMessage());
                     e.printStackTrace();
                 }
+            }
+        };
+        TimerTask invoiceTask = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("🔥 RUTINA DE SINCRONIZACION DE PEDIDOS EJECUTANDOSE...");
                 try {
                     invoiceSyncJob.execute();
                 } catch (Exception e) {
@@ -60,9 +67,11 @@ public class ShopifyRoutines extends Thread {
             }
         };
 
-        // Crea un Timer y programa el TimerTask para que se ejecute todos los días a la misma hora
-        Timer timer = new Timer();
-        timer.schedule(task, initialDelay, 5 * 60 * 1000); // 24 horas en milisegundos
+        // Mismo horario que antes: primer ciclo en el minuto siguiente y luego cada 5 minutos
+        Timer productTimer = new Timer("shopify-productos");
+        productTimer.schedule(productTask, initialDelay, 5 * 60 * 1000);
+        Timer invoiceTimer = new Timer("shopify-pedidos");
+        invoiceTimer.schedule(invoiceTask, initialDelay, 5 * 60 * 1000);
 
         // Espera indefinidamente para que el programa no finalice inmediatamente
         try {
